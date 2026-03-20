@@ -68,7 +68,7 @@ swinburn_new/
 │   │   └── a4_report_generator/       # 4C report + consistency validator
 │   └── orchestrator/
 │       ├── confidence_gate.py         # HALT / PROCEED / ESCALATE router
-│       └── graph.py                   # LangGraph StateGraph (6 nodes)
+│       └── graph.py                   # LangGraph StateGraph (9 nodes)
 ├── training/
 │   └── train.py                       # Full training pipeline + Optuna
 ├── api/
@@ -95,12 +95,98 @@ pip install -r requirements.txt
 make install
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment Variables
+
+Copy file mẫu và điền thông tin:
 
 ```bash
 cp .env.example .env
-# Edit .env with your AWS credentials (or use mock mode)
 ```
+
+Các biến môi trường được load tập trung qua **`creditlens/config/settings.py`** (Pydantic Settings). Toàn bộ module đều import từ đây — không có hardcode credentials nào trong source code.
+
+#### 🔑 AWS Core (bắt buộc cho production)
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `AWS_REGION` | Tất cả AWS services | Region deploy (khuyến nghị: `ap-southeast-1` — Singapore) |
+| `AWS_ACCESS_KEY_ID` | boto3 client | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | boto3 client | AWS secret key |
+
+#### 📄 Amazon Textract (Agent A1 — Channel 1)
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `TEXTRACT_BUCKET` | `creditlens/agents/a1_ingestion/textract_service.py` | S3 bucket chứa PDF/scan documents trước khi gửi Textract |
+
+#### 🤖 Amazon Bedrock / Claude (Agent A2 & A4)
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `BEDROCK_MODEL_ID` | `creditlens/agents/a2_feature_engineer/semantic_extractor.py` `creditlens/agents/a4_report_generator/agent.py` | Model Claude sử dụng. Mặc định: `anthropic.claude-3-5-sonnet-20241022-v2:0` |
+| `BEDROCK_MAX_TOKENS` | A2, A4 agents | Giới hạn token per response (default: 4096) |
+
+#### 📊 SageMaker Endpoint (Agent A3 — production)
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `SAGEMAKER_ENDPOINT_NAME` | `creditlens/agents/a3_scoring/agent.py` | Tên endpoint LightGBM deploy trên SageMaker. Để trống → dùng local model file |
+
+#### 🗄️ DynamoDB (Audit Trail)
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `DYNAMODB_TABLE_STATE` | `creditlens/services/` (Week 3) | Table lưu `CreditState` per application |
+| `DYNAMODB_TABLE_AUDIT` | Audit persistence | Table append-only audit trail |
+
+#### 🔍 OpenSearch Serverless (Agent A4 — RAG)
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `OPENSEARCH_ENDPOINT` | `creditlens/agents/a4_report_generator/agent.py` | URL endpoint OpenSearch Serverless collection |
+| `OPENSEARCH_INDEX` | A4 RAG query | Index chứa policy documents đã embedding |
+
+#### 🪣 S3 Storage
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `S3_BUCKET_DOCUMENTS` | A1 (Textract pre-upload) | Bucket documents tạm (PDF, scan) |
+| `S3_BUCKET_MODELS` | Training pipeline | Bucket lưu model artifacts (`.pkl`, SHAP JSON) |
+
+#### ⚙️ Application
+
+| Biến | Module sử dụng | Mô tả |
+|------|---------------|-------|
+| `APP_ENV` | `creditlens/config/settings.py` | `development` / `production`. Ở `development` → dùng mock AWS services |
+| `LOG_LEVEL` | Toàn bộ app | Mức log: `DEBUG` / `INFO` / `WARNING` |
+| `MODEL_PATH` | `creditlens/agents/a3_scoring/model.py` | Đường dẫn local đến file `.pkl` đã train |
+| `DATA_DIR` | `training/train.py` | Thư mục chứa Home Credit CSV dataset |
+
+#### 🧪 Chạy không cần AWS (Mock Mode)
+
+Nếu chưa có AWS account, hệ thống có sẵn **mock implementations** cho tất cả services:
+
+```bash
+# .env
+APP_ENV=development   # bật mock mode tự động
+```
+
+Hoặc truyền thẳng khi khởi tạo:
+
+```python
+from creditlens.orchestrator.graph import run_pipeline
+
+result = run_pipeline(
+    applicant_id="TEST001",
+    use_mock=True,          # mock Textract + CIC + Bedrock
+)
+```
+
+> **Mock services** nằm trong:
+> - `creditlens/agents/a1_ingestion/textract_service.py` — `MockTextractService`  
+> - `creditlens/agents/a1_ingestion/cic_service.py` — `MockCICService`  
+> - `creditlens/agents/a2_feature_engineer/` — mock Claude responses  
+> - `creditlens/agents/a4_report_generator/agent.py` — `_mock_narrative()`
 
 ### 3. Train the Model
 
