@@ -39,9 +39,7 @@ home-credit-default-risk/
 # Logs & Models
 logs/
 *.log
-*.pkl
 *.txt
-lgb*_booster.txt
 
 # Editor / IDE
 .vscode/
