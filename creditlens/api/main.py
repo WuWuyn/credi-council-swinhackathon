@@ -20,6 +20,7 @@ from typing import Any, Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Ensure project root is in path
@@ -55,6 +56,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve frontend static files
+_FRONTEND_DIR = PROJECT_ROOT / "front-end" / "app"
+if _FRONTEND_DIR.exists():
+    app.mount("/app", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
+    logger.info(f"Frontend served at /app from {_FRONTEND_DIR}")
 
 # ─── Lazy-loaded global agents ────────────────────────────────────────────────
 
@@ -205,6 +212,40 @@ async def score_json(data: dict[str, Any]):
         raise
     except Exception as e:
         logger.error(f"Pipeline error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Mock customer demo endpoint ──────────────────────────────────────────────
+
+_MOCK_FOLDERS = {
+    "001": "customer_001",
+    "002": "customer_002",
+    "003": "customer_003",
+    "004": "customer_004",
+}
+
+
+@app.post("/score/mock", response_model=ScoringResult)
+async def score_mock_customer(customer_id: str = Form(...)):
+    """Score one of the 4 pre-built demo customers by ID (001–004).
+
+    Used by the demo dashboard frontend.
+    """
+    folder_name = _MOCK_FOLDERS.get(customer_id)
+    if not folder_name:
+        raise HTTPException(status_code=400, detail=f"Unknown customer_id: {customer_id}. Use 001-004.")
+
+    customer_folder = PROJECT_ROOT / "data" / "mock" / folder_name
+    if not customer_folder.exists():
+        raise HTTPException(status_code=404, detail=f"Mock folder not found: {customer_folder}")
+
+    try:
+        agents = get_agents()
+        result = _run_pipeline(agents, str(customer_folder))
+        return ScoringResult(**result)
+    except Exception as e:
+        logger.error(f"Pipeline error for customer {customer_id}: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
