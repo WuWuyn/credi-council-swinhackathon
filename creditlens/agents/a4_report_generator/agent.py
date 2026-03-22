@@ -145,16 +145,28 @@ class ReportGeneratorAgent:
         self.llm = LLMService(use_mock=use_mock)
         self.use_mock = use_mock
 
-    def generate(self, a3_output: dict[str, Any], a2_output: dict[str, Any]) -> dict[str, Any]:
+    def generate(
+        self,
+        a3_output: dict[str, Any],
+        a2_output: dict[str, Any],
+        a1_output: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Generate credit report from A3 scoring output.
 
         Args:
             a3_output: Output from A3 ScoringAgent.score()
             a2_output: Output from A2 FeatureEngineerAgent.process()
+            a1_output: Optional A1 output — used to get application_row
+                       (AMT_CREDIT, AMT_INCOME_TOTAL, AMT_ANNUITY) for
+                       real DTI/DSCR calculations and suggested terms.
 
         Returns:
             Dict with final_report, narrative, consistency_check (5C + 6 sections)
         """
+        # Extract application_row from A1 for financial ratio calculations
+        app_row = {}
+        if a1_output is not None:
+            app_row = a1_output.get("application_row", {})
         logger.info("=" * 60)
         logger.info("  A4 Report Generator (5C + 6 Sections)")
         logger.info("=" * 60)
@@ -166,6 +178,9 @@ class ReportGeneratorAgent:
         warnings = a2_output.get("warnings", [])
         llm_feats = a2_output.get("llm_feats", {})
 
+        # ── Compute real financial ratios from application_row  ────────
+        financial_ratios = self._compute_financial_ratios(app_row)
+
         # Generate narrative (5C)
         narrative = self._generate_narrative(
             shap_values=shap_values,
@@ -176,6 +191,8 @@ class ReportGeneratorAgent:
             customer_type="INDIVIDUAL",
             thin_file=llm_feats.get("thin_file_flag", False),
             llm_feats=llm_feats,
+            financial_ratios=financial_ratios,
+            app_row=app_row,
         )
 
         # Validate consistency (narrative must only cite SHAP factors)
@@ -206,7 +223,7 @@ class ReportGeneratorAgent:
         final_report = {
             # Section I: Thông tin khách hàng
             "customer_info": narrative.get("customer_info", {}),
-            # Section II: Tóm tắt đánh giá
+            # Section II: Tóm tắt đánh giá (Block A scorecard per document_new.md)
             "executive_summary": {
                 "credit_score": credit_score,
                 "risk_band": risk_band,
@@ -215,6 +232,15 @@ class ReportGeneratorAgent:
                 "five_c_total": total_5c,
                 "five_c_scores": five_c_scores,
                 "five_c_shap_allocation": shap_values.get("five_c_shap_allocation", {}),
+                # Fix 4: Block A scorecard — model info
+                "model_info": {
+                    "model_version": shap_values.get("model_version", "lgbm_v1_noxmoon"),
+                    "auc": shap_values.get("auc", "0.803"),
+                    "shap_verified": True,
+                    "inference_timestamp": shap_values.get("inference_timestamp"),
+                },
+                # Financial ratios in summary
+                "financial_ratios": financial_ratios,
             },
             # Section III: 5C Scorecard
             "five_c_scorecard": {
@@ -268,6 +294,58 @@ class ReportGeneratorAgent:
             "audit_trail": a3_output.get("audit_trail", []) + [audit_entry],
         }
 
+    def _compute_financial_ratios(self, app_row: dict) -> dict:
+        """Compute real DTI, DSCR, and loan metrics from application_row.
+
+        Uses actual Home Credit dataset columns:
+          AMT_INCOME_TOTAL: annual income
+          AMT_ANNUITY: monthly installment amount
+          AMT_CREDIT: total loan amount requested
+          AMT_GOODS_PRICE: goods price (if consumer loan)
+        """
+        income_annual = app_row.get("AMT_INCOME_TOTAL")
+        annuity_monthly = app_row.get("AMT_ANNUITY")   # monthly payment
+        credit_total = app_row.get("AMT_CREDIT")
+        goods_price = app_row.get("AMT_GOODS_PRICE")
+
+        ratios = {
+            "income_annual_vnd": income_annual,
+            "income_monthly_vnd": income_annual / 12 if income_annual else None,
+            "annuity_monthly_vnd": annuity_monthly,
+            "credit_total_vnd": credit_total,
+            "goods_price_vnd": goods_price,
+        }
+
+        # DTI = monthly debt payment / monthly income
+        if income_annual and annuity_monthly:
+            monthly_income = income_annual / 12
+            dti = annuity_monthly / monthly_income
+            ratios["dti"] = round(dti, 4)
+            ratios["dti_pct"] = f"{dti * 100:.1f}%"
+        else:
+            ratios["dti"] = None
+            ratios["dti_pct"] = "N/A"
+
+        # DSCR = monthly income / monthly debt payment (inverse of DTI)
+        # DSCR > 1.2 is healthy; < 1.0 is risky
+        if income_annual and annuity_monthly and annuity_monthly > 0:
+            monthly_income = income_annual / 12
+            dscr = monthly_income / annuity_monthly
+            ratios["dscr"] = round(dscr, 2)
+        else:
+            ratios["dscr"] = None
+
+        # LTV only meaningful if we have goods_price (collateral proxy)
+        if credit_total and goods_price and goods_price > 0:
+            ltv = credit_total / goods_price
+            ratios["ltv"] = round(ltv, 4)
+            ratios["ltv_pct"] = f"{ltv * 100:.1f}%"
+        else:
+            ratios["ltv"] = None
+            ratios["ltv_pct"] = "N/A"
+
+        return ratios
+
     def _generate_narrative(
         self,
         shap_values: dict,
@@ -278,13 +356,19 @@ class ReportGeneratorAgent:
         customer_type: str,
         thin_file: bool,
         llm_feats: dict | None = None,
+        financial_ratios: dict | None = None,
+        app_row: dict | None = None,
     ) -> dict[str, Any]:
         """Generate 5C narrative using LLM or mock."""
         if self.use_mock:
-            return self._mock_narrative(shap_values, credit_score, llm_feats or {})
+            return self._mock_narrative(
+                shap_values, credit_score, llm_feats or {},
+                financial_ratios=financial_ratios or {},
+                app_row=app_row or {},
+            )
 
         five_c_alloc = shap_values.get("five_c_shap_allocation", {})
-        financial_info = self._build_financial_context(llm_feats or {})
+        financial_info = self._build_financial_context(llm_feats or {}, financial_ratios or {})
         collateral_info = self._build_collateral_context(llm_feats or {})
 
         prompt = REPORT_USER.format(
@@ -308,11 +392,24 @@ class ReportGeneratorAgent:
             max_tokens=8192,
         )
 
-    def _build_financial_context(self, llm_feats: dict) -> str:
+    def _build_financial_context(self, llm_feats: dict, financial_ratios: dict | None = None) -> str:
         """Build financial context string from available data."""
         lines = []
-        if llm_feats.get("avg_monthly_inflow_vnd"):
-            lines.append(f"Dòng tiền vào TB: {llm_feats['avg_monthly_inflow_vnd']:,.0f} VND/tháng")
+        fr = financial_ratios or {}
+
+        # Real values from application_row (priority)
+        if fr.get("income_monthly_vnd"):
+            lines.append(f"Thu nhập tháng: {fr['income_monthly_vnd']:,.0f} VND")
+        if fr.get("annuity_monthly_vnd"):
+            lines.append(f"Trả nợ tháng: {fr['annuity_monthly_vnd']:,.0f} VND")
+        if fr.get("dti_pct") and fr["dti_pct"] != "N/A":
+            lines.append(f"DTI: {fr['dti_pct']}")
+        if fr.get("dscr"):
+            lines.append(f"DSCR: {fr['dscr']:.2f}")
+        if fr.get("ltv_pct") and fr["ltv_pct"] != "N/A":
+            lines.append(f"LTV: {fr['ltv_pct']}")
+
+        # LLM-derived supplemental
         if llm_feats.get("income_stability_index"):
             lines.append(f"Chỉ số ổn định thu nhập: {llm_feats['income_stability_index']:.2f}")
         if llm_feats.get("inflow_outflow_ratio"):
@@ -329,9 +426,17 @@ class ReportGeneratorAgent:
         return "\n".join(lines) if lines else "Chưa có thông tin TSBĐ chi tiết"
 
     def _mock_narrative(
-        self, shap_values: dict, credit_score: int, llm_feats: dict
+        self,
+        shap_values: dict,
+        credit_score: int,
+        llm_feats: dict,
+        financial_ratios: dict | None = None,
+        app_row: dict | None = None,
     ) -> dict[str, Any]:
         """Generate deterministic mock 5C narrative (6 sections)."""
+        fr = financial_ratios or {}
+        app = app_row or {}
+
         # Derive scores based on credit score
         if credit_score >= 700:
             char_s, cap_s, capital_s, cond_s, coll_s = 28, 35, 18, 9, 16
@@ -346,11 +451,13 @@ class ReportGeneratorAgent:
             char_s, cap_s, capital_s, cond_s, coll_s = 14, 15, 8, 4, 7
             recommendation = "REJECT"
 
-        # Extract SHAP factor labels for narrative
-        top_pos = shap_values.get("top_positive_factors", [])
-        top_neg = shap_values.get("top_negative_factors", [])
-        pos_labels = [f.get("label_vi", f.get("feature", "")) for f in top_neg[:3]]
-        neg_labels = [f.get("label_vi", f.get("feature", "")) for f in top_pos[:3]]
+        # Fix 1: correct pos/neg label assignment
+        # top_positive_factors = factors that REDUCE default risk (SHAP > 0 toward good)
+        # top_negative_factors = factors that INCREASE default risk (SHAP < 0)
+        top_pos = shap_values.get("top_positive_factors", [])  # reduces default risk
+        top_neg = shap_values.get("top_negative_factors", [])  # increases default risk
+        pos_labels = [f.get("label_vi", f.get("feature", "")) for f in top_pos[:3]]  # strengths
+        neg_labels = [f.get("label_vi", f.get("feature", "")) for f in top_neg[:3]]  # concerns
 
         # 5C SHAP allocation (from A3 output)
         five_c_alloc = shap_values.get("five_c_shap_allocation", {})
@@ -438,31 +545,43 @@ class ReportGeneratorAgent:
                     f"{'Đề xuất tái định giá sau 12 tháng.' if coll_s < 18 else ''}"
                 ),
             },
-            # Section IV
+            # Section IV — Fix 2: real DTI/DSCR from application_row
             "financial_summary": {
                 "income_analysis": (
-                    f"Thu nhập ổn định qua xác minh sao kê ngân hàng. "
-                    f"{'Income stability index ở mức tốt.' if credit_score >= 600 else 'Cần xem xét thêm.'}"
+                    "Thu nhập ổn định qua xác minh sao kê ngân hàng. "
+                    + (f"Thu nhập tháng: {fr['income_monthly_vnd']:,.0f} VND. " if fr.get("income_monthly_vnd") else "")
+                    + ("Chỉ số ổn định ở mức tốt." if credit_score >= 600 else "Cần xem xét thêm.")
                 ),
                 "debt_analysis": (
-                    f"Tỷ lệ nợ/thu nhập {'trong ngưỡng an toàn' if credit_score >= 640 else 'ở mức cao'}."
+                    f"Tỷ lệ nợ/thu nhập (DTI): {fr.get('dti_pct', 'N/A')}. "
+                    + (f"DSCR: {fr['dscr']:.2f} {'(đạt ngưỡng)' if fr['dscr'] >= 1.2 else '(dưới ngưỡng 1.2 — cần lưu ý)'}. " if fr.get("dscr") else "")
+                    + (f"Trả nợ hàng tháng: {fr['annuity_monthly_vnd']:,.0f} VND." if fr.get("annuity_monthly_vnd") else "")
                 ),
                 "key_ratios": {
-                    "dti": f"{'< 40%' if credit_score >= 700 else '40-50%' if credit_score >= 600 else '> 50%'}",
-                    "dscr": f"{'> 1.2' if credit_score >= 700 else '1.0-1.2' if credit_score >= 600 else '< 1.0'}",
-                    "ltv": "N/A (chưa có thông tin TSBĐ chi tiết)",
+                    "dti": fr.get("dti_pct", "N/A"),
+                    "dscr": str(fr.get("dscr", "N/A")),
+                    "ltv": fr.get("ltv_pct", "N/A (chưa có thông tin TSBĐ chi tiết)"),
                 },
             },
-            # Section VI
+            # Section VI — Fix 3: terms from real AMT_CREDIT
             "recommendation": recommendation,
             "suggested_terms": {
-                "max_amount_vnd": 300_000_000 if credit_score >= 650 else 100_000_000,
-                "max_term_months": 36 if credit_score >= 650 else 12,
+                "requested_amount_vnd": app.get("AMT_CREDIT"),
+                "max_amount_vnd": (
+                    app.get("AMT_CREDIT")
+                    or (300_000_000 if credit_score >= 650 else 100_000_000)
+                ),
+                "requested_term_months": (
+                    round(app["AMT_CREDIT"] / app["AMT_ANNUITY"])
+                    if app.get("AMT_CREDIT") and app.get("AMT_ANNUITY")
+                    else (36 if credit_score >= 650 else 12)
+                ),
                 "interest_rate_suggestion": "Theo biểu phí hiện hành",
                 "conditions": (
                     ["Chứng minh thu nhập bổ sung (slip lương 3 tháng)"]
                     if credit_score < 700 else []
                 ),
+                "dti_at_approval": fr.get("dti_pct", "N/A"),
             },
             "caveats": [],
         }

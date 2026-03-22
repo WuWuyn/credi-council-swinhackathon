@@ -29,29 +29,7 @@ AWS Textract	Analyze Lending API → auto page classification → key-value pair
 Cross-check	Đối chiếu tên trên CCCD vs HĐ vs đơn vay; date range; format validation	identity_consistency_flag: OK | MISMATCH | MISSING
 
 Kênh 2: CIC API
-Thin-file handling: Nếu CIC không có record → thin_file_flag=True → hệ thống KHÔNG từ chối mà chuyển sang alternative scoring path với transaction data được weight cao hơn.
-# CIC API Response → Feature mapping
-cic_score          : int    # 300–850; null nếu thin-file
-debt_group         : int    # 1=Nợ đủ tiêu chuẩn … 5=Nợ mất vốn
-num_active_loans   : int    # số khoản vay đang hoạt động
-total_outstanding  : float  # tổng dư nợ VND
-worst_ever_group   : int    # nhóm nợ xấu nhất trong lịch sử
-thin_file_flag     : bool   # True → activate alternative scoring path
-
-Kênh 3: Bank Statement CSV (Alternative Data — Core Innovation)
-Đây là điểm cốt lõi giải bài toán thin-file/underbanked. 6 tháng sao kê tiết lộ hành vi tài chính thực tế mà CIC không có. Mỗi feature được thiết kế map 1-1 với NoxMoon's installments_payments.csv để đảm bảo training-production alignment.
-
-Feature (Production)	Home Credit Mapping	Công thức & Ý nghĩa
-avg_monthly_inflow_vnd	AMT_INCOME_TOTAL / 12	Mean(monthly_credit_sum, 6M). Proxy thu nhập thực tế — quan trọng hơn lương khai báo với self-employed
-income_stability_index	1 - CV(AMT_INSTALMENT)	1 - std(inflows)/mean. Gần 1 = ổn định. Gig workers thường thấp hơn nhưng vẫn creditworthy
-salary_pattern_detected	DAYS_EMPLOYED > 0 + stability > 0.7	Rule: credit ≈ same amount (±5%), ngày 1–5 hàng tháng, nội dung regex(LUONG|SALARY). Confirm employment không cần doc
-debt_service_behavior	SK_DPD từ POS_CASH_balance	NLP detect repayment trong nội dung giao dịch → ON_TIME / LATE_1_30 / LATE_31_60 / MISSING
-regular_bill_payment_ratio	(Không có trực tiếp)	% tháng có debit khớp pattern điện/nước/internet đúng hạn. Alternative credit signal cực mạnh với thin-file
-overdraft_count_6m	SK_DPD > 0 count	Số lần balance < 500K VND hoặc < 0. Financial stress indicator — negative signal
-inflow_outflow_ratio	AMT_INCOME / (AMT_ANNUITY + drawings)	Mean(inflow) / Mean(outflow). > 1.2 = healthy. < 1.0 = spending > income
-max_single_outflow_ratio	max(AMT_DRAWINGS) / income	Max(single_debit) / avg_monthly_inflow. Phát hiện giao dịch bất thường lớn
-business_revenue_trend	Linear slope(monthly_inflows)	SME only: slope > 0 = tăng trưởng. Thay thế báo cáo tài chính cho micro SME
-
+Kênh 3: Bank Statement CSV
 1.2 NoxMoon Feature Engineering — Sub-model Predictions
 Đây là breakthrough chính của NoxMoon (đưa từ silver medal lên gold, +0.003 AUC). Thay vì chỉ aggregate mean/sum từ bảng phụ, train một LightGBM nhỏ trên từng previous record rồi aggregate predictions — model tự học record nào quan trọng.
 
@@ -266,7 +244,6 @@ Mục tiêu: Biến SHAP output thành Tờ trình tín dụng chuẩn ngân hà
 4.1 MASCA Agent Architecture — Adapted
 Agent (MASCA)	Role gốc (MASCA)	Implementation trong CreditLens
 Data Analyst	Chuẩn bị raw data, formatting	→ A1: Textract + CIC API + CSV parser (code, không phải LLM)
-Contextualizer	Tổng hợp customer persona từ data	→ LLM đọc NoxMoon features đã structured → synthesize narrative context
 Feature Engineer	LLM tính DTI, DAR, ratios	→ THAY BẰNG NoxMoon pipeline (code Python) — deterministic, reproducible, AUC 0.80+
 Risk Modeler	LLM assess credit risk	→ THAY BẰNG LightGBM + SHAP — accuracy 60% (MASCA) vs AUC 0.80+ (LightGBM)
 Income & Stability Analyst	LLM assess income stability	→ income_stability_index từ A1 (từ installments_payments) + SHAP contribution

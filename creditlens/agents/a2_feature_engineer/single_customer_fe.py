@@ -93,12 +93,18 @@ class SingleCustomerFE:
         # ── 1. Application features ──
         app_df = pd.DataFrame([app_row])
         # Coerce None → NaN for numeric columns (prevents operator.neg(None) crash)
+        # Known categorical columns that should NOT be coerced to numeric
+        CATEGORICAL_COLS = {
+            "NAME_CONTRACT_TYPE", "CODE_GENDER", "FLAG_OWN_CAR", "FLAG_OWN_REALTY",
+            "NAME_TYPE_SUITE", "NAME_INCOME_TYPE", "NAME_EDUCATION_TYPE",
+            "NAME_FAMILY_STATUS", "NAME_HOUSING_TYPE", "OCCUPATION_TYPE",
+            "ORGANIZATION_TYPE", "FONDKAPREMONT_MODE", "HOUSETYPE_MODE",
+            "WALLSMATERIAL_MODE", "EMERGENCYSTATE_MODE",
+            "WEEKDAY_APPR_PROCESS_START",
+        }
         for col in app_df.columns:
-            if app_df[col].dtype == object:
-                try:
-                    app_df[col] = pd.to_numeric(app_df[col], errors='ignore')
-                except Exception:
-                    pass
+            if app_df[col].dtype == object and col not in CATEGORICAL_COLS:
+                app_df[col] = pd.to_numeric(app_df[col], errors='coerce')
         app_df = app_df.fillna(value=np.nan)
         app_df = self._engineer_application_features(app_df)
         logger.info(f"  App features: {app_df.shape[1]} cols")

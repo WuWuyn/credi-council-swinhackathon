@@ -102,7 +102,7 @@ def run_pipeline():
     print("\n[4/4] A4: Report Generator (5C + 6 sections)...")
     from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
     a4 = ReportGeneratorAgent(use_mock=use_mock)
-    a4_output = a4.generate(a3_output, a2_output)
+    a4_output = a4.generate(a3_output, a2_output, a1_output)
 
     report = a4_output.get("final_report", {})
     five_c = a4_output.get("five_c_scores", {})

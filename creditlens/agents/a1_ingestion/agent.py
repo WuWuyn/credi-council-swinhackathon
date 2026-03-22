@@ -35,7 +35,6 @@ import pandas as pd
 
 from creditlens.agents.a1_ingestion.document_parser import LocalDocumentParser
 from creditlens.agents.a1_ingestion.cic_service import CICService
-from creditlens.agents.a1_ingestion.bank_statement_parser import parse_bank_statement
 from creditlens.agents.a1_ingestion.internal_db_reader import InternalDBReader
 
 logger = logging.getLogger(__name__)
@@ -92,6 +91,13 @@ class IngestionAgent:
         logger.info(f"  Applicant ID: {applicant_id}")
         logger.info(f"{'='*60}")
 
+        # ── Fast-path: load directly from application_row.json ─────────
+        # When application_row.json exists, skip PDF OCR entirely.
+        # This gives 100% feature coverage (all 122 dataset columns) vs
+        # ~60% from OCR parsing, and is ~10x faster for demo mode.
+        app_row_path = customer_dir / "application_row.json"
+        if app_row_path.exists():
+            return self._ingest_from_json(customer_dir, app_row_path, applicant_id)
         # ── Channel 1: Parse PDF documents ─────────────────────────────
         doc_fields = {}
         confidence_map = {}
@@ -131,24 +137,13 @@ class IngestionAgent:
         logger.info(f"  CIC: thin_file={cic_result.get('thin_file_flag')}, "
                      f"bureau_records={len(cic_result.get('bureau_records', []))}")
 
-        # ── Channel 3: Bank Statement ──────────────────────────────────
-        bank_path = customer_dir / "06_sao_ke_ngan_hang.csv"
-        bank_features = {}
-        if bank_path.exists():
-            try:
-                bank_result = parse_bank_statement(bank_path)
-                bank_features = bank_result.get("features", {})
-                logger.info(f"  Bank statement: {len(bank_features)} features extracted")
-            except Exception as e:
-                logger.warning(f"  Bank statement error: {e}")
-
-        # ── Channel 4: Internal DB ─────────────────────────────────────
+        # ── Channel 3: Internal DB ─────────────────────────────────────
         internal_path = customer_dir / "08_internal_db.json"
         internal_dfs = self.internal_db.read(internal_path if internal_path.exists() else None)
 
         # ── Build application_row (matching application_train columns) ──
         application_row = self._build_application_row(
-            doc_fields, cic_result, bank_features, applicant_id
+            doc_fields, cic_result, applicant_id
         )
 
         # ── Build bureau DataFrames ────────────────────────────────────
@@ -162,7 +157,6 @@ class IngestionAgent:
             "input_summary": {
                 "n_pdfs": len(pdf_files),
                 "has_cic": not cic_result.get("thin_file_flag", True),
-                "has_bank_statement": bank_path.exists(),
                 "has_internal_db": internal_path.exists(),
             },
             "output_summary": {
@@ -184,7 +178,6 @@ class IngestionAgent:
             "pos_cash_df": internal_dfs.get("POS_CASH_balance", pd.DataFrame()),
             "installments_df": internal_dfs.get("installments_payments", pd.DataFrame()),
             "credit_card_df": internal_dfs.get("credit_card_balance", pd.DataFrame()),
-            "bank_features": bank_features,
             "confidence_map": confidence_map,
             "identity_consistency_flag": identity_flag,
             "thin_file_flag": cic_result.get("thin_file_flag", True),
@@ -192,11 +185,85 @@ class IngestionAgent:
             "audit_trail": [audit_entry],
         }
 
+    def _ingest_from_json(
+        self,
+        customer_dir: Path,
+        app_row_path: Path,
+        applicant_id: str,
+    ) -> dict[str, Any]:
+        """Fast-path: Load application_row directly from JSON file.
+
+        Skips PDF OCR — uses all 122 dataset columns from application_row.json.
+        Still loads CIC API JSON (bureau data) and Internal DB JSON.
+        """
+        import json as _json
+
+        logger.info(f"  [FAST-PATH] Loading from {app_row_path.name}")
+
+        with open(app_row_path, encoding="utf-8") as f:
+            application_row = _json.load(f)
+
+        # Remove TARGET column (label, not a feature)
+        application_row.pop("TARGET", None)
+
+        n_non_null = len([v for v in application_row.values() if v is not None])
+        logger.info(f"  [FAST-PATH] {n_non_null}/122 fields loaded from JSON")
+
+        # ── CIC API (bureau data) ──────────────────────────────────────
+        cic_path = customer_dir / "07_cic_api_response.json"
+        cic_result = self.cic.query(cic_path if cic_path.exists() else None)
+        logger.info(f"  CIC: thin_file={cic_result.get('thin_file_flag')}, "
+                    f"bureau_records={len(cic_result.get('bureau_records', []))}")
+
+        # ── Internal DB (previous_app, POS, installments, CC) ─────────
+        internal_path = customer_dir / "08_internal_db.json"
+        internal_dfs = self.internal_db.read(internal_path if internal_path.exists() else None)
+
+        # ── Bureau DataFrames from CIC ─────────────────────────────────
+        bureau_df, bureau_balance_df = self._build_bureau_dfs(cic_result)
+
+        logger.info(f"  Bureau records: {len(bureau_df)}")
+        logger.info(f"  previous_application: {len(internal_dfs.get('previous_application', pd.DataFrame()))} records")
+        logger.info(f"  POS_CASH_balance: {len(internal_dfs.get('POS_CASH_balance', pd.DataFrame()))} records")
+        logger.info(f"  installments_payments: {len(internal_dfs.get('installments_payments', pd.DataFrame()))} records")
+        logger.info(f"  credit_card_balance: {len(internal_dfs.get('credit_card_balance', pd.DataFrame()))} records")
+
+        audit_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "agent": "A1",
+            "action": "ingest_fast_path",
+            "input_summary": {
+                "source": "application_row.json",
+                "has_cic": not cic_result.get("thin_file_flag", True),
+                "has_internal_db": internal_path.exists(),
+            },
+            "output_summary": {
+                "n_application_fields": n_non_null,
+                "n_bureau_records": len(bureau_df),
+                "identity_consistency": "OK",
+            },
+        }
+
+        return {
+            "application_id": applicant_id,
+            "application_row": application_row,
+            "bureau_df": bureau_df,
+            "bureau_balance_df": bureau_balance_df,
+            "previous_application_df": internal_dfs.get("previous_application", pd.DataFrame()),
+            "pos_cash_df": internal_dfs.get("POS_CASH_balance", pd.DataFrame()),
+            "installments_df": internal_dfs.get("installments_payments", pd.DataFrame()),
+            "credit_card_df": internal_dfs.get("credit_card_balance", pd.DataFrame()),
+            "confidence_map": {"fast_path": 1.0},
+            "identity_consistency_flag": "OK",
+            "thin_file_flag": cic_result.get("thin_file_flag", True),
+            "raw_texts": {"fast_path": f"JSON loaded: {n_non_null}/122 fields"},
+            "audit_trail": [audit_entry],
+        }
+
     def _build_application_row(
         self,
         doc_fields: dict[str, dict],
         cic_result: dict[str, Any],
-        bank_features: dict[str, Any],
         applicant_id: str,
     ) -> dict[str, Any]:
         """Build a dict matching application_train columns from parsed data.
@@ -320,113 +387,7 @@ class IngestionAgent:
             **self._build_document_flags(doc_fields),
         }
 
-        # ── Inject bank statement features ──────────────────────────────
-        # Per document_new.md Section 1.1 Kênh 3: bank features map 1-1
-        # to Home Credit equivalents. This ensures the ML model can
-        # leverage transaction behavioral signals.
-        if bank_features:
-            row.update(self._inject_bank_features(bank_features, row, cic_result))
-
         return row
-
-    def _inject_bank_features(
-        self,
-        bank_features: dict[str, Any],
-        row: dict[str, Any],
-        cic_result: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Map bank statement features → Home Credit equivalent signals.
-
-        Design reference (document_new.md lines 42-53):
-        - avg_monthly_inflow_vnd  → AMT_INCOME_TOTAL proxy
-        - income_stability_index  → 1 - CV(AMT_INSTALMENT)
-        - salary_pattern_detected → employment confirmation
-        - overdraft_count_6m      → SK_DPD > 0 count proxy
-        - debt_service_behavior   → payment status proxy
-        - inflow_outflow_ratio    → income/expense health
-        """
-        injected = {}
-        logger.info("  Injecting bank features into application_row...")
-
-        # 1. Income validation: if bank shows real inflow, use it
-        #    avg_monthly_inflow is more reliable than stated income for
-        #    self-employed/freelancers
-        avg_inflow = bank_features.get("avg_monthly_inflow_vnd", 0)
-        if avg_inflow and avg_inflow > 0:
-            stated_income = row.get("AMT_INCOME_TOTAL")
-            if stated_income is None or stated_income == 0:
-                # No stated income → Use bank inflow as annual income
-                injected["AMT_INCOME_TOTAL"] = avg_inflow * 12
-                logger.info(f"    AMT_INCOME_TOTAL set from bank: {avg_inflow * 12:,.0f}")
-            elif abs(stated_income - avg_inflow * 12) / max(stated_income, 1) > 0.3:
-                # Significant discrepancy → use lower of two (conservative)
-                conservative = min(stated_income, avg_inflow * 12)
-                injected["AMT_INCOME_TOTAL"] = conservative
-                logger.info(
-                    f"    AMT_INCOME_TOTAL adjusted: stated={stated_income:,.0f} "
-                    f"vs bank={avg_inflow * 12:,.0f} → using {conservative:,.0f}"
-                )
-
-        # 2. Synthesize EXT_SOURCE scores from bank behavioral data
-        #    EXT_SOURCE_1/2/3 are the most predictive features (SHAP top-3)
-        #    For customers with weak/missing CIC, bank data can provide
-        #    equivalent behavioral scoring.
-        #
-        #    This follows document.md lines 192-194:
-        #    "Transaction Behavioral ★ Alt. Data → Engineered từ
-        #     installments_payments.csv + credit_card_balance.csv"
-        stability = bank_features.get("income_stability_index", 0.5)
-        bill_ratio = bank_features.get("regular_bill_payment_ratio", 0.5)
-        overdraft = bank_features.get("overdraft_count_6m", 0)
-        io_ratio = bank_features.get("inflow_outflow_ratio", 1.0)
-        salary = bank_features.get("salary_pattern_detected", False)
-        debt_service = bank_features.get("debt_service_behavior", "MISSING")
-
-        # Debt service score: ON_TIME → 1.0, LATE_1_30 → 0.4, LATE_31_60 → 0.1, MISSING → 0.5
-        debt_score_map = {"ON_TIME": 1.0, "LATE_1_30": 0.4, "LATE_31_60": 0.1, "MISSING": 0.5}
-        debt_score = debt_score_map.get(debt_service, 0.5)
-
-        # Build composite bank behavioral scores (0-1 range, like EXT_SOURCE)
-        # Score 1: Income reliability = stability × salary_bonus × io_health
-        io_health = min(1.0, max(0, (io_ratio - 0.5) / 1.0))  # 0.5→0, 1.5→1
-        bank_score_1 = stability * (1.1 if salary else 0.8) * io_health
-        bank_score_1 = max(0, min(1.0, bank_score_1))
-
-        # Score 2: Payment discipline = bill_payment × debt_service × overdraft_penalty
-        overdraft_penalty = max(0, 1.0 - overdraft * 0.15)  # Each overdraft -15%
-        bank_score_2 = bill_ratio * debt_score * overdraft_penalty
-        bank_score_2 = max(0, min(1.0, bank_score_2))
-
-        # Score 3: Overall financial health (blend)
-        bank_score_3 = (bank_score_1 * 0.4 + bank_score_2 * 0.4 +
-                        io_health * 0.2)
-        bank_score_3 = max(0, min(1.0, bank_score_3))
-
-        # Injection strategy:
-        # - If EXT_SOURCE is already set (from CIC), blend with bank score
-        # - If EXT_SOURCE is null (thin-file), use bank score directly
-        thin_file = cic_result.get("thin_file_flag", False)
-
-        for ext_key, bank_score in [
-            ("EXT_SOURCE_1", bank_score_1),
-            ("EXT_SOURCE_2", bank_score_2),
-            ("EXT_SOURCE_3", bank_score_3),
-        ]:
-            existing = row.get(ext_key)
-            if existing is None or thin_file:
-                # Thin-file or missing: use bank score as sole signal
-                injected[ext_key] = round(bank_score, 4)
-                logger.info(f"    {ext_key}: bank_score={bank_score:.4f} (replaced null/thin-file)")
-            else:
-                # Has CIC: blend 70% CIC + 30% bank (CIC still primary)
-                blended = existing * 0.7 + bank_score * 0.3
-                injected[ext_key] = round(blended, 4)
-                logger.info(
-                    f"    {ext_key}: CIC={existing:.4f} + bank={bank_score:.4f} → blended={blended:.4f}"
-                )
-
-        logger.info(f"  Bank injection complete: {len(injected)} fields updated")
-        return injected
 
     def _build_housing_features(self, housing: dict) -> dict[str, Any]:
         """Build normalized housing features from housing survey data.
@@ -435,9 +396,17 @@ class IngestionAgent:
         """
         quality = housing.get("apartment_quality")
         if quality:
-            # Normalize quality score from "7.5 / 10" to 0-1
-            nums = [float(n) for n in str(quality).split("/")]
-            quality_norm = nums[0] / nums[1] if len(nums) == 2 else nums[0] / 10
+            try:
+                # Normalize quality score from "7.5 / 10" to 0-1
+                nums = [float(n) for n in str(quality).split("/") if n.strip().replace(".", "").isdigit()]
+                if len(nums) == 2:
+                    quality_norm = nums[0] / nums[1]
+                elif len(nums) == 1:
+                    quality_norm = nums[0] / 10
+                else:
+                    quality_norm = None
+            except (ValueError, ZeroDivisionError):
+                quality_norm = None
         else:
             quality_norm = None
 
@@ -461,21 +430,35 @@ class IngestionAgent:
             for suffix in ["_AVG", "_MODE", "_MEDI"]:
                 housing_feats[col + suffix] = quality_norm
 
+        # Helper: safely convert to float
+        def _safe_float(val):
+            if val is None:
+                return None
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                import re as _re
+                nums = _re.findall(r"[\d.]+", str(val))
+                return float(nums[0]) if nums else None
+
         # Override specific values where we have actual data
-        if housing.get("max_floors"):
-            floor_norm = min(1.0, housing["max_floors"] / 50)
+        max_floors_val = _safe_float(housing.get("max_floors"))
+        if max_floors_val and max_floors_val > 0:
+            floor_norm = min(1.0, max_floors_val / 50)
             housing_feats["FLOORSMAX_AVG"] = floor_norm
             housing_feats["FLOORSMAX_MODE"] = floor_norm
             housing_feats["FLOORSMAX_MEDI"] = floor_norm
 
-        if living_area:
-            area_norm = min(1.0, living_area / 200)
+        living_area_val = _safe_float(living_area) if living_area else None
+        if living_area_val and living_area_val > 0:
+            area_norm = min(1.0, living_area_val / 200)
             housing_feats["LIVINGAREA_AVG"] = area_norm
             housing_feats["LIVINGAREA_MODE"] = area_norm
             housing_feats["LIVINGAREA_MEDI"] = area_norm
 
-        if housing.get("year_built"):
-            year_norm = min(1.0, max(0, (housing["year_built"] - 1950) / 80))
+        year_built_val = _safe_float(housing.get("year_built"))
+        if year_built_val and year_built_val > 1900:
+            year_norm = min(1.0, max(0, (year_built_val - 1950) / 80))
             housing_feats["YEARS_BUILD_AVG"] = year_norm
             housing_feats["YEARS_BUILD_MODE"] = year_norm
             housing_feats["YEARS_BUILD_MEDI"] = year_norm

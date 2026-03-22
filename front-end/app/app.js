@@ -35,64 +35,66 @@ let selected = new Set([0]);
 let lastResults = [];
 let currentModalData = null;
 
-// Customer metadata (static demo info — real scores come from API)
+// Customer metadata — extracted from Home Credit dataset
+// pass_1: SK=352956 TARGET=0 EXT=0.984 | pass_2: SK=251987 TARGET=0 EXT=0.977
+// fail_1: SK=272483 TARGET=1 EXT=0.051 | fail_2: SK=397495 TARGET=1 EXT=0.057
 const CUSTOMER_META = [
   {
-    id: "001", name: "Nguyễn Văn Minh", initials: "NV", avatarColor: "#1565c0",
-    tag: "Standard", tagClass: "tag-standard",
+    id: "001", name: "KH #352956 — Approved", initials: "A1", avatarColor: "#1565c0",
+    tag: "Pass", tagClass: "tag-standard",
     fields: [
-      { label:"Nghề nghiệp",   value:"NV Ngân hàng" },
-      { label:"Tuổi",          value:"35 tuổi" },
-      { label:"Thu nhập/T",    value:"22M VNĐ",    cls:"green" },
-      { label:"Khoản vay",     value:"300M VNĐ" },
-      { label:"CIC",           value:"Có hồ sơ",   cls:"green" },
-      { label:"PD dự kiến",    value:"~7-12%",     cls:"yellow" },
+      { label:"SK_ID_CURR",    value:"352956" },
+      { label:"TARGET",        value:"0 (Repaid)",      cls:"green" },
+      { label:"Thu nhập/năm",  value:"189,000",          cls:"green" },
+      { label:"Khoản vay",     value:"286,875" },
+      { label:"EXT_SOURCE",    value:"0.984",            cls:"green" },
+      { label:"Bureau records",value:"1 records" },
     ]
   },
   {
-    id: "002", name: "Phạm Thị Lan", initials: "PT", avatarColor: "#6a1b9a",
-    tag: "Thin-file", tagClass: "tag-thin-file",
+    id: "002", name: "KH #251987 — Approved", initials: "A2", avatarColor: "#2e7d32",
+    tag: "Pass", tagClass: "tag-standard",
     fields: [
-      { label:"Nghề nghiệp",   value:"Freelancer" },
-      { label:"Tuổi",          value:"28 tuổi" },
-      { label:"Thu nhập/T",    value:"~12M VNĐ",   cls:"yellow" },
-      { label:"Khoản vay",     value:"150M VNĐ" },
-      { label:"CIC",           value:"Không có",   cls:"red" },
-      { label:"PD dự kiến",    value:"~10-20%",    cls:"yellow" },
+      { label:"SK_ID_CURR",    value:"251987" },
+      { label:"TARGET",        value:"0 (Repaid)",      cls:"green" },
+      { label:"Thu nhập/năm",  value:"157,500",          cls:"green" },
+      { label:"Khoản vay",     value:"1,214,145" },
+      { label:"EXT_SOURCE",    value:"0.977",            cls:"green" },
+      { label:"Bureau records",value:"0 (thin-file)",   cls:"yellow" },
     ]
   },
   {
-    id: "003", name: "Trần Văn Đức", initials: "TV", avatarColor: "#2e7d32",
-    tag: "SME", tagClass: "tag-sme",
+    id: "003", name: "KH #272483 — Rejected", initials: "F1", avatarColor: "#e65100",
+    tag: "Fail", tagClass: "tag-high-risk",
     fields: [
-      { label:"Nghề nghiệp",   value:"Chủ cửa hàng" },
-      { label:"Tuổi",          value:"42 tuổi" },
-      { label:"Doanh thu/T",   value:"~80M VNĐ",   cls:"green" },
-      { label:"Khoản vay",     value:"500M VNĐ" },
-      { label:"CIC",           value:"Có (B+)",    cls:"yellow" },
-      { label:"PD dự kiến",    value:"~12-18%",    cls:"yellow" },
+      { label:"SK_ID_CURR",    value:"272483" },
+      { label:"TARGET",        value:"1 (Default)",     cls:"red" },
+      { label:"Thu nhập/năm",  value:"112,500",          cls:"yellow" },
+      { label:"Khoản vay",     value:"273,024" },
+      { label:"EXT_SOURCE",    value:"0.051",            cls:"red" },
+      { label:"Bureau records",value:"11 records",       cls:"red" },
     ]
   },
   {
-    id: "004", name: "Lê Minh Cường", initials: "LM", avatarColor: "#b71c1c",
-    tag: "High-risk", tagClass: "tag-high-risk",
+    id: "004", name: "KH #397495 — Rejected", initials: "F2", avatarColor: "#b71c1c",
+    tag: "Fail", tagClass: "tag-high-risk",
     fields: [
-      { label:"Nghề nghiệp",   value:"Mới đi làm" },
-      { label:"Tuổi",          value:"23 tuổi" },
-      { label:"Thu nhập/T",    value:"~6M VNĐ",    cls:"red" },
-      { label:"Khoản vay",     value:"50M VNĐ" },
-      { label:"CIC",           value:"Nợ xấu G4",  cls:"red" },
-      { label:"PD dự kiến",    value:">40%",        cls:"red" },
+      { label:"SK_ID_CURR",    value:"397495" },
+      { label:"TARGET",        value:"1 (Default)",     cls:"red" },
+      { label:"Thu nhập/năm",  value:"157,500",          cls:"yellow" },
+      { label:"Khoản vay",     value:"450,000" },
+      { label:"EXT_SOURCE",    value:"0.057",            cls:"red" },
+      { label:"Bureau records",value:"22 records",       cls:"red" },
     ]
   },
 ];
 
 // Pipeline stage definitions (static - visual only)
 const PIPELINE_STAGES = [
-  { label:"A1", cls:"a1", title:"Data Ingestion", metaFn: (r) => `${r._a1_fields||'—'} fields · nguồn dữ liệu`,
-    steps: [{icon:'doc',name:"PDF → OCR",sub:"Trích xuất"},{icon:'grid',name:"CIC API",sub:"Lịch sử"},{icon:'db',name:"Bank CSV",sub:"Sao kê"},{icon:'info',name:"EXT_SRC",sub:"Tổng hợp"}],
-    scoreFn: (r) => ({ num: r._a1_fields||'✓', label:"fields ✓", cls:"green" }) },
-  { label:"A2", cls:"a2", title:"LLM Feature Engineering", metaFn: (r) => `${r._a2_feats||753} features · Gemini`,
+  { label:"A1", cls:"a1", title:"Data Ingestion", metaFn: (r) => `120 fields · Dataset ground truth`,
+    steps: [{icon:'doc',name:"App Row JSON",sub:"Dataset"},{icon:'grid',name:"CIC API",sub:"Bureau"},{icon:'db',name:"Internal DB",sub:"Prev Loans"},{icon:'info',name:"EXT_SRC",sub:"Tổng hợp"}],
+    scoreFn: (r) => ({ num: '120', label:"fields ✓", cls:"green" }) },
+  { label:"A2", cls:"a2", title:"LLM Feature Engineering", metaFn: (r) => `753 features · Gemini`,
     steps: [{icon:'search',name:"Semantic",sub:"Phân tích"},{icon:'home',name:"Impute",sub:"Điền NaN"},{icon:'layers',name:"NixMoon",sub:"FE slice"},{icon:'check',name:"Validate",sub:"Kiểm tra"}],
     scoreFn: (r) => ({ num:"753", label:"feats ✓", cls:"yellow" }) },
   { label:"A3", cls:"a3", title:"ML Scoring", metaFn: (r) => `Score: ${r.credit_score} · PD: ${(r.pd_probability*100).toFixed(2)}%`,
@@ -102,6 +104,7 @@ const PIPELINE_STAGES = [
     steps: [{icon:'monitor',name:"MASCA",sub:"Biến đầu vào"},{icon:'star',name:"5C Score",sub:"Đánh giá"},{icon:'checkfull',name:"Consistency",sub: r => r.consistency_check?"PASSED":"WARN"},{icon:'filedoc',name:"PDF Gen",sub:"Xuất báo cáo"}],
     scoreFn: (r) => ({ num: r.five_c_total||'—', label:"5C pts ✓", cls: r.five_c_total>=80?"green":r.five_c_total>=50?"yellow":"red-score" }) },
 ];
+
 
 // Map API decision → badge class
 function decisionBadge(dec) {
@@ -337,13 +340,31 @@ function renderResults(results) {
     const sc = scoreClass(api.credit_score);
     const pdPct = (api.pd_probability * 100).toFixed(2);
     return `
-      <div class="result-card" onclick="openModal(${i})">
+      <div class="result-card" onclick="openModal(${i})" style="position:relative">
         <div class="result-score ${sc}">${api.credit_score}</div>
         <div class="result-info">
           <div class="result-name">${r.meta.name}</div>
           <div class="result-detail">${api.risk_band} — PD ${pdPct}%</div>
         </div>
         <span class="result-badge ${dec.cls}">${dec.label}</span>
+        <!-- PDF quick-open button -->
+        <button
+          onclick="event.stopPropagation(); openPDFViewer('${r.meta.id}','${r.meta.name}')"
+          title="Xem báo cáo PDF"
+          style="
+            margin-left:6px; background:#1565C0; border:none; color:#fff;
+            width:28px; height:28px; border-radius:6px; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0; transition:background 0.15s;
+          "
+          onmouseover="this.style.background='#1976D2'"
+          onmouseout="this.style.background='#1565C0'"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </button>
         <div class="result-chevron">${ICONS.arrow}</div>
       </div>`;
   }).join('');
@@ -502,10 +523,155 @@ function closeModal(e) {
   document.body.style.overflow = '';
 }
 
-// === PDF EXPORT ===
+// === PDF VIEWER ===
+
+// PDF viewer modal HTML (injected once)
+function _ensurePDFModal() {
+  if (document.getElementById('pdfViewerOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'pdfViewerOverlay';
+  overlay.style.cssText = `
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(13,27,42,0.85); backdrop-filter:blur(4px);
+    flex-direction:column; align-items:center; justify-content:center;
+  `;
+  overlay.innerHTML = `
+    <div style="
+      width:min(96vw,1000px); height:90vh;
+      background:#1A1A2E; border-radius:12px;
+      display:flex; flex-direction:column;
+      box-shadow:0 20px 60px rgba(0,0,0,0.5);
+      border:1px solid rgba(255,255,255,0.08);
+      overflow:hidden;
+    ">
+      <!-- PDF viewer header -->
+      <div style="
+        display:flex; align-items:center; gap:12px;
+        padding:14px 20px; background:#0D1B2A;
+        border-bottom:1px solid rgba(255,255,255,0.08);
+      ">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <div style="flex:1">
+          <div id="pdfViewerTitle" style="
+            font-weight:700; font-size:14px; color:#fff;
+          ">Tờ Trình Tín Dụng</div>
+          <div id="pdfViewerSub" style="
+            font-size:11px; color:#90A4AE; margin-top:1px;
+          ">CreditLens AI · Đang tải...</div>
+        </div>
+        <!-- Loading spinner -->
+        <div id="pdfSpinner" style="
+          width:20px; height:20px; border:2px solid rgba(255,255,255,0.15);
+          border-top-color:#1565C0; border-radius:50%;
+          animation:pdfSpin 0.8s linear infinite;
+        "></div>
+        <style>@keyframes pdfSpin{to{transform:rotate(360deg)}}</style>
+        <!-- Download btn -->
+        <a id="pdfDownloadBtn" href="#" download
+          style="
+            display:flex; align-items:center; gap:6px;
+            background:#1565C0; color:#fff; border:none;
+            padding:7px 14px; border-radius:6px;
+            font-size:12px; font-weight:600; cursor:pointer;
+            text-decoration:none; transition:background 0.2s;
+          "
+          onmouseover="this.style.background='#1976D2'"
+          onmouseout="this.style.background='#1565C0'"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Tải PDF
+        </a>
+        <!-- Close btn -->
+        <button onclick="closePDFViewer()" style="
+          background:rgba(255,255,255,0.08); border:none; color:#fff;
+          width:32px; height:32px; border-radius:6px; cursor:pointer;
+          font-size:18px; display:flex; align-items:center; justify-content:center;
+          transition:background 0.15s;
+        "
+          onmouseover="this.style.background='rgba(255,255,255,0.16)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.08)'"
+        >✕</button>
+      </div>
+      <!-- PDF iframe -->
+      <iframe id="pdfViewerFrame"
+        style="flex:1; border:none; background:#2C2C3C;"
+        src="about:blank"
+      ></iframe>
+    </div>
+  `;
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closePDFViewer();
+  });
+  document.body.appendChild(overlay);
+}
+
+function openPDFViewer(customerId, customerName) {
+  _ensurePDFModal();
+  const overlay   = document.getElementById('pdfViewerOverlay');
+  const frame     = document.getElementById('pdfViewerFrame');
+  const title     = document.getElementById('pdfViewerTitle');
+  const sub       = document.getElementById('pdfViewerSub');
+  const dlBtn     = document.getElementById('pdfDownloadBtn');
+  const spinner   = document.getElementById('pdfSpinner');
+
+  const previewUrl  = `${API_BASE}/v1/report/${customerId}/pdf`;
+  const downloadUrl = `${API_BASE}/v1/report/${customerId}/pdf?download=1`;
+
+  title.textContent = `Tờ Trình Tín Dụng — ${customerName}`;
+  sub.textContent   = 'Đang tải báo cáo...';
+  spinner.style.display = 'block';
+  frame.src = 'about:blank';
+
+  dlBtn.href     = downloadUrl;
+  dlBtn.download = `credit_report_${customerId}.pdf`;
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Load PDF into iframe
+  frame.onload = () => {
+    if (frame.src !== 'about:blank') {
+      spinner.style.display = 'none';
+      sub.textContent = `${customerName} · Sẵn sàng`;
+    }
+  };
+  frame.onerror = () => {
+    spinner.style.display = 'none';
+    sub.textContent = 'Không thể tải báo cáo — kiểm tra backend';
+  };
+
+  // Small delay so modal renders first
+  setTimeout(() => { frame.src = previewUrl; }, 100);
+}
+
+function closePDFViewer() {
+  const overlay = document.getElementById('pdfViewerOverlay');
+  if (overlay) overlay.style.display = 'none';
+  const frame = document.getElementById('pdfViewerFrame');
+  if (frame) frame.src = 'about:blank';
+  document.body.style.overflow = '';
+}
+
+// === UPDATED exportPDF (sidebar button) ===
 function exportPDF() {
-  const name = currentModalData?.meta?.name || 'Report';
-  alert(`📄 Xuất PDF: ${name}\n\nTích hợp endpoint: POST /generate-pdf`);
+  if (!currentModalData) {
+    alert('Vui lòng chạy pipeline và chọn một khách hàng trước.');
+    return;
+  }
+  const meta = currentModalData.meta;
+  // Close data modal first
+  closeModal();
+  openPDFViewer(meta.id, meta.name);
 }
 
 // === HELPERS ===
@@ -514,4 +680,6 @@ function resetBtn(btn) {
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg> Chạy Pipeline`;
 }
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closePDFViewer(); }
+});

@@ -1,159 +1,221 @@
 {
   "customer_info": {
-    "summary": "Khách hàng cá nhân với điểm tín dụng 642, thuộc nhóm rủi ro AA, xác suất vỡ nợ (PD%) là 7.73%. Hồ sơ không phải là thin-file."
+    "summary": "Khách hàng cá nhân với điểm tín dụng 695, thuộc nhóm rủi ro AA, có xác suất vỡ nợ 3.09%. Hồ sơ có nhiều yếu tố ảnh hưởng đến đánh giá tín dụng."
   },
   "executive_summary": {
-    "credit_score": 642,
+    "credit_score": 695,
     "risk_band": "AA",
-    "pd_pct": 7.73,
+    "pd_pct": 3.09,
     "recommendation": "REVIEW",
-    "five_c_total": 55,
+    "five_c_total": 58,
     "five_c_scores": {
-      "character": 20,
+      "character": 18,
       "capacity": 25,
       "capital": 5,
       "conditions": 5,
-      "collateral": 0
+      "collateral": 5
     },
     "five_c_shap_allocation": {
       "character": {
-        "shap_sum": 1.0713,
-        "pct": 13
+        "shap_sum": 1.0257,
+        "pct": 18
       },
       "capacity": {
-        "shap_sum": 0.8199,
-        "pct": 10
+        "shap_sum": 0.8405,
+        "pct": 15
       },
       "capital": {
-        "shap_sum": 0.2366,
-        "pct": 3
+        "shap_sum": 0.1088,
+        "pct": 2
       },
       "conditions": {
-        "shap_sum": 5.9122,
-        "pct": 73
+        "shap_sum": 3.682,
+        "pct": 64
       },
       "collateral": {
-        "shap_sum": 0.1124,
-        "pct": 1
+        "shap_sum": 0.0917,
+        "pct": 2
       }
+    },
+    "model_info": {
+      "model_version": "lgb1_ref_v1",
+      "auc": "0.803",
+      "shap_verified": true,
+      "inference_timestamp": "2026-03-22T22:38:50.911976+00:00"
+    },
+    "financial_ratios": {
+      "income_annual_vnd": 315000.0,
+      "income_monthly_vnd": 26250.0,
+      "annuity_monthly_vnd": 45000.0,
+      "credit_total_vnd": 900000.0,
+      "goods_price_vnd": 900000.0,
+      "dti": 1.7143,
+      "dti_pct": "171.4%",
+      "dscr": 0.58,
+      "ltv": 1.0,
+      "ltv_pct": "100.0%"
     }
   },
   "five_c_scorecard": {
     "character_assessment": {
-      "score": 20,
+      "score": 18,
       "status": "XEM_XET",
-      "shap_pct": "13%",
+      "shap_pct": "18%",
       "indicators_met": [
-        "inst_mean_DPD_SCALE (0.2447) có đóng góp tích cực cho rủi ro vỡ nợ."
+        "bureau_recent_AMT_CREDIT_SUM (Dư nợ CIC gần nhất)"
       ],
       "indicators_review": [
-        "EXT_SOURCE_2 (0.7578) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "EXT_SOURCE_3 (0.6997) có đóng góp tiêu cực cho rủi ro vỡ nợ."
+        "EXT_SOURCE_2 (Điểm tín dụng ngoại 2)",
+        "EXT_SOURCE_1 (Điểm tín dụng ngoại 1)",
+        "EXT_SOURCE_3 (Điểm tín dụng ngoại 3)",
+        "inst_mean_DPD_SCALE (Trả góp mean_DPD_SCALE)"
       ],
-      "narrative": "Yếu tố Uy tín (Character) đóng góp 13% vào mô hình đánh giá, với tổng SHAP là 1.0713. Mặc dù có chỉ số 'inst_mean_DPD_SCALE' (0.2447) cho thấy một số dấu hiệu tích cực về hành vi thanh toán, các chỉ số 'EXT_SOURCE_2' (0.7578) và 'EXT_SOURCE_3' (0.6997) lại có đóng góp tiêu cực đáng kể, cho thấy những lo ngại về lịch sử tín dụng bên ngoài. Cần xem xét kỹ lưỡng các yếu tố này để đưa ra đánh giá cuối cùng về uy tín của khách hàng."
+      "narrative": "Yếu tố 'bureau_recent_AMT_CREDIT_SUM' (Dư nợ CIC gần nhất) có đóng góp tích cực cho đánh giá tín dụng. Tuy nhiên, các chỉ số 'EXT_SOURCE_2', 'EXT_SOURCE_1', 'EXT_SOURCE_3' (Điểm tín dụng ngoại) và 'inst_mean_DPD_SCALE' (Trả góp mean_DPD_SCALE) lại có ảnh hưởng tiêu cực, cho thấy có những lo ngại về lịch sử tín dụng và khả năng thanh toán các khoản vay trước đây. Cần xem xét kỹ lưỡng các yếu tố này để có đánh giá toàn diện về uy tín của khách hàng."
     },
     "capacity_assessment": {
       "score": 25,
       "status": "XEM_XET",
-      "shap_pct": "10%",
+      "shap_pct": "15%",
       "indicators_met": [
-        "AMT_ANNUITY_to_prev_approved (9.964E9) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "inst_mean_AMT_PAYMENT_PERC (0.9905) có đóng góp tích cực cho rủi ro vỡ nợ."
+        "AMT_ANNUITY_to_prev_approved (Trả góp hiện tại / TB đơn đã duyệt)",
+        "AMT_CREDIT_to_prev_approved (Tín dụng hiện tại / TB đơn đã duyệt)",
+        "NEW_EMPLOY_TO_BIRTH_RATIO (Tỷ lệ thời gian công tác/tuổi)",
+        "prev_avg_AMT_APPLICATION (TB đơn vay trước số tiền đề nghị)",
+        "DAYS_EMPLOYED (Thời gian công tác)"
       ],
-      "indicators_review": [],
-      "narrative": "Năng lực trả nợ (Capacity) chiếm 10% trong phân tích, với tổng SHAP là 0.8199. Các chỉ số 'AMT_ANNUITY_to_prev_approved' (9.964E9) và 'inst_mean_AMT_PAYMENT_PERC' (0.9905) có đóng góp tích cực cho rủi ro vỡ nợ, cho thấy khách hàng có khả năng quản lý các khoản thanh toán hiện tại. Tuy nhiên, cần phân tích sâu hơn về dòng tiền và khả năng tạo thu nhập ổn định để đánh giá đầy đủ năng lực trả nợ."
+      "indicators_review": [
+        "AMT_CREDIT_GOODS_PERC (Tỷ lệ tín dụng/giá trị hàng)"
+      ],
+      "narrative": "Khả năng trả nợ của khách hàng được đánh giá ở mức xem xét. Các yếu tố 'AMT_ANNUITY_to_prev_approved', 'AMT_CREDIT_to_prev_approved', 'NEW_EMPLOY_TO_BIRTH_RATIO', 'prev_avg_AMT_APPLICATION' và 'DAYS_EMPLOYED' cho thấy những tín hiệu tích cực liên quan đến lịch sử vay và thời gian làm việc. Tuy nhiên, 'AMT_CREDIT_GOODS_PERC' (Tỷ lệ tín dụng/giá trị hàng) có ảnh hưởng tiêu cực, cần làm rõ ý nghĩa và tác động của chỉ số này đến khả năng trả nợ thực tế của khách hàng."
     },
     "capital_assessment": {
       "score": 5,
       "status": "KHONG_DAT",
-      "shap_pct": "3%",
+      "shap_pct": "2%",
       "indicators_met": [],
       "indicators_review": [
-        "Vốn tự có có đóng góp nhỏ (3%) vào mô hình đánh giá."
+        "bureau_sum_AMT_CREDIT_SUM (Tổng dư nợ CIC)"
       ],
-      "narrative": "Yếu tố Vốn tự có (Capital) có đóng góp rất nhỏ (3%) vào mô hình đánh giá với tổng SHAP là 0.2366. Thông tin chi tiết về vốn tự có của khách hàng không được cung cấp trong dữ liệu SHAP, do đó khó có thể đánh giá đầy đủ khả năng tài chính và mức độ tự chủ về vốn của khách hàng. Cần yêu cầu bổ sung thông tin về tài sản ròng và nguồn vốn chủ sở hữu."
+      "narrative": "Yếu tố 'bureau_sum_AMT_CREDIT_SUM' (Tổng dư nợ CIC) có đóng góp tích cực, tuy nhiên, với tỷ trọng đóng góp chỉ 2% vào đánh giá tổng thể, vốn tự có của khách hàng được đánh giá ở mức thấp. Cần có thêm thông tin chi tiết về tài sản ròng và các nguồn vốn khác để có thể đưa ra đánh giá chính xác hơn về khả năng tài chính của khách hàng."
     },
     "conditions_assessment": {
       "score": 5,
       "status": "XEM_XET",
-      "shap_pct": "73%",
+      "shap_pct": "64%",
       "indicators_met": [
-        "prev_max_DAYS_LAST_DUE_1ST_VERSION (640.0) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "prev_active_sum_AMT_LEFT (63080.082) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "inst_max_AMT_PAYMENT_DIFF (1100000.0) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "inst_sum_DPD_SCALE (4.8048) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "prev_active_sum_AMT_PAY_YEAR_LEFT (1.7522) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "region_mean_income_rel (419999999.0) có đóng góp tích cực cho rủi ro vỡ nợ.",
-        "pos_recent_CNT_INSTALMENT_FUTURE (24.0) có đóng góp tích cực cho rủi ro vỡ nợ."
+        "prev_refused_DAYS_DECISION_MAX (Đơn bị từ chối — DAYS_DECISION_MAX)",
+        "region_mean_income_rel (Thu nhập so với TB khu vực)",
+        "AMT_PAY_YEAR (Khoản trả hàng năm)"
       ],
       "indicators_review": [
-        "NEW_EXT_SOURCES_MEAN (0.703) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "NEW_SOURCES_PROD (0.3454) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "cc_mean4_AMT_PAY_INST_DIFF (500000.0) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "NEW_DOC_IND_KURT (-0.4967) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "prev_avg_DAYS_TOTAL (720.0) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "NEW_CAR_TO_BIRTH_RATIO (-0.0002) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "NAME_EDUCATION_TYPE (1.0) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
-        "DOCUMENT_CNT (5.0) có đóng góp tiêu cực cho rủi ro vỡ nợ."
+        "NEW_EXT_SOURCES_MEAN (Trung bình điểm tín dụng ngoại)",
+        "NEW_SOURCES_PROD (Tích điểm tín dụng ngoại)",
+        "NEW_DOC_IND_KURT (Kurtosis tài liệu đã nộp)",
+        "NAME_EDUCATION_TYPE (Trình độ học vấn)",
+        "YEARS_BEGINEXPLUATATION_MODE (Years beginexpluatation mode)"
       ],
-      "narrative": "Yếu tố Điều kiện (Conditions) chiếm tỷ trọng lớn nhất (73%) trong đánh giá, với tổng SHAP là 5.9122. Nhiều chỉ số liên quan đến lịch sử tín dụng trước đây và các khoản vay hiện tại ('prev_max_DAYS_LAST_DUE_1ST_VERSION', 'prev_active_sum_AMT_LEFT', 'inst_max_AMT_PAYMENT_DIFF', 'inst_sum_DPD_SCALE', 'prev_active_sum_AMT_PAY_YEAR_LEFT') cho thấy các yếu tố có thể làm tăng rủi ro vỡ nợ. Ngược lại, các chỉ số về nguồn tín dụng bên ngoài ('NEW_EXT_SOURCES_MEAN', 'NEW_SOURCES_PROD', 'EXT_SOURCE_2', 'EXT_SOURCE_3'), lịch sử thanh toán thẻ ('cc_mean4_AMT_PAY_INST_DIFF'), và các yếu tố nhân khẩu học/tài liệu ('NEW_DOC_IND_KURT', 'prev_avg_DAYS_TOTAL', 'NEW_CAR_TO_BIRTH_RATIO', 'NAME_EDUCATION_TYPE', 'DOCUMENT_CNT') lại có đóng góp tiêu cực, cho thấy những điểm cần xem xét kỹ lưỡng."
+      "narrative": "Các yếu tố về điều kiện có ảnh hưởng lớn nhất đến đánh giá tín dụng, chiếm 64% tổng đóng góp SHAP. Các chỉ số 'prev_refused_DAYS_DECISION_MAX', 'region_mean_income_rel' và 'AMT_PAY_YEAR' cho thấy những điểm tích cực. Tuy nhiên, 'NEW_EXT_SOURCES_MEAN', 'NEW_SOURCES_PROD', 'NEW_DOC_IND_KURT', 'NAME_EDUCATION_TYPE' và 'YEARS_BEGINEXPLUATATION_MODE' lại có ảnh hưởng tiêu cực đáng kể, cho thấy những lo ngại về nguồn tín dụng bên ngoài, tính đầy đủ của hồ sơ và các yếu tố liên quan đến môi trường hoạt động."
     },
     "collateral_assessment": {
-      "score": 0,
-      "status": "KHONG_DAT",
+      "score": 5,
+      "status": "XEM_XET",
       "indicators_met": [],
       "indicators_review": [
-        "Tài sản bảo đảm có đóng góp rất nhỏ (1%) vào mô hình đánh giá."
+        "collateral_shap_value"
       ],
-      "narrative": "Yếu tố Tài sản bảo đảm (Collateral) có đóng góp rất nhỏ (1%) vào mô hình đánh giá với tổng SHAP là 0.1124. Thông tin chi tiết về tài sản bảo đảm của khách hàng không được cung cấp trong dữ liệu SHAP. Do đó, không thể đánh giá được giá trị, tính pháp lý và khả năng xử lý của tài sản bảo đảm. Cần yêu cầu khách hàng cung cấp thông tin chi tiết về tài sản dự kiến dùng để thế chấp."
+      "narrative": "Thông tin về tài sản bảo đảm còn hạn chế, chỉ có đóng góp nhỏ vào đánh giá tín dụng. Cần bổ sung thông tin chi tiết về giá trị, loại hình và pháp lý của tài sản bảo đảm để có thể đánh giá đầy đủ và chính xác hơn."
     }
   },
   "financial_summary": {
-    "income_analysis": "Không có dữ liệu tài chính bổ sung được cung cấp để phân tích thu nhập và dòng tiền.",
-    "debt_analysis": "Dựa trên các yếu tố SHAP liên quan đến lịch sử tín dụng và các khoản vay hiện tại, có những chỉ số cho thấy các khoản nợ và nghĩa vụ thanh toán cần được xem xét kỹ lưỡng.",
+    "income_analysis": "Thu nhập tháng là 26,250 VND, trong khi chi phí trả nợ hàng tháng là 45,000 VND, dẫn đến tỷ lệ DTI (Debt-to-Income) lên tới 171.4%. Điều này cho thấy áp lực tài chính rất lớn và khả năng chi trả cho các khoản nợ hiện tại là rất cao.",
+    "debt_analysis": "Tỷ lệ DSCR (Debt Service Coverage Ratio) là 0.58, thấp hơn 1, cho thấy thu nhập không đủ để trang trải các nghĩa vụ nợ. Tỷ lệ LTV (Loan-to-Value) là 100.0%, cho thấy khoản vay mới sẽ chiếm toàn bộ giá trị tài sản (nếu có tài sản đảm bảo).",
     "key_ratios": {
-      "dti": "Không có dữ liệu",
-      "dscr": "Không có dữ liệu",
-      "ltv": "Không có dữ liệu"
+      "dti": "171.4%",
+      "dscr": "0.58",
+      "ltv": "100.0%"
     }
   },
   "collateral_detail": {
-    "score": 0,
-    "status": "KHONG_DAT",
+    "score": 5,
+    "status": "XEM_XET",
     "indicators_met": [],
     "indicators_review": [
-      "Tài sản bảo đảm có đóng góp rất nhỏ (1%) vào mô hình đánh giá."
+      "collateral_shap_value"
     ],
-    "narrative": "Yếu tố Tài sản bảo đảm (Collateral) có đóng góp rất nhỏ (1%) vào mô hình đánh giá với tổng SHAP là 0.1124. Thông tin chi tiết về tài sản bảo đảm của khách hàng không được cung cấp trong dữ liệu SHAP. Do đó, không thể đánh giá được giá trị, tính pháp lý và khả năng xử lý của tài sản bảo đảm. Cần yêu cầu khách hàng cung cấp thông tin chi tiết về tài sản dự kiến dùng để thế chấp."
+    "narrative": "Thông tin về tài sản bảo đảm còn hạn chế, chỉ có đóng góp nhỏ vào đánh giá tín dụng. Cần bổ sung thông tin chi tiết về giá trị, loại hình và pháp lý của tài sản bảo đảm để có thể đánh giá đầy đủ và chính xác hơn."
   },
   "suggested_terms": {
-    "max_amount_vnd": null,
-    "max_term_months": null,
+    "max_amount_vnd": 0,
+    "max_term_months": 0,
     "interest_rate_suggestion": "theo biểu phí hiện hành",
     "conditions": [
-      "Yêu cầu bổ sung thông tin chi tiết về thu nhập, chi tiêu và tài sản ròng.",
-      "Yêu cầu cung cấp thông tin chi tiết về tài sản dự kiến dùng để thế chấp.",
-      "Phân tích sâu hơn các yếu tố tiêu cực trong nhóm 'Conditions' và 'Character'."
+      "Cần làm rõ các yếu tố tiêu cực trong đánh giá 'Character' và 'Conditions'.",
+      "Bổ sung thông tin chi tiết về tài sản bảo đảm.",
+      "Đánh giá lại khả năng trả nợ dựa trên thu nhập thực tế và các khoản chi phí khác."
     ]
   },
   "llm_insights": {
     "loan_purpose": "UNCLEAR",
-    "positive_signals": [
-      "Stable employment with a reputable company (Công ty TNHH Công nghệ ABC Việt Nam)",
-      "Permanent employment contract (Không xác định thời hạn)",
-      "Consistent and verifiable income (40,000,000 VND/thang)",
-      "Full social insurance contributions (BHXH, BHYT, BHTN)",
-      "Long-term employment history (started 2019-06-01)",
-      "High income level"
-    ],
-    "risk_flags": []
+    "positive_signals": [],
+    "risk_flags": [
+      "Inconsistent stated income with employment documents",
+      "Missing repayment plan details"
+    ]
   },
   "caveats": [
-    "Đánh giá dựa trên dữ liệu SHAP được cung cấp, không có thông tin tài chính chi tiết.",
-    "Cần thu thập thêm thông tin để có đánh giá toàn diện."
+    "Field 'OCCUPATION_TYPE' was imputed (confidence: 95%)",
+    "Field 'BASEMENTAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'YEARS_BUILD_AVG' was imputed (confidence: 90%)",
+    "Field 'COMMONAREA_AVG' was imputed (confidence: 95%)",
+    "Field 'FLOORSMIN_AVG' was imputed (confidence: 95%)",
+    "Field 'LIVINGAPARTMENTS_AVG' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAPARTMENTS_AVG' was imputed (confidence: 95%)",
+    "Field 'NONLIVINGAREA_AVG' was imputed (confidence: 95%)",
+    "Field 'BASEMENTAREA_MODE' was imputed (confidence: 95%)",
+    "Field 'YEARS_BUILD_MODE' was imputed (confidence: 95%)",
+    "Field 'COMMONAREA_MODE' was imputed (confidence: 100%)",
+    "Field 'FLOORSMIN_MODE' was imputed (confidence: 95%)",
+    "Field 'LANDAREA_MODE' was imputed (confidence: 95%)",
+    "Field 'LIVINGAPARTMENTS_MODE' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAPARTMENTS_MODE' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAREA_MODE' was imputed (confidence: 95%)",
+    "Field 'BASEMENTAREA_MEDI' was imputed (confidence: 95%)",
+    "Field 'YEARS_BUILD_MEDI' was imputed (confidence: 95%)",
+    "Field 'COMMONAREA_MEDI' was imputed (confidence: 100%)",
+    "Field 'FLOORSMIN_MEDI' was imputed (confidence: 95%)",
+    "Field 'LANDAREA_MEDI' was imputed (confidence: 100%)",
+    "Field 'LIVINGAPARTMENTS_MEDI' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAPARTMENTS_MEDI' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAREA_MEDI' was imputed (confidence: 100%)",
+    "Field 'FONDKAPREMONT_MODE' was imputed (confidence: 95%)",
+    "Field 'OCCUPATION_TYPE' was imputed (confidence: 95%)",
+    "Field 'BASEMENTAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'YEARS_BUILD_AVG' was imputed (confidence: 90%)",
+    "Field 'COMMONAREA_AVG' was imputed (confidence: 95%)",
+    "Field 'FLOORSMIN_AVG' was imputed (confidence: 95%)",
+    "Field 'LIVINGAPARTMENTS_AVG' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAPARTMENTS_AVG' was imputed (confidence: 95%)",
+    "Field 'NONLIVINGAREA_AVG' was imputed (confidence: 95%)",
+    "Field 'BASEMENTAREA_MODE' was imputed (confidence: 95%)",
+    "Field 'YEARS_BUILD_MODE' was imputed (confidence: 95%)",
+    "Field 'COMMONAREA_MODE' was imputed (confidence: 100%)",
+    "Field 'FLOORSMIN_MODE' was imputed (confidence: 95%)",
+    "Field 'LANDAREA_MODE' was imputed (confidence: 95%)",
+    "Field 'LIVINGAPARTMENTS_MODE' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAPARTMENTS_MODE' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAREA_MODE' was imputed (confidence: 95%)",
+    "Field 'BASEMENTAREA_MEDI' was imputed (confidence: 95%)",
+    "Field 'YEARS_BUILD_MEDI' was imputed (confidence: 95%)",
+    "Field 'COMMONAREA_MEDI' was imputed (confidence: 100%)",
+    "Field 'FLOORSMIN_MEDI' was imputed (confidence: 95%)",
+    "Field 'LANDAREA_MEDI' was imputed (confidence: 100%)",
+    "Field 'LIVINGAPARTMENTS_MEDI' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAPARTMENTS_MEDI' was imputed (confidence: 100%)",
+    "Field 'NONLIVINGAREA_MEDI' was imputed (confidence: 100%)",
+    "Field 'FONDKAPREMONT_MODE' was imputed (confidence: 95%)"
   ],
   "audit_reference": {
     "model_version": "lgb1_ref_v1",
-    "inference_timestamp": "2026-03-22T09:03:41.199353+00:00"
+    "inference_timestamp": "2026-03-22T22:38:50.911976+00:00"
   }
 }

@@ -26,11 +26,12 @@ logger = logging.getLogger(__name__)
 
 
 CUSTOMERS = [
-    {"dir": "data/mock/customer_001", "name": "Nguyễn Văn Minh",  "profile": "NV IT, CIC đầy đủ"},
-    {"dir": "data/mock/customer_002", "name": "Phạm Thị Lan",     "profile": "Freelancer thin-file"},
-    {"dir": "data/mock/customer_003", "name": "Trần Văn Đức",     "profile": "SME Cửa hàng Hoa Lan"},
-    {"dir": "data/mock/customer_004", "name": "Lê Minh Cường",    "profile": "SV mới đi làm, high-risk"},
+    {"dir": "data/mock/customer_001", "name": "Customer_418735",  "profile": "TARGET=0 (pass), EXT_high=0.78-0.89", "expected_target": 0},
+    {"dir": "data/mock/customer_002", "name": "Customer_394570",  "profile": "TARGET=0 (pass), EXT_high=0.79-0.88", "expected_target": 0},
+    {"dir": "data/mock/customer_003", "name": "Customer_272483",  "profile": "TARGET=1 (fail), EXT_low=0.001-0.10", "expected_target": 1},
+    {"dir": "data/mock/customer_004", "name": "Customer_169206",  "profile": "TARGET=1 (fail), EXT_low=0.001-0.17", "expected_target": 1},
 ]
+
 
 
 def run_single_customer(customer_dir, customer_name, use_mock):
@@ -83,7 +84,7 @@ def run_single_customer(customer_dir, customer_name, use_mock):
         # ── A4 ──
         from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
         a4 = ReportGeneratorAgent(use_mock=use_mock)
-        a4_output = a4.generate(a3_output, a2_output)
+        a4_output = a4.generate(a3_output, a2_output, a1_output)
 
         report = a4_output.get("final_report", {})
         five_c = a4_output.get("five_c_scores", {})
@@ -99,6 +100,12 @@ def run_single_customer(customer_dir, customer_name, use_mock):
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2, default=str)
         result["report_path"] = report_path
+
+        # Save SHAP values for PDF report generation
+        shap_path = os.path.join(customer_dir, "shap_values.json")
+        shap_full = a3_output.get("shap_values", {})
+        with open(shap_path, "w", encoding="utf-8") as f:
+            json.dump(shap_full, f, ensure_ascii=False, indent=2, default=str)
 
         result["status"] = "OK"
 

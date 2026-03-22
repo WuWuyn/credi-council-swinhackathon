@@ -40,4 +40,6 @@ async def health_check():
 
 # Import routes
 from api.routes.score import router as score_router
+from api.routes.report import router as report_router
 app.include_router(score_router, prefix="/v1")
+app.include_router(report_router, prefix="/v1")

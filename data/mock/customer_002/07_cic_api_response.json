@@ -1,30 +1,84 @@
 {
   "api_version": "CIC-VN-v2.1",
-  "query_timestamp": "2026-03-18T09:15:00+07:00",
-  "customer_id": "036098007654",
-  "customer_name": "Phạm Thị Lan",
+  "query_timestamp": "2026-03-15T10:23:41+07:00",
+  "customer_id": "394570",
   "ext_source_scores": {
-    "EXT_SOURCE_1": null,
-    "EXT_SOURCE_2": null,
-    "EXT_SOURCE_3": null,
-    "_note": "Thin-file: Không có điểm tín dụng ngoại do chưa có lịch sử vay"
+    "EXT_SOURCE_1": 0.8782867305484753,
+    "EXT_SOURCE_2": 0.7886537525893306,
+    "EXT_SOURCE_3": 0.8555235867964663
   },
   "credit_inquiry_counts": {
-    "AMT_REQ_CREDIT_BUREAU_HOUR": 0,
-    "AMT_REQ_CREDIT_BUREAU_DAY": 0,
-    "AMT_REQ_CREDIT_BUREAU_WEEK": 0,
-    "AMT_REQ_CREDIT_BUREAU_MON": 0,
-    "AMT_REQ_CREDIT_BUREAU_QRT": 0,
-    "AMT_REQ_CREDIT_BUREAU_YEAR": 0
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_MON": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_QRT": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 1.0
   },
   "social_circle": {
-    "OBS_30_CNT_SOCIAL_CIRCLE": 0,
-    "DEF_30_CNT_SOCIAL_CIRCLE": 0,
-    "OBS_60_CNT_SOCIAL_CIRCLE": 0,
-    "DEF_60_CNT_SOCIAL_CIRCLE": 0
+    "OBS_30_CNT_SOCIAL_CIRCLE": 0.0,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 0.0,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 0.0,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 0.0
   },
-  "bureau_records": [],
-  "thin_file_flag": true,
-  "cic_score_equivalent": null,
-  "debt_group": null
+  "bureau_records": [
+    {
+      "SK_ID_BUREAU": 5611552,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -2578,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": -1847.0,
+      "DAYS_ENDDATE_FACT": -2006.0,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 154714.5,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": null,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -2004,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    },
+    {
+      "SK_ID_BUREAU": 5611553,
+      "CREDIT_ACTIVE": "Active",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -1282,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": -735.0,
+      "DAYS_ENDDATE_FACT": null,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 233955.0,
+      "AMT_CREDIT_SUM_DEBT": 126018.0,
+      "AMT_CREDIT_SUM_LIMIT": null,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -796,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    },
+    {
+      "SK_ID_BUREAU": 5611554,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -772,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": -223.0,
+      "DAYS_ENDDATE_FACT": -365.0,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 229500.0,
+      "AMT_CREDIT_SUM_DEBT": null,
+      "AMT_CREDIT_SUM_LIMIT": null,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -365,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    }
+  ],
+  "thin_file_flag": false
 }
