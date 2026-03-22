@@ -1,0 +1,94 @@
+{
+  "top_positive_factors": [
+    {
+      "feature": "Điểm tín dụng ngoại 3",
+      "shap_value": 0.05,
+      "label_vi": "Điểm tín dụng ngoại 3 (CIC) ở mức 0.0251 (SHAP: 0.",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "Điểm tín dụng ngoại 2",
+      "shap_value": 0.05,
+      "label_vi": "Điểm tín dụng ngoại 2 (CIC) ở mức 0.0012 (SHAP: 0.",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "Tỷ lệ trả góp hiện tại so với khoản vay đã duyệt trung bình",
+      "shap_value": 0.05,
+      "label_vi": "Tỷ lệ trả góp hiện tại so với khoản vay đã duyệt t",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "Trung bình điểm tín dụng ngoại",
+      "shap_value": 0.05,
+      "label_vi": "Trung bình điểm tín dụng ngoại (NEW_EXT_SOURCES_ME",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "Thời gian cấp CCCD là -196.0 ngày",
+      "shap_value": 0.05,
+      "label_vi": "Thời gian cấp CCCD là -196.0 ngày (SHAP: 0.1212) c",
+      "direction": "negative_for_default"
+    }
+  ],
+  "top_negative_factors": [
+    {
+      "feature": "Tỷ lệ trả chậm trung bình",
+      "shap_value": -0.04,
+      "label_vi": "Tỷ lệ trả chậm trung bình (inst_mean_DPD_SCALE) ở ",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "Tuổi khách hàng là -7777.0",
+      "shap_value": -0.04,
+      "label_vi": "Tuổi khách hàng là -7777.0 (SHAP: -0.0878) có thể ",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "Tỷ lệ tín dụng trên giá trị hàng hóa",
+      "shap_value": -0.04,
+      "label_vi": "Tỷ lệ tín dụng trên giá trị hàng hóa (AMT_CREDIT_G",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "Tổng dư nợ tín dụng",
+      "shap_value": -0.04,
+      "label_vi": "Tổng dư nợ tín dụng (Total_CREDIT) là 135,000.0 VN",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "Amt diff credit goods là 0.0",
+      "shap_value": -0.04,
+      "label_vi": "Amt diff credit goods là 0.0 (SHAP: -0.0617) cần đ",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "Occupation type mean encode là 0.0807",
+      "shap_value": -0.04,
+      "label_vi": "Occupation type mean encode là 0.0807 (SHAP: -0.05",
+      "direction": "positive_for_default"
+    }
+  ],
+  "five_c_shap_allocation": {
+    "character": {
+      "shap_sum": 1.6372,
+      "pct": 26
+    },
+    "capacity": {
+      "shap_sum": 0.7858,
+      "pct": 12
+    },
+    "capital": {
+      "shap_sum": 0.1856,
+      "pct": 3
+    },
+    "conditions": {
+      "shap_sum": 3.6549,
+      "pct": 58
+    },
+    "collateral": {
+      "shap_sum": 0.0781,
+      "pct": 1
+    }
+  }
+}

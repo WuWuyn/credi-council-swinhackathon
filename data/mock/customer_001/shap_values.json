@@ -1,0 +1,94 @@
+{
+  "top_positive_factors": [
+    {
+      "feature": "bureau_recent_AMT_CREDIT_SUM",
+      "shap_value": 0.05,
+      "label_vi": "bureau_recent_AMT_CREDIT_SUM (Dư nợ CIC gần nhất)",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_to_prev_approved",
+      "shap_value": 0.05,
+      "label_vi": "AMT_ANNUITY_to_prev_approved (Trả góp hiện tại / T",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_CREDIT_to_prev_approved",
+      "shap_value": 0.05,
+      "label_vi": "AMT_CREDIT_to_prev_approved (Tín dụng hiện tại / T",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "prev_refused_DAYS_DECISION_MAX",
+      "shap_value": 0.05,
+      "label_vi": "prev_refused_DAYS_DECISION_MAX (Đơn bị từ chối — D",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "region_mean_income_rel",
+      "shap_value": 0.05,
+      "label_vi": "region_mean_income_rel (Thu nhập so với TB khu vực",
+      "direction": "negative_for_default"
+    }
+  ],
+  "top_negative_factors": [
+    {
+      "feature": "EXT_SOURCE_2",
+      "shap_value": -0.04,
+      "label_vi": "EXT_SOURCE_2 (Điểm tín dụng ngoại 2)",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_1",
+      "shap_value": -0.04,
+      "label_vi": "EXT_SOURCE_1 (Điểm tín dụng ngoại 1)",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_CREDIT_GOODS_PERC",
+      "shap_value": -0.04,
+      "label_vi": "AMT_CREDIT_GOODS_PERC (Tỷ lệ tín dụng/giá trị hàng",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "bureau_sum_AMT_CREDIT_SUM",
+      "shap_value": -0.04,
+      "label_vi": "bureau_sum_AMT_CREDIT_SUM (Tổng dư nợ CIC)",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "NEW_EXT_SOURCES_MEAN",
+      "shap_value": -0.04,
+      "label_vi": "NEW_EXT_SOURCES_MEAN (Trung bình điểm tín dụng ngo",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "NEW_SOURCES_PROD",
+      "shap_value": -0.04,
+      "label_vi": "NEW_SOURCES_PROD (Tích điểm tín dụng ngoại)",
+      "direction": "positive_for_default"
+    }
+  ],
+  "five_c_shap_allocation": {
+    "character": {
+      "shap_sum": 1.0257,
+      "pct": 18
+    },
+    "capacity": {
+      "shap_sum": 0.8405,
+      "pct": 15
+    },
+    "capital": {
+      "shap_sum": 0.1088,
+      "pct": 2
+    },
+    "conditions": {
+      "shap_sum": 3.682,
+      "pct": 64
+    },
+    "collateral": {
+      "shap_sum": 0.0917,
+      "pct": 2
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "top_positive_factors": [
+    {
+      "feature": "pos_mean_SK_DPD_SCALE",
+      "shap_value": 0.05,
+      "label_vi": "pos_mean_SK_DPD_SCALE (91.947) có tác động tích cự",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "bureau_recent_AMT_CREDIT_SUM",
+      "shap_value": 0.05,
+      "label_vi": "bureau_recent_AMT_CREDIT_SUM (-999.0) cho thấy khô",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_to_prev_approved",
+      "shap_value": 0.05,
+      "label_vi": "AMT_ANNUITY_to_prev_approved (24,939,000.0) cho th",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "DAYS_BIRTH",
+      "shap_value": 0.05,
+      "label_vi": "DAYS_BIRTH (-24,537.0) cho thấy tuổi của khách hàn",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "bureau_sum_AMT_CREDIT_SUM",
+      "shap_value": 0.05,
+      "label_vi": "bureau_sum_AMT_CREDIT_SUM (-999.0) cho thấy tổng d",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "pos_sum_SK_DPD_SCALE",
+      "shap_value": 0.05,
+      "label_vi": "pos_sum_SK_DPD_SCALE (602.689) cho thấy tổng hành ",
+      "direction": "negative_for_default"
+    }
+  ],
+  "top_negative_factors": [
+    {
+      "feature": "EXT_SOURCE_2",
+      "shap_value": -0.04,
+      "label_vi": "EXT_SOURCE_2 (0.7887) có tác động tiêu cực đến khả",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_3",
+      "shap_value": -0.04,
+      "label_vi": "EXT_SOURCE_3 (0.8555) có tác động tiêu cực đến khả",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_INCOME_RATE",
+      "shap_value": -0.04,
+      "label_vi": "AMT_ANNUITY_INCOME_RATE (0.2771) cho thấy tỷ lệ tr",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "NEW_EXT_SOURCES_MEAN",
+      "shap_value": -0.04,
+      "label_vi": "NEW_EXT_SOURCES_MEAN (-0.5846) có tác động tiêu cự",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "NEW_SOURCES_PROD",
+      "shap_value": -0.04,
+      "label_vi": "NEW_SOURCES_PROD (-0.2273) có tác động tiêu cực đế",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "Chưa có thông tin chi tiết về tài sản bảo đảm được cung cấp trong dữ liệu SHAP.",
+      "shap_value": -0.04,
+      "label_vi": "Chưa có thông tin chi tiết về tài sản bảo đảm được",
+      "direction": "positive_for_default"
+    }
+  ],
+  "five_c_shap_allocation": {
+    "character": {
+      "shap_sum": 1.2177,
+      "pct": 22
+    },
+    "capacity": {
+      "shap_sum": 0.7572,
+      "pct": 14
+    },
+    "capital": {
+      "shap_sum": 0.1401,
+      "pct": 3
+    },
+    "conditions": {
+      "shap_sum": 3.3925,
+      "pct": 61
+    },
+    "collateral": {
+      "shap_sum": 0.0502,
+      "pct": 1
+    }
+  }
+}
