@@ -1,0 +1,30 @@
+{
+  "api_version": "CIC-VN-v2.1",
+  "query_timestamp": "2026-03-18T09:15:00+07:00",
+  "customer_id": "036098007654",
+  "customer_name": "Phạm Thị Lan",
+  "ext_source_scores": {
+    "EXT_SOURCE_1": null,
+    "EXT_SOURCE_2": null,
+    "EXT_SOURCE_3": null,
+    "_note": "Thin-file: Không có điểm tín dụng ngoại do chưa có lịch sử vay"
+  },
+  "credit_inquiry_counts": {
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 0,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 0,
+    "AMT_REQ_CREDIT_BUREAU_MON": 0,
+    "AMT_REQ_CREDIT_BUREAU_QRT": 0,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 0
+  },
+  "social_circle": {
+    "OBS_30_CNT_SOCIAL_CIRCLE": 0,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 0,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 0,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 0
+  },
+  "bureau_records": [],
+  "thin_file_flag": true,
+  "cic_score_equivalent": null,
+  "debt_group": null
+}

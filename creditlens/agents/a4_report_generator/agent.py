@@ -1,8 +1,16 @@
 """
-CreditLens A4 — Main Report Generator Agent.
+CreditLens A4 — Report Generator Agent (Local Version).
 
-Generates 4C credit assessments grounded in SHAP values, with RAG-based
-policy citation. This is the LangGraph node for Agent A4.
+# LOCAL_SUB: Uses Gemini API instead of Bedrock Claude.
+# Production: Replace LLMService with BedrockLLMService.
+
+Generates Vietnamese credit assessment reports:
+1. Thông tin khách hàng (Customer Info)
+2. Tóm tắt đánh giá (Executive Summary) + Scorecard
+3. 5C Scorecard (Character, Capacity, Capital, Conditions, Collateral)
+4. Tình hình tài chính
+5. Tài sản bảo đảm
+6. Khuyến nghị & Caveats + Audit trail
 """
 
 from __future__ import annotations
@@ -12,80 +20,223 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from creditlens.services.llm_service import LLMService
 from creditlens.agents.a4_report_generator.consistency_validator import validate_narrative_consistency
-from creditlens.config.prompts import A4_REPORT_GENERATION_SYSTEM, A4_REPORT_GENERATION_USER
-from creditlens.state.credit_state import CreditState
+from creditlens.config.feature_config import get_label_vi
 
 logger = logging.getLogger(__name__)
 
-MAX_RETRIES = 2
+# ── Report Generation Prompts (5C + 6 Sections) ──
+REPORT_SYSTEM = """Bạn là chuyên gia phân tích tín dụng tại ngân hàng Việt Nam.
+Tạo báo cáo đánh giá tín dụng 5C bằng tiếng Việt theo chuẩn TT39/2016.
+
+5C: Character (Uy tín), Capacity (Năng lực trả nợ), Capital (Vốn tự có),
+    Conditions (Điều kiện), Collateral (Tài sản bảo đảm).
+
+QUAN TRỌNG:
+- Chỉ trích dẫn các yếu tố từ SHAP values được cung cấp
+- Không bịa đặt thông tin hoặc yếu tố không có trong dữ liệu
+- Sử dụng số liệu cụ thể khi có thể
+- Viết bằng văn phong ngân hàng trang trọng
+
+Trả lời CHỈ bằng JSON hợp lệ theo schema sau:
+{
+    "customer_info": {
+        "summary": "Tóm tắt hồ sơ khách hàng (1-2 câu)"
+    },
+    "character_assessment": {
+        "score": 0-30,
+        "status": "DAT|XEM_XET|KHONG_DAT",
+        "shap_pct": "% SHAP contribution",
+        "indicators_met": ["..."],
+        "indicators_review": ["..."],
+        "narrative": "100-150 chữ"
+    },
+    "capacity_assessment": {
+        "score": 0-40,
+        "status": "DAT|XEM_XET|KHONG_DAT",
+        "shap_pct": "% SHAP contribution",
+        "indicators_met": ["..."],
+        "indicators_review": ["..."],
+        "narrative": "100-150 chữ"
+    },
+    "capital_assessment": {
+        "score": 0-20,
+        "status": "DAT|XEM_XET|KHONG_DAT",
+        "shap_pct": "% SHAP contribution",
+        "indicators_met": ["..."],
+        "indicators_review": ["..."],
+        "narrative": "100-150 chữ"
+    },
+    "conditions_assessment": {
+        "score": 0-10,
+        "status": "DAT|XEM_XET|KHONG_DAT",
+        "shap_pct": "% SHAP contribution",
+        "indicators_met": ["..."],
+        "indicators_review": ["..."],
+        "narrative": "100-150 chữ"
+    },
+    "collateral_assessment": {
+        "score": 0-20,
+        "status": "DAT|XEM_XET|KHONG_DAT",
+        "indicators_met": ["..."],
+        "indicators_review": ["..."],
+        "narrative": "50-100 chữ"
+    },
+    "financial_summary": {
+        "income_analysis": "Phân tích thu nhập và dòng tiền",
+        "debt_analysis": "Phân tích nợ và khả năng trả nợ",
+        "key_ratios": {"dti": "...", "dscr": "...", "ltv": "..."}
+    },
+    "recommendation": "APPROVE|REVIEW|REJECT",
+    "suggested_terms": {
+        "max_amount_vnd": number,
+        "max_term_months": number,
+        "interest_rate_suggestion": "theo biểu phí hiện hành",
+        "conditions": ["Điều kiện tiên quyết"]
+    },
+    "caveats": ["..."]
+}"""
+
+REPORT_USER = """Tạo báo cáo 5C + 6 phần cho đơn vay với thông tin sau:
+
+=== SHAP Feature Attribution ===
+{shap_json}
+
+=== Phân bổ SHAP theo 5C ===
+{five_c_allocation}
+
+=== Cảnh báo ===
+{warnings_json}
+
+=== Thông tin bổ sung ===
+- Loại khách hàng: {customer_type}
+- Thin-file: {thin_file_flag}
+- Tổng số điểm tín dụng: {credit_score}
+- Risk band: {risk_band}
+- PD%: {pd_pct}
+
+=== Thông tin tài chính ===
+{financial_info}
+
+=== Thông tin tài sản bảo đảm ===
+{collateral_info}
+
+Tạo đánh giá chi tiết cho từng C, chỉ TRÍCH DẪN các yếu tố từ SHAP values.
+
+CHÚ Ý THANG ĐIỂM (KHÔNG ĐƯỢC VƯỢT):
+- Character: 0-30 điểm
+- Capacity: 0-40 điểm
+- Capital: 0-20 điểm
+- Conditions: 0-10 điểm
+- Collateral: 0-20 điểm
+Tổng tối đa: 120 điểm."""
 
 
 class ReportGeneratorAgent:
-    """Agent A4 — Report Generator & Explainability Stack.
+    """Agent A4 — Report Generator + Explainability.
 
-    Converts SHAP mathematical output into human-readable Vietnamese
-    credit reports with 3 layers of explainability:
-        1. SHAP Feature Attribution (mathematical)
-        2. Grounded LLM Narrative (human-readable, constrained)
-        3. Immutable Audit Trail (regulatory)
+    # LOCAL_SUB: Uses Gemini API. Production: use Bedrock Claude.
 
-    Hard constraint: narrative MUST only reference SHAP factors.
+    Converts SHAP output into human-readable Vietnamese 5C reports (6 sections).
     """
 
-    def __init__(self, use_mock: bool = True, bedrock_client=None):
+    def __init__(self, use_mock: bool = True):
+        self.llm = LLMService(use_mock=use_mock)
         self.use_mock = use_mock
-        self.bedrock_client = bedrock_client
 
-    def generate_report_only(
-        self,
-        state: CreditState,
-        violation_feedback: list[str] | None = None,
-    ) -> dict[str, Any]:
-        """Generate 4C report WITHOUT consistency validation.
-
-        Used by the 9-node graph where consistency_validator is a separate node.
+    def generate(self, a3_output: dict[str, Any], a2_output: dict[str, Any]) -> dict[str, Any]:
+        """Generate credit report from A3 scoring output.
 
         Args:
-            state: Current pipeline state with A3 SHAP output.
-            violation_feedback: Previous consistency violations for retry.
+            a3_output: Output from A3 ScoringAgent.score()
+            a2_output: Output from A2 FeatureEngineerAgent.process()
 
         Returns:
-            State update dict with narrative and report (no consistency check).
+            Dict with final_report, narrative, consistency_check (5C + 6 sections)
         """
-        logger.info(f"A4 generate_report_only — App {state.get('application_id', 'unknown')}")
+        logger.info("=" * 60)
+        logger.info("  A4 Report Generator (5C + 6 Sections)")
+        logger.info("=" * 60)
 
-        shap_values = state.get("shap_values", {})
-        warnings = state.get("warnings", [])
+        credit_score = a3_output.get("credit_score", 0)
+        pd_pct = a3_output.get("pd_pct", 0)
+        risk_band = a3_output.get("risk_band", "CCC")
+        shap_values = a3_output.get("shap_values", {})
+        warnings = a2_output.get("warnings", [])
+        llm_feats = a2_output.get("llm_feats", {})
 
+        # Generate narrative (5C)
         narrative = self._generate_narrative(
             shap_values=shap_values,
             warnings=warnings,
-            customer_type=state.get("customer_type", "INDIVIDUAL"),
-            thin_file=state.get("structured_feats", {}).get("thin_file_flag", False),
-            previous_violations=violation_feedback or [],
+            credit_score=credit_score,
+            risk_band=risk_band,
+            pd_pct=pd_pct,
+            customer_type="INDIVIDUAL",
+            thin_file=llm_feats.get("thin_file_flag", False),
+            llm_feats=llm_feats,
         )
 
-        # Build 4C scores
-        four_c_scores = {}
-        for dim in ["character", "capacity", "capital", "conditions"]:
-            assessment = narrative.get(f"{dim}_assessment", {})
-            four_c_scores[dim] = assessment.get("score", 0)
+        # Validate consistency (narrative must only cite SHAP factors)
+        consistency = validate_narrative_consistency(shap_values, narrative)
+        logger.info(f"  Consistency check: {'PASSED' if consistency['passed'] else 'FAILED'}")
 
-        # Build final report
+        # Build 5C scores (with clamping to valid ranges)
+        five_c_max = {
+            "character": 30, "capacity": 40, "capital": 20,
+            "conditions": 10, "collateral": 20,
+        }
+        five_c_scores = {}
+        for dim, max_score in five_c_max.items():
+            assessment = narrative.get(f"{dim}_assessment") or {}
+            raw_score = assessment.get("score", 0) if isinstance(assessment, dict) else 0
+            clamped = max(0, min(int(raw_score), max_score))
+            five_c_scores[dim] = clamped
+            # Write clamped score back to narrative for consistency
+            if isinstance(assessment, dict) and assessment.get("score") != clamped:
+                assessment["score"] = clamped
+
+        total_5c = sum(five_c_scores.values())
+        logger.info(f"  5C Total: {total_5c}/120")
+        for dim, score in five_c_scores.items():
+            logger.info(f"    {dim}: {score}/{five_c_max[dim]}")
+
+        # Build final report (6 sections)
         final_report = {
+            # Section I: Thông tin khách hàng
+            "customer_info": narrative.get("customer_info", {}),
+            # Section II: Tóm tắt đánh giá
             "executive_summary": {
-                "credit_score": state.get("credit_score"),
-                "risk_band": state.get("risk_band"),
-                "pd_pct": state.get("pd_pct"),
+                "credit_score": credit_score,
+                "risk_band": risk_band,
+                "pd_pct": pd_pct,
                 "recommendation": narrative.get("recommendation", "REVIEW"),
-                "overall_confidence": state.get("overall_confidence"),
+                "five_c_total": total_5c,
+                "five_c_scores": five_c_scores,
+                "five_c_shap_allocation": shap_values.get("five_c_shap_allocation", {}),
             },
-            "four_c_scorecard": narrative,
+            # Section III: 5C Scorecard
+            "five_c_scorecard": {
+                "character_assessment": narrative.get("character_assessment", {}),
+                "capacity_assessment": narrative.get("capacity_assessment", {}),
+                "capital_assessment": narrative.get("capital_assessment", {}),
+                "conditions_assessment": narrative.get("conditions_assessment", {}),
+                "collateral_assessment": narrative.get("collateral_assessment", {}),
+            },
+            # Section IV: Tình hình tài chính
+            "financial_summary": narrative.get("financial_summary", {}),
+            # Section V: Tài sản bảo đảm (detail from collateral assessment)
+            "collateral_detail": narrative.get("collateral_assessment", {}),
+            # Section VI: Khuyến nghị & Caveats
             "suggested_terms": narrative.get("suggested_terms", {}),
+            "llm_insights": {
+                "loan_purpose": llm_feats.get("loan_purpose_category"),
+                "positive_signals": llm_feats.get("positive_signals", []),
+                "risk_flags": llm_feats.get("risk_flags", []),
+            },
             "caveats": narrative.get("caveats", []) + warnings,
             "audit_reference": {
-                "application_id": state.get("application_id"),
                 "model_version": shap_values.get("model_version"),
                 "inference_timestamp": shap_values.get("inference_timestamp"),
             },
@@ -94,248 +245,224 @@ class ReportGeneratorAgent:
         audit_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "agent": "A4",
-            "action": "report_generation",
-            "input_summary": {
-                "shap_factors": len(shap_values.get("top_positive_factors", []))
-                + len(shap_values.get("top_negative_factors", [])),
-            },
+            "action": "report_generation_5c",
             "output_summary": {
                 "recommendation": narrative.get("recommendation"),
+                "five_c_total": total_5c,
+                "consistency_passed": consistency.get("passed"),
             },
-            "model_version": "claude-3.5-sonnet",
-            "confidence": None,
+            "model_version": "gemini-2.5-flash-lite",
         }
+
+        logger.info(f"  Recommendation: {narrative.get('recommendation', 'REVIEW')}")
 
         return {
-            "four_c_scores": four_c_scores,
+            "credit_score": credit_score,
+            "pd_pct": pd_pct,
+            "risk_band": risk_band,
+            "five_c_scores": five_c_scores,
             "narrative": narrative,
+            "consistency_check": consistency,
             "final_report": final_report,
             "warnings": warnings,
-            "audit_trail": state.get("audit_trail", []) + [audit_entry],
-        }
-
-    def generate(self, state: CreditState) -> dict[str, Any]:
-        """Generate credit report — LangGraph node function (legacy single-node).
-
-        Includes retry loop: if consistency validation fails,
-        re-generates with violation feedback (max 2 retries).
-
-        Args:
-            state: Current pipeline state with A3 SHAP output.
-
-        Returns:
-            State update dict with A4 outputs.
-        """
-        logger.info(f"A4 Report Generator — App {state.get('application_id', 'unknown')}")
-
-        shap_values = state.get("shap_values", {})
-        warnings = state.get("warnings", [])
-
-        narrative = None
-        consistency_result = None
-
-        for attempt in range(1 + MAX_RETRIES):
-            # Generate report
-            narrative = self._generate_narrative(
-                shap_values=shap_values,
-                warnings=warnings,
-                customer_type=state.get("customer_type", "INDIVIDUAL"),
-                thin_file=state.get("structured_feats", {}).get("thin_file_flag", False),
-                previous_violations=consistency_result.get("violations", []) if consistency_result else [],
-            )
-
-            # Validate consistency
-            consistency_result = validate_narrative_consistency(shap_values, narrative)
-
-            if consistency_result["passed"]:
-                logger.info(f"Report generated (attempt {attempt + 1}): consistency PASSED")
-                break
-            else:
-                logger.warning(
-                    f"Report attempt {attempt + 1}: consistency FAILED "
-                    f"({len(consistency_result['violations'])} violations)"
-                )
-
-        # If still failed after retries, flag for human review
-        if not consistency_result["passed"]:
-            warnings.append(
-                "⚠️ Báo cáo tự động không đạt consistency check sau 3 lần thử. "
-                "Cần xem xét thủ công."
-            )
-
-        # Build 4C scores
-        four_c_scores = {}
-        for dim in ["character", "capacity", "capital", "conditions"]:
-            assessment = narrative.get(f"{dim}_assessment", {})
-            four_c_scores[dim] = assessment.get("score", 0)
-
-        # Build final report
-        final_report = {
-            "executive_summary": {
-                "credit_score": state.get("credit_score"),
-                "risk_band": state.get("risk_band"),
-                "pd_pct": state.get("pd_pct"),
-                "recommendation": narrative.get("recommendation", "REVIEW"),
-                "overall_confidence": state.get("overall_confidence"),
-            },
-            "four_c_scorecard": narrative,
-            "suggested_terms": narrative.get("suggested_terms", {}),
-            "caveats": narrative.get("caveats", []) + warnings,
-            "audit_reference": {
-                "application_id": state.get("application_id"),
-                "model_version": shap_values.get("model_version"),
-                "inference_timestamp": shap_values.get("inference_timestamp"),
-            },
-        }
-
-        # Audit entry
-        audit_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "agent": "A4",
-            "action": "report_generation",
-            "input_summary": {
-                "shap_factors": len(shap_values.get("top_positive_factors", []))
-                + len(shap_values.get("top_negative_factors", [])),
-            },
-            "output_summary": {
-                "recommendation": narrative.get("recommendation"),
-                "consistency_passed": consistency_result["passed"],
-                "shap_coverage": consistency_result["shap_coverage"],
-                "attempts": min(3, (consistency_result.get("violations", []) and 3) or 1),
-            },
-            "model_version": "claude-3.5-sonnet",
-            "confidence": consistency_result["shap_coverage"],
-        }
-
-        return {
-            "four_c_scores": four_c_scores,
-            "narrative": narrative,
-            "consistency_check": consistency_result,
-            "final_report": final_report,
-            "warnings": warnings,
-            "audit_trail": state.get("audit_trail", []) + [audit_entry],
+            "audit_trail": a3_output.get("audit_trail", []) + [audit_entry],
         }
 
     def _generate_narrative(
         self,
         shap_values: dict,
         warnings: list[str],
+        credit_score: int,
+        risk_band: str,
+        pd_pct: float,
         customer_type: str,
         thin_file: bool,
-        previous_violations: list[str],
+        llm_feats: dict | None = None,
     ) -> dict[str, Any]:
-        """Generate 4C narrative from SHAP values.
-
-        Args:
-            shap_values: SHAP JSON from A3.
-            warnings: Current warning list.
-            customer_type: INDIVIDUAL or SME.
-            thin_file: Whether this is a thin-file customer.
-            previous_violations: Violations from previous attempt (for retry).
-
-        Returns:
-            4C assessment narrative dict.
-        """
+        """Generate 5C narrative using LLM or mock."""
         if self.use_mock:
-            return self._mock_narrative(shap_values)
+            return self._mock_narrative(shap_values, credit_score, llm_feats or {})
 
-        # Build prompt
-        system = A4_REPORT_GENERATION_SYSTEM
-        if previous_violations:
-            system += (
-                "\n\nPREVIOUS ATTEMPT FAILED. Fix these violations:\n"
-                + "\n".join(f"- {v}" for v in previous_violations)
-            )
+        five_c_alloc = shap_values.get("five_c_shap_allocation", {})
+        financial_info = self._build_financial_context(llm_feats or {})
+        collateral_info = self._build_collateral_context(llm_feats or {})
 
-        user = A4_REPORT_GENERATION_USER.format(
-            shap_json=json.dumps(shap_values, indent=2),
-            rag_context="[Policy context will be retrieved from RAG]",
-            warnings_json=json.dumps(warnings),
+        prompt = REPORT_USER.format(
+            shap_json=json.dumps(shap_values, indent=2, default=str),
+            five_c_allocation=json.dumps(five_c_alloc, indent=2, default=str),
+            warnings_json=json.dumps(warnings, default=str),
             customer_type=customer_type,
             thin_file_flag=thin_file,
+            credit_score=credit_score,
+            risk_band=risk_band,
+            pd_pct=pd_pct,
+            financial_info=financial_info,
+            collateral_info=collateral_info,
         )
 
-        response = self.bedrock_client.invoke_model(
-            modelId="anthropic.claude-3-5-sonnet-20241022-v2:0",
-            body=json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 4096,
-                "system": system,
-                "messages": [{"role": "user", "content": user}],
-            }),
+        return self.llm.generate_json(
+            REPORT_SYSTEM, prompt,
+            {"character_assessment", "capacity_assessment",
+             "capital_assessment", "conditions_assessment",
+             "collateral_assessment", "recommendation"},
+            max_tokens=8192,
         )
-        response_body = json.loads(response["body"].read())
-        return json.loads(response_body["content"][0]["text"])
 
-    def _mock_narrative(self, shap_values: dict) -> dict[str, Any]:
-        """Generate mock 4C narrative for development."""
-        score = shap_values.get("credit_score", 672)
-        risk_band = shap_values.get("risk_band", "AA")
+    def _build_financial_context(self, llm_feats: dict) -> str:
+        """Build financial context string from available data."""
+        lines = []
+        if llm_feats.get("avg_monthly_inflow_vnd"):
+            lines.append(f"Dòng tiền vào TB: {llm_feats['avg_monthly_inflow_vnd']:,.0f} VND/tháng")
+        if llm_feats.get("income_stability_index"):
+            lines.append(f"Chỉ số ổn định thu nhập: {llm_feats['income_stability_index']:.2f}")
+        if llm_feats.get("inflow_outflow_ratio"):
+            lines.append(f"Tỷ lệ thu/chi: {llm_feats['inflow_outflow_ratio']:.2f}")
+        return "\n".join(lines) if lines else "Không có dữ liệu tài chính bổ sung"
+
+    def _build_collateral_context(self, llm_feats: dict) -> str:
+        """Build collateral context string from available data."""
+        lines = []
+        if llm_feats.get("collateral_type"):
+            lines.append(f"Loại TSBĐ: {llm_feats['collateral_type']}")
+        if llm_feats.get("collateral_value_vnd"):
+            lines.append(f"Giá trị thẩm định: {llm_feats['collateral_value_vnd']:,.0f} VND")
+        return "\n".join(lines) if lines else "Chưa có thông tin TSBĐ chi tiết"
+
+    def _mock_narrative(
+        self, shap_values: dict, credit_score: int, llm_feats: dict
+    ) -> dict[str, Any]:
+        """Generate deterministic mock 5C narrative (6 sections)."""
+        # Derive scores based on credit score
+        if credit_score >= 700:
+            char_s, cap_s, capital_s, cond_s, coll_s = 28, 35, 18, 9, 16
+            recommendation = "APPROVE"
+        elif credit_score >= 600:
+            char_s, cap_s, capital_s, cond_s, coll_s = 25, 28, 15, 8, 14
+            recommendation = "REVIEW"
+        elif credit_score >= 460:
+            char_s, cap_s, capital_s, cond_s, coll_s = 20, 22, 12, 6, 10
+            recommendation = "CONDITIONAL"
+        else:
+            char_s, cap_s, capital_s, cond_s, coll_s = 14, 15, 8, 4, 7
+            recommendation = "REJECT"
+
+        # Extract SHAP factor labels for narrative
+        top_pos = shap_values.get("top_positive_factors", [])
+        top_neg = shap_values.get("top_negative_factors", [])
+        pos_labels = [f.get("label_vi", f.get("feature", "")) for f in top_neg[:3]]
+        neg_labels = [f.get("label_vi", f.get("feature", "")) for f in top_pos[:3]]
+
+        # 5C SHAP allocation (from A3 output)
+        five_c_alloc = shap_values.get("five_c_shap_allocation", {})
 
         return {
+            # Section I
+            "customer_info": {
+                "summary": (
+                    f"Khách hàng {'cá nhân' if not llm_feats.get('is_sme') else 'doanh nghiệp'}. "
+                    f"{'Thin-file — không có lịch sử tín dụng CIC. ' if llm_feats.get('thin_file_flag') else ''}"
+                    f"Điểm tín dụng: {credit_score}/850."
+                ),
+            },
+            # Section III — 5C assessments
             "character_assessment": {
-                "score": 28,
-                "status": "DAT",
+                "score": char_s,
+                "status": "DAT" if char_s >= 22 else "XEM_XET" if char_s >= 15 else "KHONG_DAT",
+                "shap_pct": five_c_alloc.get("character", {}).get("pct", 0),
                 "indicators_met": [
-                    "Phát hiện giao dịch lương đều đặn — lịch sử 6 tháng nhất quán",
-                    "Thanh toán hóa đơn đúng hạn 90% — tín hiệu uy tín tốt",
+                    "Lịch sử tín dụng tích cực từ CIC",
+                    "Thanh toán đúng hạn theo sao kê ngân hàng",
                 ],
-                "indicators_review": [],
+                "indicators_review": (
+                    ["Thin-file — chưa đủ lịch sử tín dụng"] if llm_feats.get("thin_file_flag") else []
+                ),
                 "narrative": (
-                    "Khách hàng thể hiện uy tín tín dụng tốt qua các chỉ tiêu hành vi. "
-                    "Phát hiện giao dịch lương đều đặn trong 6 tháng liên tục, "
-                    "thanh toán hóa đơn đúng hạn đạt 90%. "
-                    "Không ghi nhận nợ xấu trong lịch sử tín dụng."
+                    f"Khách hàng thể hiện uy tín tín dụng {'tốt' if char_s >= 22 else 'cần xem xét'}. "
+                    f"Điểm CIC ở mức {'khá' if char_s >= 22 else 'chưa đủ đánh giá'}, "
+                    f"không ghi nhận nợ xấu. "
+                    f"Các yếu tố tích cực: {', '.join(pos_labels) if pos_labels else 'không có dữ liệu đầy đủ'}."
                 ),
             },
             "capacity_assessment": {
-                "score": 31,
-                "status": "XEM_XET",
+                "score": cap_s,
+                "status": "DAT" if cap_s >= 28 else "XEM_XET" if cap_s >= 18 else "KHONG_DAT",
+                "shap_pct": five_c_alloc.get("capacity", {}).get("pct", 0),
                 "indicators_met": [
-                    "Thu nhập ổn định 6 tháng (index 0.81)",
-                    "Thu nhập khai báo khớp sao kê ngân hàng",
+                    "Thu nhập ổn định, có xác minh qua HĐLĐ",
+                    "Tỷ lệ nợ/thu nhập trong ngưỡng chấp nhận được",
                 ],
-                "indicators_review": [
-                    "Tỷ lệ nợ/thu nhập ở mức cao (48%) > ngưỡng tốt 40% → "
-                    "Đề xuất: giảm hạn mức 20% hoặc yêu cầu chứng minh thu nhập bổ sung",
-                    "Số dư về âm 2 lần trong 6 tháng cần giải trình",
-                ],
+                "indicators_review": (
+                    [f"Cần lưu ý: {', '.join(neg_labels)}"] if neg_labels else []
+                ),
                 "narrative": (
-                    "Năng lực trả nợ của khách hàng ở mức khá nhưng cần lưu ý. "
-                    "Thu nhập ổn định 6 tháng với index 0.81, thu nhập khai báo khớp sao kê. "
-                    "Tuy nhiên, tỷ lệ nợ/thu nhập ở mức cao 48%, vượt ngưỡng tốt 40%. "
-                    "Ghi nhận số dư về âm 2 lần trong 6 tháng."
+                    f"Năng lực trả nợ {'đáp ứng yêu cầu' if cap_s >= 28 else 'cần xem xét thêm'}. "
+                    f"Thu nhập được xác minh qua hợp đồng lao động và sao kê ngân hàng. "
+                    f"SHAP contribution: {five_c_alloc.get('capacity', {}).get('pct', 0)}%."
                 ),
             },
             "capital_assessment": {
-                "score": 16,
-                "status": "DAT",
-                "indicators_met": [
-                    "Tài sản bảo đảm đáp ứng yêu cầu",
-                ],
+                "score": capital_s,
+                "status": "DAT" if capital_s >= 14 else "XEM_XET" if capital_s >= 10 else "KHONG_DAT",
+                "shap_pct": five_c_alloc.get("capital", {}).get("pct", 0),
+                "indicators_met": ["Vốn tự có và tài sản ròng ở mức chấp nhận được"],
                 "indicators_review": [],
                 "narrative": (
-                    "Vốn và tài sản bảo đảm của khách hàng đáp ứng yêu cầu. "
-                    "Tài sản bảo đảm đủ buffer cho khoản vay hiện tại."
+                    f"Vốn tự có {'đáp ứng' if capital_s >= 14 else 'cần bổ sung thêm cho'} "
+                    f"yêu cầu khoản vay."
                 ),
             },
             "conditions_assessment": {
-                "score": 9,
-                "status": "DAT",
+                "score": cond_s,
+                "status": "DAT" if cond_s >= 7 else "XEM_XET" if cond_s >= 5 else "KHONG_DAT",
+                "shap_pct": five_c_alloc.get("conditions", {}).get("pct", 0),
                 "indicators_met": [
                     "Mục đích vay rõ ràng",
-                    "Kế hoạch trả nợ chi tiết",
+                    "Kế hoạch trả nợ phù hợp",
                 ],
                 "indicators_review": [],
                 "narrative": (
-                    "Điều kiện khoản vay phù hợp. Mục đích vay rõ ràng — tiêu dùng. "
-                    "Kế hoạch trả nợ chi tiết, phù hợp với năng lực tài chính."
+                    "Điều kiện khoản vay phù hợp, mục đích vay rõ ràng. "
+                    "Ngành nghề ổn định, điều kiện thị trường thuận lợi."
                 ),
             },
-            "recommendation": "APPROVE" if score >= 640 else "REVIEW",
+            "collateral_assessment": {
+                "score": coll_s,
+                "status": "DAT" if coll_s >= 14 else "XEM_XET" if coll_s >= 8 else "KHONG_DAT",
+                "indicators_met": ["Có tài sản bảo đảm phù hợp"] if coll_s >= 14 else [],
+                "indicators_review": (
+                    ["Cần bổ sung hoặc tái định giá TSBĐ"] if coll_s < 14 else []
+                ),
+                "narrative": (
+                    f"Tài sản bảo đảm {'đáp ứng yêu cầu' if coll_s >= 14 else 'cần đánh giá thêm'} "
+                    f"cho khoản vay. "
+                    f"{'Đề xuất tái định giá sau 12 tháng.' if coll_s < 18 else ''}"
+                ),
+            },
+            # Section IV
+            "financial_summary": {
+                "income_analysis": (
+                    f"Thu nhập ổn định qua xác minh sao kê ngân hàng. "
+                    f"{'Income stability index ở mức tốt.' if credit_score >= 600 else 'Cần xem xét thêm.'}"
+                ),
+                "debt_analysis": (
+                    f"Tỷ lệ nợ/thu nhập {'trong ngưỡng an toàn' if credit_score >= 640 else 'ở mức cao'}."
+                ),
+                "key_ratios": {
+                    "dti": f"{'< 40%' if credit_score >= 700 else '40-50%' if credit_score >= 600 else '> 50%'}",
+                    "dscr": f"{'> 1.2' if credit_score >= 700 else '1.0-1.2' if credit_score >= 600 else '< 1.0'}",
+                    "ltv": "N/A (chưa có thông tin TSBĐ chi tiết)",
+                },
+            },
+            # Section VI
+            "recommendation": recommendation,
             "suggested_terms": {
-                "max_amount_vnd": 80_000_000,
-                "max_term_months": 24,
+                "max_amount_vnd": 300_000_000 if credit_score >= 650 else 100_000_000,
+                "max_term_months": 36 if credit_score >= 650 else 12,
+                "interest_rate_suggestion": "Theo biểu phí hiện hành",
+                "conditions": (
+                    ["Chứng minh thu nhập bổ sung (slip lương 3 tháng)"]
+                    if credit_score < 700 else []
+                ),
             },
             "caveats": [],
         }

@@ -1,83 +1,113 @@
 """
-CreditLens A1 — CIC API Service (Mock + Production).
+CreditLens A1 — CIC API Client (Local Mock + Production).
 
-Client for querying the Credit Information Center (CIC) for credit history.
-Includes a mock implementation for development/testing.
+# LOCAL_SUB: For production, replace mock JSON file reading with real CIC API calls.
+# See LOCAL_SUBSTITUTIONS.md for migration guide.
+
+Reads CIC data from mock JSON files or queries real CIC API.
+Returns structured bureau records, external scores, and social circle data.
 """
 
 from __future__ import annotations
 
+import json
 import logging
-import random
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class CICService:
-    """CIC API client.
+    """CIC (Credit Information Center) API client.
 
-    In production, connects to the real CIC API.
-    In development, uses mock data that simulates realistic responses.
+    # LOCAL_SUB: Mock reads from JSON file. Production: send HTTP request to CIC API.
+
+    In local mode, reads from pre-generated mock JSON files.
+    In production mode, calls the real CIC API endpoint.
     """
 
     def __init__(self, use_mock: bool = True):
         self.use_mock = use_mock
 
-    def query(self, applicant_id: str) -> dict[str, Any]:
+    def query(self, cic_data_path: str | Path | None = None) -> dict[str, Any]:
         """Query CIC for credit history.
 
         Args:
-            applicant_id: Applicant identifier (CCCD or internal ID).
+            cic_data_path: Path to mock CIC JSON file (local mode).
 
         Returns:
-            CIC response dict with credit bureau data.
+            Structured CIC response with bureau records.
         """
-        if self.use_mock:
-            return self._mock_query(applicant_id)
+        if self.use_mock and cic_data_path:
+            return self._read_mock(Path(cic_data_path))
+        elif self.use_mock:
+            return self._default_thin_file()
+        else:
+            # LOCAL_SUB: Implement real CIC API call here
+            raise NotImplementedError("Real CIC API not implemented. See LOCAL_SUBSTITUTIONS.md")
 
-        # TODO: Implement real CIC API integration
-        raise NotImplementedError("Real CIC API integration not yet implemented")
+    def _read_mock(self, path: Path) -> dict[str, Any]:
+        """Read mock CIC response from JSON file."""
+        if not path.exists():
+            logger.warning(f"CIC mock file not found: {path}")
+            return self._default_thin_file()
 
-    def _mock_query(self, applicant_id: str) -> dict[str, Any]:
-        """Generate mock CIC response for development.
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
-        Simulates various scenarios: normal, thin-file, and bad debt.
-        """
-        # Use hash of applicant_id for deterministic mock data
-        seed = hash(applicant_id) % 100
+        logger.info(f"CIC mock loaded: {len(data.get('bureau_records', []))} bureau records")
 
-        # 20% chance thin-file (no CIC record)
-        if seed < 20:
-            return {
-                "cic_score": None,
-                "debt_group": None,
-                "num_active_loans": 0,
-                "total_outstanding": 0,
-                "worst_ever_group": None,
-                "thin_file_flag": True,
-                "response_status": "NO_RECORD",
-            }
+        # Extract structured features matching dataset columns
+        result = {
+            # External scores (application_train columns)
+            "EXT_SOURCE_1": data.get("ext_source_scores", {}).get("EXT_SOURCE_1"),
+            "EXT_SOURCE_2": data.get("ext_source_scores", {}).get("EXT_SOURCE_2"),
+            "EXT_SOURCE_3": data.get("ext_source_scores", {}).get("EXT_SOURCE_3"),
 
-        # 10% chance bad debt (group 3-5)
-        if seed < 30:
-            return {
-                "cic_score": random.randint(150, 400),
-                "debt_group": random.choice([3, 4, 5]),
-                "num_active_loans": random.randint(1, 5),
-                "total_outstanding": random.randint(50_000_000, 500_000_000),
-                "worst_ever_group": random.choice([3, 4, 5]),
-                "thin_file_flag": False,
-                "response_status": "OK",
-            }
+            # Credit inquiry counts (application_train columns)
+            "AMT_REQ_CREDIT_BUREAU_HOUR": data.get("credit_inquiry_counts", {}).get("AMT_REQ_CREDIT_BUREAU_HOUR", 0),
+            "AMT_REQ_CREDIT_BUREAU_DAY": data.get("credit_inquiry_counts", {}).get("AMT_REQ_CREDIT_BUREAU_DAY", 0),
+            "AMT_REQ_CREDIT_BUREAU_WEEK": data.get("credit_inquiry_counts", {}).get("AMT_REQ_CREDIT_BUREAU_WEEK", 0),
+            "AMT_REQ_CREDIT_BUREAU_MON": data.get("credit_inquiry_counts", {}).get("AMT_REQ_CREDIT_BUREAU_MON", 0),
+            "AMT_REQ_CREDIT_BUREAU_QRT": data.get("credit_inquiry_counts", {}).get("AMT_REQ_CREDIT_BUREAU_QRT", 0),
+            "AMT_REQ_CREDIT_BUREAU_YEAR": data.get("credit_inquiry_counts", {}).get("AMT_REQ_CREDIT_BUREAU_YEAR", 0),
 
-        # 70% normal record
+            # Social circle (application_train columns)
+            "OBS_30_CNT_SOCIAL_CIRCLE": data.get("social_circle", {}).get("OBS_30_CNT_SOCIAL_CIRCLE", 0),
+            "DEF_30_CNT_SOCIAL_CIRCLE": data.get("social_circle", {}).get("DEF_30_CNT_SOCIAL_CIRCLE", 0),
+            "OBS_60_CNT_SOCIAL_CIRCLE": data.get("social_circle", {}).get("OBS_60_CNT_SOCIAL_CIRCLE", 0),
+            "DEF_60_CNT_SOCIAL_CIRCLE": data.get("social_circle", {}).get("DEF_60_CNT_SOCIAL_CIRCLE", 0),
+
+            # Bureau records (bureau.csv equivalent)
+            "bureau_records": data.get("bureau_records", []),
+
+            # Thin file flag
+            "thin_file_flag": data.get("thin_file_flag", False),
+            "cic_score": data.get("cic_score_equivalent"),
+            "debt_group": data.get("debt_group", 1),
+        }
+
+        return result
+
+    def _default_thin_file(self) -> dict[str, Any]:
+        """Default response when no CIC data available (thin-file)."""
         return {
-            "cic_score": random.randint(450, 750),
-            "debt_group": random.choice([1, 1, 1, 2]),
-            "num_active_loans": random.randint(0, 3),
-            "total_outstanding": random.randint(0, 200_000_000),
-            "worst_ever_group": random.choice([1, 1, 2]),
-            "thin_file_flag": False,
-            "response_status": "OK",
+            "EXT_SOURCE_1": None,
+            "EXT_SOURCE_2": None,
+            "EXT_SOURCE_3": None,
+            "AMT_REQ_CREDIT_BUREAU_HOUR": 0,
+            "AMT_REQ_CREDIT_BUREAU_DAY": 0,
+            "AMT_REQ_CREDIT_BUREAU_WEEK": 0,
+            "AMT_REQ_CREDIT_BUREAU_MON": 0,
+            "AMT_REQ_CREDIT_BUREAU_QRT": 0,
+            "AMT_REQ_CREDIT_BUREAU_YEAR": 0,
+            "OBS_30_CNT_SOCIAL_CIRCLE": 0,
+            "DEF_30_CNT_SOCIAL_CIRCLE": 0,
+            "OBS_60_CNT_SOCIAL_CIRCLE": 0,
+            "DEF_60_CNT_SOCIAL_CIRCLE": 0,
+            "bureau_records": [],
+            "thin_file_flag": True,
+            "cic_score": None,
+            "debt_group": None,
         }

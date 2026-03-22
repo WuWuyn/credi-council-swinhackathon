@@ -19,16 +19,15 @@ logger = logging.getLogger(__name__)
 def pd_to_credit_score(pd_pct: float) -> int:
     """Map probability of default (%) to credit score (300-850).
 
-    Uses a logarithmic mapping that produces scores aligned with
-    the risk band definitions in the design document.
+    Uses piecewise linear interpolation in log-PD space, anchored
+    exactly to the RISK_BANDS boundaries:
 
-    The mapping:
-        PD ~0%   → Score 850 (best)
-        PD ~2%   → Score ~720 (AAA/AA boundary)
-        PD ~8%   → Score ~640 (AA/A boundary)
-        PD ~18%  → Score ~560 (A/BBB boundary)
-        PD ~35%  → Score ~460 (BBB/CC boundary)
-        PD ~100% → Score 300 (worst)
+        PD ≤ 0.5%  → Score 850 (best)
+        PD = 2%    → Score 720 (AAA/AA boundary)
+        PD = 8%    → Score 640 (AA/A boundary)
+        PD = 18%   → Score 560 (A/BBB boundary)
+        PD = 35%   → Score 460 (BBB/CC boundary)
+        PD ≥ 100%  → Score 300 (worst)
 
     Args:
         pd_pct: Probability of default as percentage (0-100).
@@ -37,15 +36,43 @@ def pd_to_credit_score(pd_pct: float) -> int:
         Credit score integer (300-850).
     """
     # Clamp PD to valid range
-    pd_clamped = max(0.001, min(pd_pct, 99.99))
+    pd_clamped = max(0.01, min(pd_pct, 99.99))
 
-    # Logarithmic mapping: score = 850 - k * ln(pd)
-    # Calibrated so that PD=2% → 720, PD=35% → 460
-    # k ≈ 93, offset ≈ 850 + 93*ln(0.02) ≈ 486
-    score = 850 + 93 * np.log(0.02) - 93 * np.log(pd_clamped / 100)
-    score = int(round(max(300, min(850, score))))
+    # Anchor points: (PD%, Score) — exactly matching RISK_BANDS boundaries
+    # Piecewise linear interpolation in log(PD) space ensures smooth,
+    # monotonic mapping while hitting every boundary precisely.
+    anchors = [
+        (0.5, 850),   # Best possible
+        (2.0, 720),   # AAA / AA boundary
+        (8.0, 640),   # AA / A boundary
+        (18.0, 560),  # A / BBB boundary
+        (35.0, 460),  # BBB / CC boundary
+        (100.0, 300), # Worst possible
+    ]
 
-    return score
+    ln_pd = np.log(pd_clamped)
+
+    # If below lowest anchor, cap at max score
+    if pd_clamped <= anchors[0][0]:
+        return 850
+
+    # If above highest anchor, cap at min score
+    if pd_clamped >= anchors[-1][0]:
+        return 300
+
+    # Find the segment and interpolate linearly in log-PD space
+    for i in range(len(anchors) - 1):
+        pd_lo, score_lo = anchors[i]
+        pd_hi, score_hi = anchors[i + 1]
+        if pd_clamped <= pd_hi:
+            ln_lo = np.log(pd_lo)
+            ln_hi = np.log(pd_hi)
+            # Linear interpolation in log space
+            t = (ln_pd - ln_lo) / (ln_hi - ln_lo)
+            score = score_lo + t * (score_hi - score_lo)
+            return int(round(max(300, min(850, score))))
+
+    return 300
 
 
 def credit_score_to_risk_band(score: int) -> RiskBandDefinition:

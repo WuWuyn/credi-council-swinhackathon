@@ -1,0 +1,529 @@
+{
+  "SK_ID_CURR": 300003,
+  "previous_applications": [
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NAME_CONTRACT_TYPE": "Consumer loans",
+      "AMT_ANNUITY": 4500000,
+      "AMT_APPLICATION": 100000000,
+      "AMT_CREDIT": 100000000,
+      "AMT_DOWN_PAYMENT": 0,
+      "AMT_GOODS_PRICE": 100000000,
+      "WEEKDAY_APPR_PROCESS_START": "MONDAY",
+      "HOUR_APPR_PROCESS_START": 9,
+      "FLAG_LAST_APPL_PER_CONTRACT": "Y",
+      "NFLAG_LAST_APPL_IN_DAY": 1,
+      "RATE_DOWN_PAYMENT": 0.0,
+      "RATE_INTEREST_PRIMARY": 0.13,
+      "RATE_INTEREST_PRIVILEGED": 0.11,
+      "NAME_CASH_LOAN_PURPOSE": "Repairs",
+      "NAME_CONTRACT_STATUS": "Approved",
+      "DAYS_DECISION": -900,
+      "NAME_PAYMENT_TYPE": "Cash through the bank",
+      "CODE_REJECT_REASON": "XAP",
+      "NAME_TYPE_SUITE": "Spouse, partner",
+      "NAME_CLIENT_TYPE": "New",
+      "NAME_GOODS_CATEGORY": "XNA",
+      "NAME_PORTFOLIO": "Cash",
+      "NAME_PRODUCT_TYPE": "walk-in",
+      "CHANNEL_TYPE": "Credit and cash offices",
+      "SELLERPLACE_AREA": -1,
+      "NAME_SELLER_INDUSTRY": "XNA",
+      "CNT_PAYMENT": 24,
+      "NAME_YIELD_GROUP": "middle",
+      "PRODUCT_COMBINATION": "Cash",
+      "DAYS_FIRST_DRAWING": -890,
+      "DAYS_FIRST_DUE": -860,
+      "DAYS_LAST_DUE_1ST_VERSION": -140,
+      "DAYS_LAST_DUE": -140,
+      "DAYS_TERMINATION": -110,
+      "NFLAG_INSURED_ON_APPROVAL": 0
+    }
+  ],
+  "pos_cash_balance": [
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": 0,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 24,
+      "NAME_CONTRACT_STATUS": "Completed",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -1,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 23,
+      "NAME_CONTRACT_STATUS": "Completed",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -2,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 22,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -3,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 21,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -4,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 20,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -5,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 19,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -6,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 18,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -7,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 17,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -8,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 16,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -9,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 15,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -10,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 14,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -11,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 13,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -12,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 12,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -13,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 11,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -14,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 10,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -15,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 9,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -16,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 8,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -17,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 7,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -18,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 6,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -19,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 5,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -20,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 4,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -21,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 3,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -22,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 2,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "MONTHS_BALANCE": -23,
+      "CNT_INSTALMENT": 24,
+      "CNT_INSTALMENT_FUTURE": 1,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    }
+  ],
+  "installments_payments": [
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 1,
+      "DAYS_INSTALMENT": -870,
+      "DAYS_ENTRY_PAYMENT": -871,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 2,
+      "DAYS_INSTALMENT": -840,
+      "DAYS_ENTRY_PAYMENT": -841,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 3,
+      "DAYS_INSTALMENT": -810,
+      "DAYS_ENTRY_PAYMENT": -811,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 4,
+      "DAYS_INSTALMENT": -780,
+      "DAYS_ENTRY_PAYMENT": -781,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 5,
+      "DAYS_INSTALMENT": -750,
+      "DAYS_ENTRY_PAYMENT": -751,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 6,
+      "DAYS_INSTALMENT": -720,
+      "DAYS_ENTRY_PAYMENT": -721,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 7,
+      "DAYS_INSTALMENT": -690,
+      "DAYS_ENTRY_PAYMENT": -691,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 8,
+      "DAYS_INSTALMENT": -660,
+      "DAYS_ENTRY_PAYMENT": -661,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 9,
+      "DAYS_INSTALMENT": -630,
+      "DAYS_ENTRY_PAYMENT": -631,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 10,
+      "DAYS_INSTALMENT": -600,
+      "DAYS_ENTRY_PAYMENT": -601,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 11,
+      "DAYS_INSTALMENT": -570,
+      "DAYS_ENTRY_PAYMENT": -571,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 12,
+      "DAYS_INSTALMENT": -540,
+      "DAYS_ENTRY_PAYMENT": -541,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 13,
+      "DAYS_INSTALMENT": -510,
+      "DAYS_ENTRY_PAYMENT": -511,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 14,
+      "DAYS_INSTALMENT": -480,
+      "DAYS_ENTRY_PAYMENT": -481,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 15,
+      "DAYS_INSTALMENT": -450,
+      "DAYS_ENTRY_PAYMENT": -451,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 16,
+      "DAYS_INSTALMENT": -420,
+      "DAYS_ENTRY_PAYMENT": -421,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 17,
+      "DAYS_INSTALMENT": -390,
+      "DAYS_ENTRY_PAYMENT": -391,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 18,
+      "DAYS_INSTALMENT": -360,
+      "DAYS_ENTRY_PAYMENT": -361,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 19,
+      "DAYS_INSTALMENT": -330,
+      "DAYS_ENTRY_PAYMENT": -331,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 20,
+      "DAYS_INSTALMENT": -300,
+      "DAYS_ENTRY_PAYMENT": -301,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 21,
+      "DAYS_INSTALMENT": -270,
+      "DAYS_ENTRY_PAYMENT": -271,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 22,
+      "DAYS_INSTALMENT": -240,
+      "DAYS_ENTRY_PAYMENT": -241,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 23,
+      "DAYS_INSTALMENT": -210,
+      "DAYS_ENTRY_PAYMENT": -211,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    },
+    {
+      "SK_ID_PREV": 3001001,
+      "SK_ID_CURR": 300003,
+      "NUM_INSTALMENT_VERSION": 1,
+      "NUM_INSTALMENT_NUMBER": 24,
+      "DAYS_INSTALMENT": -180,
+      "DAYS_ENTRY_PAYMENT": -181,
+      "AMT_INSTALMENT": 4500000,
+      "AMT_PAYMENT": 4500000
+    }
+  ],
+  "credit_card_balance": []
+}

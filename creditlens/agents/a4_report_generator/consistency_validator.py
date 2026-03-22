@@ -46,12 +46,12 @@ def validate_narrative_consistency(
     violations: list[str] = []
     mentioned_labels: set[str] = set()
 
-    dimensions = ["character", "capacity", "capital", "conditions"]
+    dimensions = ["character", "capacity", "capital", "conditions", "collateral"]
 
     for dimension in dimensions:
         assessment_key = f"{dimension}_assessment"
-        assessment = narrative.get(assessment_key, {})
-        narrative_text = assessment.get("narrative", "")
+        assessment = narrative.get(assessment_key) or {}
+        narrative_text = assessment.get("narrative", "") if isinstance(assessment, dict) else ""
 
         if not narrative_text:
             violations.append(f"{dimension}: narrative is empty")

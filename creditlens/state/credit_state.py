@@ -98,10 +98,10 @@ class CreditState(TypedDict, total=False):
     shap_values: dict  # full SHAP JSON (see SHAP output schema)
 
     # ── A4 outputs — Report Generator ──
-    four_c_scores: dict[str, float]  # {character, capacity, capital, conditions}
-    narrative: dict[str, str]  # LLM text per 4C dimension
+    five_c_scores: dict[str, float]  # {character, capacity, capital, conditions, collateral}
+    narrative: dict[str, str]  # LLM text per 5C dimension
     consistency_check: dict  # narrative vs SHAP validation result
-    final_report: dict  # complete structured report
+    final_report: dict  # complete structured report (6 sections)
 
     # ── Routing & audit ──
     routing: str  # AUTO_APPROVE|REVIEW|REJECT|ESCALATE|HALT
@@ -135,11 +135,15 @@ class ShapFactor(TypedDict):
     label_vi: str  # Vietnamese human-readable label
 
 
-class FourCAllocation(TypedDict):
-    """SHAP contribution allocation to a 4C dimension."""
+class FiveCAllocation(TypedDict):
+    """SHAP contribution allocation to a 5C dimension."""
 
     shap_sum: float  # Sum of SHAP values for features in this dimension
     pct: int  # Percentage contribution (0-100)
+
+
+# Backward compat alias
+FourCAllocation = FiveCAllocation
 
 
 class ShapOutput(TypedDict):
@@ -152,46 +156,63 @@ class ShapOutput(TypedDict):
     inference_timestamp: str
     top_positive_factors: list[ShapFactor]
     top_negative_factors: list[ShapFactor]
-    four_c_shap_allocation: dict[str, FourCAllocation]
+    five_c_shap_allocation: dict[str, FiveCAllocation]
     all_features_shap: dict[str, float]
 
 
 # ─── Report Schema ────────────────────────────────────────────────────────────
 
 
-class FourCAssessment(TypedDict):
-    """Assessment for a single 4C dimension (Character/Capacity/Capital/Conditions)."""
+class FiveCAssessment(TypedDict):
+    """Assessment for a single 5C dimension.
 
-    score: float  # 0-30 for Character, 0-40 for Capacity, 0-20 for Capital, 0-10 for Conditions
-    status: str  # DAT | XEM_XET | CHUA_DAT
+    5C: Character(30), Capacity(40), Capital(20), Conditions(10), Collateral(20) = 120 total.
+    """
+
+    score: float  # Max varies by dimension
+    status: str  # DAT | XEM_XET | KHONG_DAT
+    shap_pct: int  # SHAP contribution percentage
     indicators_met: list[str]  # Positive indicators
     indicators_review: list[str]  # Indicators needing review + action
     narrative: str  # 100-150 word Vietnamese text, SHAP-grounded
 
 
-class CreditReport(TypedDict, total=False):
-    """Complete credit report output from A4."""
+# Backward compat alias
+FourCAssessment = FiveCAssessment
 
-    # Section 1 — Executive Summary
+
+class CreditReport(TypedDict, total=False):
+    """Complete credit report output from A4 (6 sections)."""
+
+    # Section I — Thông tin khách hàng
+    customer_info: dict[str, str]
+
+    # Section II — Tóm tắt đánh giá (Executive Summary)
     credit_score: int
     risk_band: str
     recommendation: str  # APPROVE|CONDITIONAL|REVIEW|REJECT
     pd_pct: float
-    overall_confidence: float
+    five_c_total: int
+    five_c_shap_allocation: dict[str, FiveCAllocation]
 
-    # Section 2 — 4C Scorecard
-    character_assessment: FourCAssessment
-    capacity_assessment: FourCAssessment
-    capital_assessment: FourCAssessment
-    conditions_assessment: FourCAssessment
+    # Section III — 5C Scorecard
+    character_assessment: FiveCAssessment
+    capacity_assessment: FiveCAssessment
+    capital_assessment: FiveCAssessment
+    conditions_assessment: FiveCAssessment
+    collateral_assessment: FiveCAssessment
 
-    # Section 3 — Suggested terms
+    # Section IV — Tình hình tài chính
+    financial_summary: dict[str, Any]
+
+    # Section V — Tài sản bảo đảm
+    collateral_detail: dict[str, Any]
+
+    # Section VI — Khuyến nghị & Caveats
     suggested_terms: dict[str, Any]  # {max_amount_vnd, max_term_months}
-
-    # Section 4 — Caveats & Warnings
     caveats: list[str]  # imputation warnings, data quality notes
 
-    # Section 5 — Audit Reference
+    # Audit Reference
     application_id: str
     model_version: str
     inference_timestamp: str

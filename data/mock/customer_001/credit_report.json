@@ -1,0 +1,159 @@
+{
+  "customer_info": {
+    "summary": "Khách hàng cá nhân với điểm tín dụng 642, thuộc nhóm rủi ro AA, xác suất vỡ nợ (PD%) là 7.73%. Hồ sơ không phải là thin-file."
+  },
+  "executive_summary": {
+    "credit_score": 642,
+    "risk_band": "AA",
+    "pd_pct": 7.73,
+    "recommendation": "REVIEW",
+    "five_c_total": 55,
+    "five_c_scores": {
+      "character": 20,
+      "capacity": 25,
+      "capital": 5,
+      "conditions": 5,
+      "collateral": 0
+    },
+    "five_c_shap_allocation": {
+      "character": {
+        "shap_sum": 1.0713,
+        "pct": 13
+      },
+      "capacity": {
+        "shap_sum": 0.8199,
+        "pct": 10
+      },
+      "capital": {
+        "shap_sum": 0.2366,
+        "pct": 3
+      },
+      "conditions": {
+        "shap_sum": 5.9122,
+        "pct": 73
+      },
+      "collateral": {
+        "shap_sum": 0.1124,
+        "pct": 1
+      }
+    }
+  },
+  "five_c_scorecard": {
+    "character_assessment": {
+      "score": 20,
+      "status": "XEM_XET",
+      "shap_pct": "13%",
+      "indicators_met": [
+        "inst_mean_DPD_SCALE (0.2447) có đóng góp tích cực cho rủi ro vỡ nợ."
+      ],
+      "indicators_review": [
+        "EXT_SOURCE_2 (0.7578) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "EXT_SOURCE_3 (0.6997) có đóng góp tiêu cực cho rủi ro vỡ nợ."
+      ],
+      "narrative": "Yếu tố Uy tín (Character) đóng góp 13% vào mô hình đánh giá, với tổng SHAP là 1.0713. Mặc dù có chỉ số 'inst_mean_DPD_SCALE' (0.2447) cho thấy một số dấu hiệu tích cực về hành vi thanh toán, các chỉ số 'EXT_SOURCE_2' (0.7578) và 'EXT_SOURCE_3' (0.6997) lại có đóng góp tiêu cực đáng kể, cho thấy những lo ngại về lịch sử tín dụng bên ngoài. Cần xem xét kỹ lưỡng các yếu tố này để đưa ra đánh giá cuối cùng về uy tín của khách hàng."
+    },
+    "capacity_assessment": {
+      "score": 25,
+      "status": "XEM_XET",
+      "shap_pct": "10%",
+      "indicators_met": [
+        "AMT_ANNUITY_to_prev_approved (9.964E9) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "inst_mean_AMT_PAYMENT_PERC (0.9905) có đóng góp tích cực cho rủi ro vỡ nợ."
+      ],
+      "indicators_review": [],
+      "narrative": "Năng lực trả nợ (Capacity) chiếm 10% trong phân tích, với tổng SHAP là 0.8199. Các chỉ số 'AMT_ANNUITY_to_prev_approved' (9.964E9) và 'inst_mean_AMT_PAYMENT_PERC' (0.9905) có đóng góp tích cực cho rủi ro vỡ nợ, cho thấy khách hàng có khả năng quản lý các khoản thanh toán hiện tại. Tuy nhiên, cần phân tích sâu hơn về dòng tiền và khả năng tạo thu nhập ổn định để đánh giá đầy đủ năng lực trả nợ."
+    },
+    "capital_assessment": {
+      "score": 5,
+      "status": "KHONG_DAT",
+      "shap_pct": "3%",
+      "indicators_met": [],
+      "indicators_review": [
+        "Vốn tự có có đóng góp nhỏ (3%) vào mô hình đánh giá."
+      ],
+      "narrative": "Yếu tố Vốn tự có (Capital) có đóng góp rất nhỏ (3%) vào mô hình đánh giá với tổng SHAP là 0.2366. Thông tin chi tiết về vốn tự có của khách hàng không được cung cấp trong dữ liệu SHAP, do đó khó có thể đánh giá đầy đủ khả năng tài chính và mức độ tự chủ về vốn của khách hàng. Cần yêu cầu bổ sung thông tin về tài sản ròng và nguồn vốn chủ sở hữu."
+    },
+    "conditions_assessment": {
+      "score": 5,
+      "status": "XEM_XET",
+      "shap_pct": "73%",
+      "indicators_met": [
+        "prev_max_DAYS_LAST_DUE_1ST_VERSION (640.0) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "prev_active_sum_AMT_LEFT (63080.082) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "inst_max_AMT_PAYMENT_DIFF (1100000.0) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "inst_sum_DPD_SCALE (4.8048) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "prev_active_sum_AMT_PAY_YEAR_LEFT (1.7522) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "region_mean_income_rel (419999999.0) có đóng góp tích cực cho rủi ro vỡ nợ.",
+        "pos_recent_CNT_INSTALMENT_FUTURE (24.0) có đóng góp tích cực cho rủi ro vỡ nợ."
+      ],
+      "indicators_review": [
+        "NEW_EXT_SOURCES_MEAN (0.703) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "NEW_SOURCES_PROD (0.3454) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "cc_mean4_AMT_PAY_INST_DIFF (500000.0) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "NEW_DOC_IND_KURT (-0.4967) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "prev_avg_DAYS_TOTAL (720.0) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "NEW_CAR_TO_BIRTH_RATIO (-0.0002) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "NAME_EDUCATION_TYPE (1.0) có đóng góp tiêu cực cho rủi ro vỡ nợ.",
+        "DOCUMENT_CNT (5.0) có đóng góp tiêu cực cho rủi ro vỡ nợ."
+      ],
+      "narrative": "Yếu tố Điều kiện (Conditions) chiếm tỷ trọng lớn nhất (73%) trong đánh giá, với tổng SHAP là 5.9122. Nhiều chỉ số liên quan đến lịch sử tín dụng trước đây và các khoản vay hiện tại ('prev_max_DAYS_LAST_DUE_1ST_VERSION', 'prev_active_sum_AMT_LEFT', 'inst_max_AMT_PAYMENT_DIFF', 'inst_sum_DPD_SCALE', 'prev_active_sum_AMT_PAY_YEAR_LEFT') cho thấy các yếu tố có thể làm tăng rủi ro vỡ nợ. Ngược lại, các chỉ số về nguồn tín dụng bên ngoài ('NEW_EXT_SOURCES_MEAN', 'NEW_SOURCES_PROD', 'EXT_SOURCE_2', 'EXT_SOURCE_3'), lịch sử thanh toán thẻ ('cc_mean4_AMT_PAY_INST_DIFF'), và các yếu tố nhân khẩu học/tài liệu ('NEW_DOC_IND_KURT', 'prev_avg_DAYS_TOTAL', 'NEW_CAR_TO_BIRTH_RATIO', 'NAME_EDUCATION_TYPE', 'DOCUMENT_CNT') lại có đóng góp tiêu cực, cho thấy những điểm cần xem xét kỹ lưỡng."
+    },
+    "collateral_assessment": {
+      "score": 0,
+      "status": "KHONG_DAT",
+      "indicators_met": [],
+      "indicators_review": [
+        "Tài sản bảo đảm có đóng góp rất nhỏ (1%) vào mô hình đánh giá."
+      ],
+      "narrative": "Yếu tố Tài sản bảo đảm (Collateral) có đóng góp rất nhỏ (1%) vào mô hình đánh giá với tổng SHAP là 0.1124. Thông tin chi tiết về tài sản bảo đảm của khách hàng không được cung cấp trong dữ liệu SHAP. Do đó, không thể đánh giá được giá trị, tính pháp lý và khả năng xử lý của tài sản bảo đảm. Cần yêu cầu khách hàng cung cấp thông tin chi tiết về tài sản dự kiến dùng để thế chấp."
+    }
+  },
+  "financial_summary": {
+    "income_analysis": "Không có dữ liệu tài chính bổ sung được cung cấp để phân tích thu nhập và dòng tiền.",
+    "debt_analysis": "Dựa trên các yếu tố SHAP liên quan đến lịch sử tín dụng và các khoản vay hiện tại, có những chỉ số cho thấy các khoản nợ và nghĩa vụ thanh toán cần được xem xét kỹ lưỡng.",
+    "key_ratios": {
+      "dti": "Không có dữ liệu",
+      "dscr": "Không có dữ liệu",
+      "ltv": "Không có dữ liệu"
+    }
+  },
+  "collateral_detail": {
+    "score": 0,
+    "status": "KHONG_DAT",
+    "indicators_met": [],
+    "indicators_review": [
+      "Tài sản bảo đảm có đóng góp rất nhỏ (1%) vào mô hình đánh giá."
+    ],
+    "narrative": "Yếu tố Tài sản bảo đảm (Collateral) có đóng góp rất nhỏ (1%) vào mô hình đánh giá với tổng SHAP là 0.1124. Thông tin chi tiết về tài sản bảo đảm của khách hàng không được cung cấp trong dữ liệu SHAP. Do đó, không thể đánh giá được giá trị, tính pháp lý và khả năng xử lý của tài sản bảo đảm. Cần yêu cầu khách hàng cung cấp thông tin chi tiết về tài sản dự kiến dùng để thế chấp."
+  },
+  "suggested_terms": {
+    "max_amount_vnd": null,
+    "max_term_months": null,
+    "interest_rate_suggestion": "theo biểu phí hiện hành",
+    "conditions": [
+      "Yêu cầu bổ sung thông tin chi tiết về thu nhập, chi tiêu và tài sản ròng.",
+      "Yêu cầu cung cấp thông tin chi tiết về tài sản dự kiến dùng để thế chấp.",
+      "Phân tích sâu hơn các yếu tố tiêu cực trong nhóm 'Conditions' và 'Character'."
+    ]
+  },
+  "llm_insights": {
+    "loan_purpose": "UNCLEAR",
+    "positive_signals": [
+      "Stable employment with a reputable company (Công ty TNHH Công nghệ ABC Việt Nam)",
+      "Permanent employment contract (Không xác định thời hạn)",
+      "Consistent and verifiable income (40,000,000 VND/thang)",
+      "Full social insurance contributions (BHXH, BHYT, BHTN)",
+      "Long-term employment history (started 2019-06-01)",
+      "High income level"
+    ],
+    "risk_flags": []
+  },
+  "caveats": [
+    "Đánh giá dựa trên dữ liệu SHAP được cung cấp, không có thông tin tài chính chi tiết.",
+    "Cần thu thập thêm thông tin để có đánh giá toàn diện."
+  ],
+  "audit_reference": {
+    "model_version": "lgb1_ref_v1",
+    "inference_timestamp": "2026-03-22T09:03:41.199353+00:00"
+  }
+}

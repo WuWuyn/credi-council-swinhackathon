@@ -106,14 +106,21 @@ class CreditLensModel:
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
         """Get probability of default.
 
-        Args:
-            X: Feature DataFrame.
-
-        Returns:
-            Array of default probabilities (P[TARGET=1]).
+        Handles two model formats:
+        1. Single LGBMClassifier (old CreditLens format)
+        2. List of BaggingClassifiers (new train_pipeline format)
         """
         if self.model is None:
             raise RuntimeError("Model not trained. Call train() or load() first.")
+
+        # New format: list of BaggingClassifiers (one per fold)
+        if isinstance(self.model, list):
+            preds = np.zeros(len(X))
+            for clf in self.model:
+                preds += clf.predict_proba(X)[:, 1] / len(self.model)
+            return preds
+
+        # Old format: single LGBMClassifier
         return self.model.predict_proba(X)[:, 1]
 
     def predict(self, X: pd.DataFrame, threshold: float = 0.5) -> np.ndarray:
@@ -159,20 +166,61 @@ class CreditLensModel:
     def load(self, path: Path | str | None = None) -> None:
         """Load model from disk.
 
+        Hỗ trợ 2 format:
+        1. CreditLens format: dict {"model": LGBMClassifier, "feature_names": [...], ...}
+        2. Raw format: LGBMClassifier object được save trực tiếp (pkl từ external source)
+
         Args:
             path: File path. Defaults to models/lgbm_v1.pkl.
         """
         path = Path(path) if path else MODELS_DIR / "lgbm_v1.pkl"
 
-        with open(path, "rb") as f:
-            model_data = pickle.load(f)
+        class _CustomUnpickler(pickle.Unpickler):
+            """Remap classes saved under __main__ to their importable module path.
 
-        self.model = model_data["model"]
-        self.feature_names = model_data["feature_names"]
-        self.params = model_data["params"]
-        self.model_version = model_data.get("model_version", "unknown")
+            When train_pipeline.py ran as __main__, BaggingClassifier was pickled
+            as __main__.BaggingClassifier. This remaps it back so any caller can load.
+            """
+            _REMAP = {
+                ("__main__", "BaggingClassifier"): ("training.train_pipeline", "BaggingClassifier"),
+            }
+
+            def find_class(self, module: str, name: str):
+                module, name = self._REMAP.get((module, name), (module, name))
+                return super().find_class(module, name)
+
+        with open(path, "rb") as f:
+            model_data = _CustomUnpickler(f).load()
+
+
+        # CreditLens original format: dict with 'model' key
+        if isinstance(model_data, dict) and "model" in model_data:
+            self.model = model_data["model"]
+            self.feature_names = model_data.get("feature_names", [])
+            self.params = model_data.get("params", self.params)
+            self.model_version = model_data.get("model_version", "unknown")
+
+        # New train_pipeline format: dict with 'classifiers' list
+        elif isinstance(model_data, dict) and "classifiers" in model_data:
+            self.model = model_data["classifiers"]  # list of BaggingClassifiers
+            self.feature_names = model_data.get("feature_names", [])
+            self.meanenc_feats = model_data.get("meanenc_feats", [])
+            self.cat_feats = model_data.get("cat_feats", [])
+            self.model_version = "lgb1_ref_v1"
+            logger.info(f"Loaded {len(self.model)} BaggingClassifiers (folds), {len(self.feature_names)} features.")
+
+        else:
+            # Raw LGBMClassifier (pkl từ external source)
+            self.model = model_data
+            self.feature_names = list(getattr(model_data, "feature_name_", []))
+            self.model_version = "external_model"
+            logger.warning(
+                f"Loaded raw LGBMClassifier từ {path} (external format). "
+                f"Feature names: {len(self.feature_names)} features."
+            )
 
         logger.info(f"Model loaded from {path} (version: {self.model_version})")
+
 
     def tune_with_optuna(
         self,

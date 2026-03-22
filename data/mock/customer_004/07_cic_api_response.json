@@ -1,0 +1,107 @@
+{
+  "api_version": "CIC-VN-v2.1",
+  "query_timestamp": "2026-03-20T16:00:00+07:00",
+  "customer_id": "001003008765",
+  "customer_name": "Lê Minh Cường",
+  "ext_source_scores": {
+    "EXT_SOURCE_1": 0.21,
+    "EXT_SOURCE_2": 0.285,
+    "EXT_SOURCE_3": 0.195,
+    "_note": "Very low scores — young borrower, late payments, thin history"
+  },
+  "credit_inquiry_counts": {
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 1,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 2,
+    "AMT_REQ_CREDIT_BUREAU_MON": 3,
+    "AMT_REQ_CREDIT_BUREAU_QRT": 5,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 8
+  },
+  "social_circle": {
+    "OBS_30_CNT_SOCIAL_CIRCLE": 3,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 1,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 2,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 1
+  },
+  "bureau_records": [
+    {
+      "SK_ID_BUREAU": 5004001,
+      "CREDIT_ACTIVE": "Active",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -400,
+      "CREDIT_DAY_OVERDUE": 15,
+      "DAYS_CREDIT_ENDDATE": 300,
+      "DAYS_ENDDATE_FACT": null,
+      "AMT_CREDIT_MAX_OVERDUE": 2500000,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 50000000,
+      "AMT_CREDIT_SUM_DEBT": 25000000,
+      "AMT_CREDIT_SUM_LIMIT": 0,
+      "AMT_CREDIT_SUM_OVERDUE": 2500000,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -5,
+      "AMT_ANNUITY": 2500000,
+      "monthly_status": [
+        {
+          "MONTHS_BALANCE": 0,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -1,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -2,
+          "STATUS": "1"
+        },
+        {
+          "MONTHS_BALANCE": -3,
+          "STATUS": "1"
+        },
+        {
+          "MONTHS_BALANCE": -4,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -5,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -6,
+          "STATUS": "1"
+        },
+        {
+          "MONTHS_BALANCE": -7,
+          "STATUS": "1"
+        },
+        {
+          "MONTHS_BALANCE": -8,
+          "STATUS": "2"
+        },
+        {
+          "MONTHS_BALANCE": -9,
+          "STATUS": "2"
+        },
+        {
+          "MONTHS_BALANCE": -10,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -11,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -12,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -13,
+          "STATUS": "0"
+        }
+      ]
+    }
+  ],
+  "thin_file_flag": false,
+  "cic_score_equivalent": 420,
+  "debt_group": 2
+}

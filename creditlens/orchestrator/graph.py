@@ -129,20 +129,24 @@ def build_graph(
                     "risk_band": "AA",
                     "model_version": "lgbm_v1_mock",
                     "top_positive_factors": [
-                        {"feature": "salary_pattern_detected", "shap": 0.089,
-                         "value": True, "label_vi": "Phát hiện giao dịch lương đều đặn"},
-                        {"feature": "income_stability_index", "shap": 0.072,
-                         "value": 0.81, "label_vi": "Thu nhập ổn định 6 tháng"},
+                        {"feature": "salary_pattern_detected", "shap_value": 0.089,
+                         "value": True, "label_vi": "Phát hiện giao dịch lương đều đặn",
+                         "dimension_5c": "character"},
+                        {"feature": "income_stability_index", "shap_value": 0.072,
+                         "value": 0.81, "label_vi": "Thu nhập ổn định 6 tháng",
+                         "dimension_5c": "capacity"},
                     ],
                     "top_negative_factors": [
-                        {"feature": "dti_ratio", "shap": -0.063,
-                         "value": 0.48, "label_vi": "Tỷ lệ nợ/thu nhập ở mức cao (48%)"},
+                        {"feature": "dti_ratio", "shap_value": -0.063,
+                         "value": 0.48, "label_vi": "Tỷ lệ nợ/thu nhập ở mức cao (48%)",
+                         "dimension_5c": "capacity"},
                     ],
-                    "4c_shap_allocation": {
+                    "five_c_shap_allocation": {
                         "character": {"shap_sum": 0.118, "pct": 28},
                         "capacity": {"shap_sum": 0.172, "pct": 41},
                         "capital": {"shap_sum": 0.080, "pct": 19},
-                        "conditions": {"shap_sum": 0.050, "pct": 12},
+                        "conditions": {"shap_sum": 0.040, "pct": 9},
+                        "collateral": {"shap_sum": 0.010, "pct": 3},
                     },
                 },
             }
@@ -151,7 +155,7 @@ def build_graph(
     def report_generator_node(state: CreditState) -> dict[str, Any]:
         """Node 7: report_generator — Claude LLM report generation.
 
-        Generates 4C credit assessment narrative in Vietnamese.
+        Generates 5C credit assessment narrative in Vietnamese (6 sections).
         Does NOT perform consistency validation (separate node).
         """
         return report_generator_agent.generate_report_only(state)

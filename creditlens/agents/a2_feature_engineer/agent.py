@@ -1,160 +1,175 @@
 """
-CreditLens A2 — Main LLM Feature Engineer Agent.
+CreditLens A2 — LLM Feature Engineer Agent (Local Version).
 
-Orchestrates Variant A (semantic extraction) and Variant B (imputation).
-This is the LangGraph node for Agent A2.
+# LOCAL_SUB: Uses Gemini API instead of Bedrock Claude.
+
+Orchestrates the feature engineering pipeline:
+1. Semantic extraction from OCR text (LLM-based)
+2. Intelligent imputation of missing fields (LLM-based)
+3. Feature engineering: 218 raw columns → 753 ML features
+   (reusing existing training/feature_engineering.py logic)
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+
+import numpy as np
+import pandas as pd
 
 from creditlens.agents.a2_feature_engineer.semantic_extractor import SemanticExtractor
 from creditlens.agents.a2_feature_engineer.imputer import IntelligentImputer
-from creditlens.agents.a2_feature_engineer.thin_file_handler import activate_thin_file_path
-from creditlens.config.feature_config import (
-    FIELD_DEFINITIONS,
-    CONFIDENCE_THRESHOLDS,
-    TIER_WEIGHTS,
-    FeatureTier,
-    OVERALL_CONFIDENCE_AUTO_PROCEED,
-    OVERALL_CONFIDENCE_PROCEED_WITH_WARNINGS,
-)
-from creditlens.state.credit_state import CreditState
 
 logger = logging.getLogger(__name__)
+
+# Add project root to path for training module import
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 class FeatureEngineerAgent:
     """Agent A2 — LLM Feature Engineer.
 
-    Two operating modes:
-        Variant A: Semantic extraction — ALWAYS runs on OCR text
-        Variant B: Intelligent imputation — ONLY for missing IMPORTANT fields
+    Takes A1 output (application_row + DataFrames) and produces:
+    1. LLM semantic features (loan purpose, risk flags, etc.)
+    2. Imputed missing fields
+    3. Full 753-feature vector for ML model (via feature_engineering.py)
 
-    Also handles thin-file path activation when needed.
+    This is the bridge between raw data and ML scoring.
     """
 
-    def __init__(self, use_mock: bool = True, bedrock_client=None):
-        self.semantic_extractor = SemanticExtractor(
-            bedrock_client=bedrock_client,
-            use_mock=use_mock,
-        )
-        self.imputer = IntelligentImputer(
-            bedrock_client=bedrock_client,
-            use_mock=use_mock,
-        )
+    def __init__(self, use_mock: bool = True):
+        self.semantic_extractor = SemanticExtractor(use_mock=use_mock)
+        self.imputer = IntelligentImputer(use_mock=use_mock)
 
-    def process(self, state: CreditState) -> dict[str, Any]:
-        """Run A2 feature engineering — LangGraph node function.
+    def process(self, a1_output: dict[str, Any]) -> dict[str, Any]:
+        """Run A2 feature engineering pipeline.
 
         Args:
-            state: Current pipeline state with A1 outputs.
+            a1_output: Output from A1 IngestionAgent.ingest()
 
         Returns:
-            State update dict with A2 outputs.
+            Dict with:
+                - feature_vector: pd.Series/dict with 753 features
+                - llm_feats: semantic features from LLM
+                - imputation_log: list of imputed fields
+                - warnings: list of warning messages
+                - audit_trail: audit entries
         """
-        logger.info(f"A2 Feature Engineer — App {state.get('application_id', 'unknown')}")
+        logger.info("="*60)
+        logger.info("  A2 Feature Engineer — Processing")
+        logger.info("="*60)
 
-        llm_feats: dict[str, Any] = {}
+        application_row = a1_output["application_row"]
+        warnings: list[str] = []
         imputation_log: list[dict] = []
-        warnings: list[str] = list(state.get("warnings", []))
-        structured_feats = state.get("structured_feats", {})
-        confidence_map = state.get("confidence_map", {})
+        llm_feats: dict[str, Any] = {}
 
-        # ── Variant A: Semantic extraction (always runs) ──
-        raw_ocr = state.get("raw_ocr_text", {})
-        if raw_ocr:
-            ocr_combined = " ".join(raw_ocr.values())
-            semantic_feats = self.semantic_extractor.extract_loan_features(ocr_combined)
-            llm_feats.update(semantic_feats)
-            logger.info(f"Variant A: extracted {len(semantic_feats)} semantic features")
+        # ── Step 1: Semantic extraction from OCR text ──
+        raw_texts = a1_output.get("raw_texts", {})
+        if raw_texts:
+            ocr_combined = " ".join(str(v) for v in raw_texts.values())
+            semantic = self.semantic_extractor.extract_loan_features(ocr_combined)
+            llm_feats.update(semantic)
+            logger.info(f"  Step 1: {len(semantic)} semantic features extracted")
+            logger.info(f"    Purpose: {semantic.get('loan_purpose_category')}")
+            logger.info(f"    Positive: {semantic.get('positive_signals')}")
+            logger.info(f"    Risks: {semantic.get('risk_flags')}")
 
-        # ── Variant B: Imputation (only for missing IMPORTANT fields) ──
-        missing_fields = state.get("missing_fields", [])
+        # ── Step 2: Imputation of missing fields ──
+        missing_fields = [k for k, v in application_row.items() if v is None]
         if missing_fields:
             imputed, imp_log = self.imputer.impute_missing_fields(
-                missing_fields=missing_fields,
-                structured_feats=structured_feats,
-                confidence_map=confidence_map,
+                missing_fields, application_row
             )
-            llm_feats.update(imputed)
+            application_row.update(imputed)
             imputation_log.extend(imp_log)
 
-            # Add imputation warnings
+            n_imputed = sum(1 for e in imp_log if e.get("imputation_flag"))
+            logger.info(f"  Step 2: {n_imputed}/{len(missing_fields)} fields imputed")
+
             for entry in imp_log:
                 if entry.get("imputation_flag"):
                     warnings.append(
-                        f"Trường '{entry['field']}' được ước tính "
-                        f"(confidence: {entry['confidence']:.0%}). "
-                        f"Nguồn: {entry['source']}"
+                        f"Field '{entry['field']}' was imputed "
+                        f"(confidence: {entry['confidence']:.0%})"
                     )
 
-        # ── Thin-file path ──
-        if structured_feats.get("thin_file_flag"):
-            thin_file_result = activate_thin_file_path(structured_feats, confidence_map)
-            llm_feats["thin_file_info"] = thin_file_result
-            warnings.extend(thin_file_result.get("warnings", []))
+        # ── Step 3: Feature engineering (218 raw → 753 features) ──
+        logger.info("  Step 3: Running feature engineering pipeline...")
+        feature_vector = self._run_feature_engineering(a1_output)
 
-        # ── Compute overall confidence ──
-        overall_confidence = self._compute_overall_confidence(confidence_map)
+        if feature_vector is not None:
+            logger.info(f"  Step 3: {len(feature_vector)} features generated")
+        else:
+            logger.warning("  Step 3: Feature engineering failed — using raw features only")
+            warnings.append("Feature engineering failed — model will use raw features")
 
         # ── Imputation metadata ──
         n_imputed = sum(1 for e in imputation_log if e.get("imputation_flag"))
-        if n_imputed > 0:
-            llm_feats["income_imputed_flag"] = 1
-            llm_feats["imputation_confidence"] = sum(
-                e["confidence"] for e in imputation_log if e.get("imputation_flag")
-            ) / n_imputed
-        else:
-            llm_feats["income_imputed_flag"] = 0
-            llm_feats["imputation_confidence"] = 1.0
+        llm_feats["income_imputed_flag"] = 1 if n_imputed > 0 else 0
+        llm_feats["imputation_confidence"] = (
+            sum(e["confidence"] for e in imputation_log if e.get("imputation_flag")) / n_imputed
+            if n_imputed > 0 else 1.0
+        )
 
-        # ── Audit entry ──
+        # ── Thin file flag propagation ──
+        thin_file = a1_output.get("thin_file_flag", False)
+        if thin_file:
+            llm_feats["thin_file_flag"] = True
+            warnings.append("Thin-file customer — limited credit history available")
+
+        # ── Audit ──
         audit_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "agent": "A2",
-            "action": "llm_feature_engineering",
+            "action": "feature_engineering",
             "input_summary": {
-                "has_ocr_text": bool(raw_ocr),
-                "n_missing_fields": len(missing_fields),
-                "thin_file": structured_feats.get("thin_file_flag", False),
+                "has_ocr": bool(raw_texts),
+                "n_missing_before": len(missing_fields) if missing_fields else 0,
+                "thin_file": thin_file,
             },
             "output_summary": {
-                "n_semantic_features": len(semantic_feats) if raw_ocr else 0,
-                "n_imputed_fields": n_imputed,
-                "overall_confidence": overall_confidence,
+                "n_semantic_features": len(llm_feats),
+                "n_imputed": n_imputed,
+                "n_ml_features": len(feature_vector) if feature_vector is not None else 0,
             },
-            "model_version": "claude-3.5-sonnet",
-            "confidence": overall_confidence,
+            "model_version": "gemini-2.5-flash-lite",
         }
 
         return {
+            "feature_vector": feature_vector,
+            "application_row": application_row,
             "llm_feats": llm_feats,
             "imputation_log": imputation_log,
             "warnings": warnings,
-            "overall_confidence": overall_confidence,
-            "audit_trail": state.get("audit_trail", []) + [audit_entry],
+            "audit_trail": a1_output.get("audit_trail", []) + [audit_entry],
         }
 
-    def _compute_overall_confidence(self, confidence_map: dict[str, float]) -> float:
-        """Compute weighted overall confidence score.
+    def _run_feature_engineering(self, a1_output: dict[str, Any]) -> pd.Series | None:
+        """Run full feature engineering pipeline on A1 output.
 
-        Formula: Σ(weight_i × confidence_i) / Σ(weight_i)
-        Weights: CRITICAL=3, IMPORTANT=2, OPTIONAL=1
+        Uses SingleCustomerFE which applies the same feature engineering
+        as training/feature_engineering.py but for a single customer.
         """
-        weighted_sum = 0.0
-        weight_total = 0.0
+        try:
+            from creditlens.agents.a2_feature_engineer.single_customer_fe import SingleCustomerFE
 
-        for field_name, field_def in FIELD_DEFINITIONS.items():
-            conf = confidence_map.get(field_name, 0.0)
-            weight = TIER_WEIGHTS[field_def.tier]
-            weighted_sum += weight * conf
-            weight_total += weight
+            fe = SingleCustomerFE("models/fe_stats.pkl")
+            return fe.build_features(a1_output)
 
-        if weight_total == 0:
-            return 0.0
+        except FileNotFoundError as e:
+            logger.warning(f"  FE stats not found: {e}")
+            logger.warning("  Run: python training/precompute_fe_stats.py --data-dir home-credit-default-risk/")
+            return None
 
-        return round(weighted_sum / weight_total, 3)
+        except Exception as e:
+            logger.error(f"Feature engineering failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return None

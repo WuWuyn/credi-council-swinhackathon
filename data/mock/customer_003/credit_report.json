@@ -1,0 +1,230 @@
+{
+  "customer_info": {
+    "summary": "Khách hàng cá nhân với điểm tín dụng 593, thuộc nhóm rủi ro A, xác suất vỡ nợ 12.82%. Hồ sơ có nhiều yếu tố tích cực về điều kiện vay nhưng cần xem xét kỹ lưỡng các yếu tố liên quan đến năng lực trả nợ và vốn tự có."
+  },
+  "executive_summary": {
+    "credit_score": 593,
+    "risk_band": "A",
+    "pd_pct": 12.82,
+    "recommendation": "REVIEW",
+    "five_c_total": 73,
+    "five_c_scores": {
+      "character": 22,
+      "capacity": 28,
+      "capital": 10,
+      "conditions": 8,
+      "collateral": 5
+    },
+    "five_c_shap_allocation": {
+      "character": {
+        "shap_sum": 0.8061,
+        "pct": 15
+      },
+      "capacity": {
+        "shap_sum": 0.7616,
+        "pct": 14
+      },
+      "capital": {
+        "shap_sum": 0.2491,
+        "pct": 5
+      },
+      "conditions": {
+        "shap_sum": 3.6047,
+        "pct": 66
+      },
+      "collateral": {
+        "shap_sum": 0.0473,
+        "pct": 1
+      }
+    }
+  },
+  "five_c_scorecard": {
+    "character_assessment": {
+      "score": 22,
+      "status": "DAT",
+      "shap_pct": "15%",
+      "indicators_met": [
+        "EXT_SOURCE_3 (Điểm tín dụng ngoại 3 - CIC) có giá trị 0.3866, đóng góp tích cực vào đánh giá uy tín.",
+        "inst_mean_DPD_SCALE (Trung bình lịch sử trả góp) có giá trị 0.0, cho thấy không có lịch sử chậm thanh toán gần đây."
+      ],
+      "indicators_review": [
+        "Cần làm rõ thêm về nguồn gốc và độ tin cậy của 'EXT_SOURCE_3' để có cái nhìn toàn diện hơn về uy tín của khách hàng."
+      ],
+      "narrative": "Yếu tố 'Character' đóng góp 15% vào mô hình, với điểm số đánh giá là 22/30, đạt mức 'DAT'. Điểm tín dụng ngoại 3 (EXT_SOURCE_3) với giá trị 0.3866 cho thấy một số thông tin tích cực về lịch sử tín dụng của khách hàng. Bên cạnh đó, chỉ số trung bình lịch sử trả góp (inst_mean_DPD_SCALE) bằng 0 là một dấu hiệu tốt. Tuy nhiên, để đánh giá đầy đủ, cần có thêm thông tin chi tiết về các nguồn dữ liệu tín dụng ngoại và các yếu tố khác liên quan đến hành vi tài chính của khách hàng."
+    },
+    "capacity_assessment": {
+      "score": 28,
+      "status": "DAT",
+      "shap_pct": "14%",
+      "indicators_met": [
+        "AMT_ANNUITY_to_prev_approved (Tỷ lệ trả góp hiện tại so với TB đơn đã duyệt) với giá trị 18,000,000,000.0 cho thấy khả năng đáp ứng các khoản thanh toán lớn.",
+        "AMT_CREDIT_GOODS_PERC (Tỷ lệ tín dụng/giá trị hàng) là 0.8, cho thấy mức độ sử dụng tín dụng hợp lý.",
+        "AMT_ANNUITY_INCOME_RATE (Tỷ lệ trả góp/thu nhập) là 0.0407, nằm trong ngưỡng chấp nhận được."
+      ],
+      "indicators_review": [
+        "Cần phân tích sâu hơn về nguồn thu nhập ổn định và khả năng duy trì các khoản thanh toán trong tương lai, đặc biệt khi có yếu tố 'AMT_ANNUITY_to_prev_approved' có giá trị cao."
+      ],
+      "narrative": "Khả năng trả nợ (Capacity) được đánh giá với 28/40 điểm, đạt mức 'DAT', chiếm 14% trong mô hình. Yếu tố 'AMT_ANNUITY_to_prev_approved' với giá trị 18,000,000,000.0 cho thấy khả năng quản lý các khoản thanh toán lớn. Tỷ lệ tín dụng trên giá trị hàng (AMT_CREDIT_GOODS_PERC) là 0.8 và tỷ lệ trả góp trên thu nhập (AMT_ANNUITY_INCOME_RATE) là 0.0407, đều cho thấy sự cân đối trong khả năng tài chính. Tuy nhiên, cần có thêm thông tin về nguồn thu nhập và các cam kết tài chính khác để đảm bảo khả năng trả nợ bền vững."
+    },
+    "capital_assessment": {
+      "score": 10,
+      "status": "XEM_XET",
+      "shap_pct": "5%",
+      "indicators_met": [
+        "bureau_sum_AMT_CREDIT_SUM (Tổng dư nợ CIC) là 100,000,000.0, cho thấy mức độ sử dụng tín dụng hiện tại.",
+        "bureau_AMT_DEBT_TOTAL_RATIO (Tỷ lệ nợ trên tổng tài sản) là 0.0, cho thấy không có nợ quá hạn trên CIC."
+      ],
+      "indicators_review": [
+        "Thiếu thông tin chi tiết về vốn tự có, tài sản ròng và các nguồn vốn khác của khách hàng."
+      ],
+      "narrative": "Đánh giá về vốn tự có (Capital) đạt 10/20 điểm, ở mức 'XEM_XET', đóng góp 5% vào mô hình. Các chỉ số từ CIC như tổng dư nợ (bureau_sum_AMT_CREDIT_SUM) là 100,000,000.0 và tỷ lệ nợ trên tổng tài sản (bureau_AMT_DEBT_TOTAL_RATIO) bằng 0 cho thấy tình hình nợ hiện tại. Tuy nhiên, báo cáo thiếu thông tin chi tiết về vốn tự có, tài sản ròng và các nguồn vốn khác của khách hàng, là những yếu tố quan trọng để đánh giá sức khỏe tài chính tổng thể."
+    },
+    "conditions_assessment": {
+      "score": 8,
+      "status": "DAT",
+      "shap_pct": "66%",
+      "indicators_met": [
+        "NEW_EXT_SOURCES_MEAN (Trung bình điểm tín dụng ngoại) là 0.4029, cho thấy các yếu tố bên ngoài thuận lợi.",
+        "prev_refused_DAYS_DECISION_MAX (Số ngày từ chối đơn vay trước đó) là 0.0, cho thấy không có lịch sử bị từ chối gần đây.",
+        "region_mean_income_rel (Thu nhập so với TB khu vực) là 442,752,563.0, cho thấy mức thu nhập tốt so với khu vực.",
+        "family_status_mean_income_rel (Thu nhập so với TB tình trạng hôn nhân) là 2810.1274, cho thấy thu nhập tương đối tốt trong nhóm tình trạng hôn nhân.",
+        "AMT_PAY_YEAR (Khoản trả hàng năm) là 11.1111, cho thấy lịch sử thanh toán đều đặn.",
+        "inst_sum_DBD_SCALE (Tổng số ngày quá hạn) là 6.6501, cho thấy lịch sử trả nợ tốt.",
+        "pos_recent_CNT_INSTALMENT_FUTURE (Số khoản trả góp tương lai) là 24.0, cho thấy các nghĩa vụ trả nợ trong tương lai.",
+        "AGE_PAYOFF (Tuổi khi kết thúc khoản vay) là 52.7182, cho thấy kế hoạch tài chính dài hạn."
+      ],
+      "indicators_review": [
+        "Cần làm rõ ý nghĩa và tác động của các yếu tố 'NEW_DOC_IND_KURT' (-0.4967) và 'DOCUMENT_CNT' (5.0) có giá trị âm, cũng như 'prev_avg_DAYS_TOTAL' (720.0) và 'AMT_DIFF_CREDIT_GOODS' (-50,000,000.0)."
+      ],
+      "narrative": "Yếu tố 'Conditions' chiếm tỷ trọng lớn nhất (66%) trong mô hình, với điểm số 8/10, đạt mức 'DAT'. Nhiều chỉ số cho thấy các điều kiện thuận lợi như điểm tín dụng ngoại trung bình (NEW_EXT_SOURCES_MEAN) là 0.4029, thu nhập so với khu vực (region_mean_income_rel) là 442,752,563.0, và không có lịch sử bị từ chối đơn vay gần đây (prev_refused_DAYS_DECISION_MAX = 0.0). Tuy nhiên, cần xem xét kỹ lưỡng các yếu tố có giá trị âm như 'NEW_DOC_IND_KURT' (-0.4967) và 'prev_avg_DAYS_TOTAL' (720.0) để hiểu rõ hơn về các rủi ro tiềm ẩn."
+    },
+    "collateral_assessment": {
+      "score": 5,
+      "status": "XEM_XET",
+      "indicators_met": [],
+      "indicators_review": [
+        "Chưa có thông tin chi tiết về tài sản bảo đảm."
+      ],
+      "narrative": "Đánh giá về tài sản bảo đảm (Collateral) chỉ chiếm 1% trong mô hình và chưa có điểm số cụ thể do thiếu thông tin chi tiết. Hiện tại, chưa có dữ liệu về loại tài sản, giá trị định giá, tỷ lệ cho vay trên giá trị (LTV) hoặc các yếu tố liên quan khác. Do đó, cần bổ sung thông tin về tài sản bảo đảm để có thể đánh giá đầy đủ."
+    }
+  },
+  "financial_summary": {
+    "income_analysis": "Dựa trên các yếu tố SHAP như 'region_mean_income_rel' (442,752,563.0) và 'family_status_mean_income_rel' (2810.1274), có thể suy luận rằng thu nhập của khách hàng tương đối tốt so với mặt bằng chung của khu vực và tình trạng hôn nhân. Tuy nhiên, không có dữ liệu tài chính chi tiết để phân tích sâu hơn về dòng tiền.",
+    "debt_analysis": "Các chỉ số như 'AMT_ANNUITY_INCOME_RATE' (0.0407) cho thấy tỷ lệ trả nợ trên thu nhập ở mức hợp lý. Tuy nhiên, 'bureau_sum_AMT_CREDIT_SUM' (100,000,000.0) cho thấy khách hàng có các khoản vay hiện hữu. Cần phân tích kỹ hơn về tổng nghĩa vụ nợ và khả năng trả nợ của khách hàng.",
+    "key_ratios": {
+      "dti": "Không có dữ liệu để tính toán DTI.",
+      "dscr": "Không có dữ liệu để tính toán DSCR.",
+      "ltv": "Không có dữ liệu để tính toán LTV."
+    }
+  },
+  "collateral_detail": {
+    "score": 5,
+    "status": "XEM_XET",
+    "indicators_met": [],
+    "indicators_review": [
+      "Chưa có thông tin chi tiết về tài sản bảo đảm."
+    ],
+    "narrative": "Đánh giá về tài sản bảo đảm (Collateral) chỉ chiếm 1% trong mô hình và chưa có điểm số cụ thể do thiếu thông tin chi tiết. Hiện tại, chưa có dữ liệu về loại tài sản, giá trị định giá, tỷ lệ cho vay trên giá trị (LTV) hoặc các yếu tố liên quan khác. Do đó, cần bổ sung thông tin về tài sản bảo đảm để có thể đánh giá đầy đủ."
+  },
+  "suggested_terms": {
+    "max_amount_vnd": null,
+    "max_term_months": null,
+    "interest_rate_suggestion": "theo biểu phí hiện hành",
+    "conditions": [
+      "Bổ sung thông tin chi tiết về tài sản bảo đảm.",
+      "Cung cấp báo cáo tài chính chi tiết (nếu có) hoặc các giấy tờ chứng minh thu nhập và nguồn trả nợ.",
+      "Làm rõ các yếu tố có giá trị âm trong phần 'Conditions' như 'NEW_DOC_IND_KURT', 'prev_avg_DAYS_TOTAL'."
+    ]
+  },
+  "llm_insights": {
+    "loan_purpose": "PRODUCTION",
+    "positive_signals": [
+      "Applicant owns the business property (address matches residence and business)",
+      "Applicant has a registered business with a clear industry and capital",
+      "Applicant has a stable family structure (married with two children)",
+      "Applicant has a history of paying social and health insurance",
+      "Applicant has a registered business address that matches their residential address, indicating stability"
+    ],
+    "risk_flags": [
+      "Revenue decline of 11% year-over-year",
+      "Business operating for approximately 3 years, relatively new",
+      "No explicit repayment plan provided in the application documents"
+    ]
+  },
+  "caveats": [
+    "Field 'AMT_GOODS_PRICE' was imputed (confidence: 70%)",
+    "Field 'DAYS_EMPLOYED' was imputed (confidence: 70%)",
+    "Field 'APARTMENTS_AVG' was imputed (confidence: 90%)",
+    "Field 'APARTMENTS_MODE' was imputed (confidence: 85%)",
+    "Field 'APARTMENTS_MEDI' was imputed (confidence: 90%)",
+    "Field 'BASEMENTAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'BASEMENTAREA_MODE' was imputed (confidence: 90%)",
+    "Field 'BASEMENTAREA_MEDI' was imputed (confidence: 90%)",
+    "Field 'YEARS_BEGINEXPLUATATION_MEDI' was imputed (confidence: 90%)",
+    "Field 'COMMONAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'COMMONAREA_MODE' was imputed (confidence: 85%)",
+    "Field 'COMMONAREA_MEDI' was imputed (confidence: 95%)",
+    "Field 'ENTRANCES_AVG' was imputed (confidence: 90%)",
+    "Field 'ENTRANCES_MODE' was imputed (confidence: 85%)",
+    "Field 'ENTRANCES_MEDI' was imputed (confidence: 95%)",
+    "Field 'FLOORSMAX_AVG' was imputed (confidence: 90%)",
+    "Field 'FLOORSMAX_MODE' was imputed (confidence: 85%)",
+    "Field 'FLOORSMAX_MEDI' was imputed (confidence: 95%)",
+    "Field 'FLOORSMIN_AVG' was imputed (confidence: 90%)",
+    "Field 'FLOORSMIN_MODE' was imputed (confidence: 70%)",
+    "Field 'FLOORSMIN_MEDI' was imputed (confidence: 95%)",
+    "Field 'LANDAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'LANDAREA_MODE' was imputed (confidence: 80%)",
+    "Field 'LIVINGAPARTMENTS_AVG' was imputed (confidence: 80%)",
+    "Field 'LIVINGAPARTMENTS_MODE' was imputed (confidence: 90%)",
+    "Field 'LIVINGAPARTMENTS_MEDI' was imputed (confidence: 90%)",
+    "Field 'LIVINGAREA_AVG' was imputed (confidence: 80%)",
+    "Field 'LIVINGAREA_MODE' was imputed (confidence: 90%)",
+    "Field 'LIVINGAREA_MEDI' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAPARTMENTS_AVG' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAPARTMENTS_MODE' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAPARTMENTS_MEDI' was imputed (confidence: 95%)",
+    "Field 'NONLIVINGAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAREA_MODE' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAREA_MEDI' was imputed (confidence: 90%)",
+    "Field 'AMT_GOODS_PRICE' was imputed (confidence: 70%)",
+    "Field 'DAYS_EMPLOYED' was imputed (confidence: 70%)",
+    "Field 'APARTMENTS_AVG' was imputed (confidence: 90%)",
+    "Field 'APARTMENTS_MODE' was imputed (confidence: 85%)",
+    "Field 'APARTMENTS_MEDI' was imputed (confidence: 90%)",
+    "Field 'BASEMENTAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'BASEMENTAREA_MODE' was imputed (confidence: 90%)",
+    "Field 'BASEMENTAREA_MEDI' was imputed (confidence: 90%)",
+    "Field 'YEARS_BEGINEXPLUATATION_MEDI' was imputed (confidence: 90%)",
+    "Field 'COMMONAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'COMMONAREA_MODE' was imputed (confidence: 85%)",
+    "Field 'COMMONAREA_MEDI' was imputed (confidence: 95%)",
+    "Field 'ENTRANCES_AVG' was imputed (confidence: 90%)",
+    "Field 'ENTRANCES_MODE' was imputed (confidence: 85%)",
+    "Field 'ENTRANCES_MEDI' was imputed (confidence: 95%)",
+    "Field 'FLOORSMAX_AVG' was imputed (confidence: 90%)",
+    "Field 'FLOORSMAX_MODE' was imputed (confidence: 85%)",
+    "Field 'FLOORSMAX_MEDI' was imputed (confidence: 95%)",
+    "Field 'FLOORSMIN_AVG' was imputed (confidence: 90%)",
+    "Field 'FLOORSMIN_MODE' was imputed (confidence: 70%)",
+    "Field 'FLOORSMIN_MEDI' was imputed (confidence: 95%)",
+    "Field 'LANDAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'LANDAREA_MODE' was imputed (confidence: 80%)",
+    "Field 'LIVINGAPARTMENTS_AVG' was imputed (confidence: 80%)",
+    "Field 'LIVINGAPARTMENTS_MODE' was imputed (confidence: 90%)",
+    "Field 'LIVINGAPARTMENTS_MEDI' was imputed (confidence: 90%)",
+    "Field 'LIVINGAREA_AVG' was imputed (confidence: 80%)",
+    "Field 'LIVINGAREA_MODE' was imputed (confidence: 90%)",
+    "Field 'LIVINGAREA_MEDI' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAPARTMENTS_AVG' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAPARTMENTS_MODE' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAPARTMENTS_MEDI' was imputed (confidence: 95%)",
+    "Field 'NONLIVINGAREA_AVG' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAREA_MODE' was imputed (confidence: 90%)",
+    "Field 'NONLIVINGAREA_MEDI' was imputed (confidence: 90%)"
+  ],
+  "audit_reference": {
+    "model_version": "lgb1_ref_v1",
+    "inference_timestamp": "2026-03-22T09:04:47.593775+00:00"
+  }
+}

@@ -47,6 +47,12 @@ def parse_bank_statement(csv_path: str | Path) -> dict[str, Any]:
     df = pd.read_csv(csv_path, parse_dates=["date"])
     df = df.sort_values("date").reset_index(drop=True)
 
+    # Handle different column formats
+    if "amount" not in df.columns and "credit" in df.columns and "debit" in df.columns:
+        df["amount"] = df["credit"].fillna(0) - df["debit"].fillna(0)
+    if "running_balance" not in df.columns and "balance" in df.columns:
+        df["running_balance"] = df["balance"]
+
     # Validate minimum data requirement
     df["month"] = df["date"].dt.to_period("M")
     n_months = df["month"].nunique()

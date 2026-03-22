@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import shap
 
-from creditlens.config.feature_config import FEATURE_TO_4C_MAPPING, SHAP_LABEL_VI
+from creditlens.config.feature_config import FEATURE_TO_4C_MAPPING, SHAP_LABEL_VI, get_5c_dimension
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +107,7 @@ class SHAPExplainer:
                 "shap": round(float(inverted_shap), 4),
                 "value": _serialize_value(feat_value),
                 "label_vi": label_detail,
+                "dimension_5c": get_5c_dimension(feat_name),
             }
 
             if inverted_shap > 0:
@@ -118,8 +119,8 @@ class SHAPExplainer:
         positive_factors.sort(key=lambda x: x["shap"], reverse=True)
         negative_factors.sort(key=lambda x: x["shap"])
 
-        # Compute 4C SHAP allocation
-        four_c_allocation = self._compute_4c_allocation(feature_shap)
+        # Compute 5C SHAP allocation
+        five_c_allocation = self._compute_5c_allocation(feature_shap)
 
         # Build output
         output = {
@@ -130,7 +131,7 @@ class SHAPExplainer:
             "inference_timestamp": datetime.now(timezone.utc).isoformat(),
             "top_positive_factors": positive_factors[:top_n],
             "top_negative_factors": negative_factors[:top_n],
-            "4c_shap_allocation": four_c_allocation,
+            "five_c_shap_allocation": five_c_allocation,
             "all_features_shap": {k: round(float(v), 6) for k, v in feature_shap.items()},
         }
 
@@ -173,10 +174,10 @@ class SHAPExplainer:
             results.append(result)
         return results
 
-    def _compute_4c_allocation(self, feature_shap: dict[str, float]) -> dict[str, dict[str, Any]]:
-        """Compute SHAP contribution allocation to 4C dimensions.
+    def _compute_5c_allocation(self, feature_shap: dict[str, float]) -> dict[str, dict[str, Any]]:
+        """Compute SHAP contribution allocation to 5C dimensions.
 
-        Maps each feature's SHAP value to its 4C dimension and computes
+        Maps each feature's SHAP value to its 5C dimension and computes
         the total SHAP contribution and percentage for each dimension.
         """
         dimension_shap: dict[str, float] = {
@@ -184,11 +185,12 @@ class SHAPExplainer:
             "capacity": 0.0,
             "capital": 0.0,
             "conditions": 0.0,
+            "collateral": 0.0,
         }
 
         for feat_name, shap_val in feature_shap.items():
-            dimension = FEATURE_TO_4C_MAPPING.get(feat_name)
-            if dimension and dimension in dimension_shap:
+            dimension = get_5c_dimension(feat_name)
+            if dimension in dimension_shap:
                 dimension_shap[dimension] += abs(shap_val)
 
         total_shap = sum(dimension_shap.values()) or 1.0

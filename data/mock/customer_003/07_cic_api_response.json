@@ -1,0 +1,171 @@
+{
+  "api_version": "CIC-VN-v2.1",
+  "query_timestamp": "2026-03-10T14:30:00+07:00",
+  "customer_id": "038084005432",
+  "customer_name": "Trần Văn Đức",
+  "ext_source_scores": {
+    "EXT_SOURCE_1": 0.38,
+    "EXT_SOURCE_2": 0.42,
+    "EXT_SOURCE_3": 0.35,
+    "_note": "Scores lower — limited credit history, SME"
+  },
+  "credit_inquiry_counts": {
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 0,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 1,
+    "AMT_REQ_CREDIT_BUREAU_MON": 1,
+    "AMT_REQ_CREDIT_BUREAU_QRT": 2,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 3
+  },
+  "social_circle": {
+    "OBS_30_CNT_SOCIAL_CIRCLE": 1,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 0,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 1,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 0
+  },
+  "bureau_records": [
+    {
+      "SK_ID_BUREAU": 5003001,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -900,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": -100,
+      "DAYS_ENDDATE_FACT": -110,
+      "AMT_CREDIT_MAX_OVERDUE": 0,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 100000000,
+      "AMT_CREDIT_SUM_DEBT": 0,
+      "AMT_CREDIT_SUM_LIMIT": 0,
+      "AMT_CREDIT_SUM_OVERDUE": 0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -100,
+      "AMT_ANNUITY": 4500000,
+      "monthly_status": [
+        {
+          "MONTHS_BALANCE": 0,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -1,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -2,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -3,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -4,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -5,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -6,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -7,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -8,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -9,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -10,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -11,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -12,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -13,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -14,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -15,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -16,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -17,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -18,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -19,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -20,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -21,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -22,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -23,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -24,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -25,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -26,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -27,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -28,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -29,
+          "STATUS": "X"
+        }
+      ]
+    }
+  ],
+  "thin_file_flag": false,
+  "cic_score_equivalent": 580,
+  "debt_group": 1
+}

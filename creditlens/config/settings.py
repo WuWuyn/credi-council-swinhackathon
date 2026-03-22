@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     # ── Application ──
     app_env: str = "development"
     log_level: str = "INFO"
-    model_path: str = "models/lgbm_v1.pkl"
+    model_path: str = "models/lgbm_ref_v1.pkl"
     data_dir: str = "home-credit-default-risk"
 
     @property
