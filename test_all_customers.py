@@ -34,7 +34,7 @@ CUSTOMERS = [
 
 
 
-def run_single_customer(customer_dir, customer_name, use_mock):
+def run_single_customer(customer_dir, customer_name):
     """Run pipeline for a single customer, return results dict."""
     result = {
         "customer_dir": customer_dir,
@@ -46,7 +46,7 @@ def run_single_customer(customer_dir, customer_name, use_mock):
     try:
         # ── A1 ──
         from creditlens.agents.a1_ingestion.agent import IngestionAgent
-        a1 = IngestionAgent(use_mock=True)
+        a1 = IngestionAgent()
         a1_output = a1.ingest(customer_dir=customer_dir)
 
         app = a1_output["application_row"]
@@ -56,7 +56,7 @@ def run_single_customer(customer_dir, customer_name, use_mock):
 
         # ── A2 ──
         from creditlens.agents.a2_feature_engineer.agent import FeatureEngineerAgent
-        a2 = FeatureEngineerAgent(use_mock=use_mock)
+        a2 = FeatureEngineerAgent()
         a2_output = a2.process(a1_output)
 
         fv = a2_output.get("feature_vector")
@@ -83,7 +83,7 @@ def run_single_customer(customer_dir, customer_name, use_mock):
 
         # ── A4 ──
         from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
-        a4 = ReportGeneratorAgent(use_mock=use_mock)
+        a4 = ReportGeneratorAgent()
         a4_output = a4.generate(a3_output, a2_output, a1_output)
 
         report = a4_output.get("final_report", {})
@@ -134,17 +134,7 @@ def run_single_customer(customer_dir, customer_name, use_mock):
 
 def main():
     # Detect mode
-    use_mock = not bool(os.environ.get("GEMINI_API_KEY"))
-    if os.environ.get("USE_MOCK", "").lower() == "true":
-        use_mock = True
-    elif os.environ.get("USE_MOCK", "").lower() == "false":
-        use_mock = False
-
-    mode_label = "MOCK" if use_mock else "REAL (Gemini API)"
-
-    print("\n" + "=" * 80)
-    print("  CREDITLENS — ALL CUSTOMERS PIPELINE TEST")
-    print(f"  Mode: {mode_label}")
+    print("  Mode: REAL (Gemini API)")
     print("=" * 80)
 
     results = []
@@ -155,7 +145,7 @@ def main():
         print(f"  Directory: {cust['dir']}")
         print(f"{'─'*80}")
 
-        r = run_single_customer(cust["dir"], cust["name"], use_mock)
+        r = run_single_customer(cust["dir"], cust["name"])
         results.append(r)
 
         if r["status"] == "OK":

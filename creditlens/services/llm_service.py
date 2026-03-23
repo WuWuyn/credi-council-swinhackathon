@@ -51,8 +51,8 @@ class LLMService:
         text = llm.generate_text(system_prompt, user_prompt)
     """
 
-    def __init__(self, use_mock: bool = False):
-        self.use_mock = use_mock
+    def __init__(self):
+        pass
 
     def generate_json(
         self,
@@ -72,8 +72,7 @@ class LLMService:
         Returns:
             Parsed JSON dict, with missing keys filled as None.
         """
-        if self.use_mock:
-            return {key: None for key in (required_keys or set())}
+
 
         response_text = self.generate_text(system_prompt, user_prompt, max_tokens)
         return self._parse_json(response_text, required_keys or set())
@@ -94,8 +93,7 @@ class LLMService:
         Returns:
             Generated text string.
         """
-        if self.use_mock:
-            return "[Mock LLM response]"
+
 
         from google.genai import types
         client = _get_client()

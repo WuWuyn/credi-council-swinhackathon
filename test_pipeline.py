@@ -32,20 +32,12 @@ def run_pipeline():
     print("  CREDITLENS — END-TO-END PIPELINE TEST")
     print("=" * 70)
 
-    # Auto-detect mock mode: use real API if GEMINI_API_KEY is set
-    use_mock = not bool(os.environ.get("GEMINI_API_KEY"))
-    if os.environ.get("USE_MOCK", "").lower() == "true":
-        use_mock = True
-    elif os.environ.get("USE_MOCK", "").lower() == "false":
-        use_mock = False
-
-    mode_label = "MOCK" if use_mock else "REAL (Gemini API)"
-    print(f"  Mode: {mode_label}")
+    print("  Mode: REAL (Gemini API)")
 
     # ── A1: Data Ingestion ──
     print("\n[1/4] A1: Data Ingestion...")
     from creditlens.agents.a1_ingestion.agent import IngestionAgent
-    a1 = IngestionAgent(use_mock=True)  # Always mock for data source
+    a1 = IngestionAgent()
     a1_output = a1.ingest(customer_dir="data/mock/customer_001")
 
     app = a1_output["application_row"]
@@ -56,7 +48,7 @@ def run_pipeline():
     # ── A2: Feature Engineering ──
     print("\n[2/4] A2: LLM Feature Engineering...")
     from creditlens.agents.a2_feature_engineer.agent import FeatureEngineerAgent
-    a2 = FeatureEngineerAgent(use_mock=use_mock)
+    a2 = FeatureEngineerAgent()
     a2_output = a2.process(a1_output)
 
     fv = a2_output.get("feature_vector")
@@ -101,7 +93,7 @@ def run_pipeline():
     # ── A4: Report Generator ──
     print("\n[4/4] A4: Report Generator (5C + 6 sections)...")
     from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
-    a4 = ReportGeneratorAgent(use_mock=use_mock)
+    a4 = ReportGeneratorAgent()
     a4_output = a4.generate(a3_output, a2_output, a1_output)
 
     report = a4_output.get("final_report", {})

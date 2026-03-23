@@ -78,19 +78,18 @@ def get_agents():
     from creditlens.agents.a3_scoring.agent import ScoringAgent
     from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
 
-    use_mock = os.environ.get("USE_MOCK", "true").lower() == "true"
     model_path = os.environ.get("MODEL_PATH", "models/lgbm_ref_v1.pkl")
 
     # Resolve relative paths from project root
     if not Path(model_path).is_absolute():
         model_path = str(PROJECT_ROOT / model_path)
 
-    _agents["a1"] = IngestionAgent(use_mock=True)  # Always mock — local data files, not real AWS
-    _agents["a2"] = FeatureEngineerAgent(use_mock=use_mock)
+    _agents["a1"] = IngestionAgent()
+    _agents["a2"] = FeatureEngineerAgent()
     _agents["a3"] = ScoringAgent(model_path=model_path)
-    _agents["a4"] = ReportGeneratorAgent(use_mock=use_mock)
+    _agents["a4"] = ReportGeneratorAgent()
 
-    logger.info(f"Agents loaded (use_mock={use_mock}, model={model_path})")
+    logger.info(f"Agents loaded (model={model_path})")
     return _agents
 
 
@@ -114,7 +113,6 @@ class ScoringResult(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
-    use_mock: bool
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -122,12 +120,10 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    use_mock = os.environ.get("USE_MOCK", "true").lower() == "true"
     model_loaded = Path(os.environ.get("MODEL_PATH", "models/lgbm_ref_v1.pkl")).exists()
     return HealthResponse(
         status="ok",
         model_loaded=model_loaded,
-        use_mock=use_mock,
     )
 
 

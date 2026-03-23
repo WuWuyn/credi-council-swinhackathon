@@ -27,25 +27,22 @@ class CICService:
     In production mode, calls the real CIC API endpoint.
     """
 
-    def __init__(self, use_mock: bool = False):
-        self.use_mock = use_mock
+    def __init__(self):
+        pass
 
     def query(self, cic_data_path: str | Path | None = None) -> dict[str, Any]:
         """Query CIC for credit history.
 
         Args:
-            cic_data_path: Path to mock CIC JSON file (local mode).
+            cic_data_path: Path to CIC JSON file.
 
         Returns:
             Structured CIC response with bureau records.
         """
-        if self.use_mock and cic_data_path:
+        if cic_data_path:
             return self._read_mock(Path(cic_data_path))
-        elif self.use_mock:
-            return self._default_thin_file()
         else:
-            # LOCAL_SUB: Implement real CIC API call here
-            raise NotImplementedError("Real CIC API not implemented. See LOCAL_SUBSTITUTIONS.md")
+            return self._default_thin_file()
 
     def _read_mock(self, path: Path) -> dict[str, Any]:
         """Read mock CIC response from JSON file."""

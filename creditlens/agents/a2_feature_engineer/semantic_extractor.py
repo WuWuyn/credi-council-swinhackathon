@@ -75,14 +75,12 @@ class SemanticExtractor:
     - positive_signals
     """
 
-    def __init__(self, use_mock: bool = False):
-        self.llm = LLMService(use_mock=use_mock)
-        self.use_mock = use_mock
+    def __init__(self):
+        self.llm = LLMService()
 
     def extract_loan_features(self, ocr_text: str) -> dict[str, Any]:
         """Extract semantic features from loan application text."""
-        if self.use_mock:
-            return self._mock_loan_extraction(ocr_text)
+
 
         prompt = SEMANTIC_USER.format(ocr_text=ocr_text[:4000])
         result = self.llm.generate_json(
@@ -100,43 +98,4 @@ class SemanticExtractor:
 
         return result
 
-    def _mock_loan_extraction(self, ocr_text: str) -> dict[str, Any]:
-        """Mock semantic extraction based on actual text content."""
-        # Simple heuristic-based extraction from OCR text
-        text_lower = ocr_text.lower()
 
-        # Detect purpose
-        if any(w in text_lower for w in ["xe", "oto", "o to", "car"]):
-            purpose = "CONSUMPTION"
-        elif any(w in text_lower for w in ["san xuat", "kinh doanh", "business"]):
-            purpose = "PRODUCTION"
-        elif any(w in text_lower for w in ["bat dong san", "nha dat", "dau tu"]):
-            purpose = "INVESTMENT"
-        else:
-            purpose = "CONSUMPTION"
-
-        # Detect positive signals
-        positive = []
-        if "khong xac dinh thoi han" in text_lower:
-            positive.append("Permanent employment contract")
-        if any(w in text_lower for w in ["vinhomes", "chung cu", "can ho"]):
-            positive.append("Owns apartment/property")
-        if any(w in text_lower for w in ["luong", "thu nhap"]):
-            positive.append("Verified income document")
-
-        # Detect risk flags
-        risks = []
-        if "khong co" not in text_lower and "tranh chap" in text_lower:
-            risks.append("Potential property dispute")
-
-        return {
-            "loan_purpose_category": purpose,
-            "loan_purpose_category_encoded": LOAN_PURPOSE_MAP.get(purpose, 4),
-            "repayment_plan_quality": "GENERAL",
-            "repayment_plan_quality_encoded": 2,
-            "stated_income_consistency": True,
-            "risk_flags": risks,
-            "positive_signals": positive,
-            "extraction_confidence": 0.85,
-            "risk_flag_count": len(risks),
-        }

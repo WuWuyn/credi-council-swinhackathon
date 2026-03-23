@@ -16,9 +16,14 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+import warnings
 
 import numpy as np
 import pandas as pd
+
+# Suppress noisy pandas warnings for single-row DataFrames
+warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
+warnings.filterwarnings("ignore", message=".*Downcasting.*", category=FutureWarning)
 
 # Add project root for training imports
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -89,6 +94,8 @@ class SingleCustomerFE:
         """
         app_row = a1_output["application_row"]
         sk_id = app_row.get("SK_ID_CURR", 100002)
+
+
 
         # ── 1. Application features ──
         app_df = pd.DataFrame([app_row])
@@ -247,6 +254,8 @@ class SingleCustomerFE:
         all_existing = existing_raw | existing_sanitized
 
         n_added = 0
+        zero_cols = []
+        nan_cols = []
         for feat in self.feature_names:
             if feat in all_existing:
                 continue
@@ -265,9 +274,20 @@ class SingleCustomerFE:
                 "cc_Refused", "cc_Sent_proposal", "cc_Signed",
                 "pos_NAME_CONTRACT_STATUS_CNT_",
             ]):
-                app_df[feat] = 0
+                zero_cols.append(feat)
             else:
-                app_df[feat] = np.nan
+                nan_cols.append(feat)
+
+        # Batch insert to avoid DataFrame fragmentation
+        if zero_cols or nan_cols:
+            new_data = {}
+            for c in zero_cols:
+                new_data[c] = 0
+            for c in nan_cols:
+                new_data[c] = np.nan
+            new_df = pd.DataFrame(new_data, index=app_df.index)
+            app_df = pd.concat([app_df, new_df], axis=1)
+
         if n_added:
             logger.info(f"  Injected {n_added} missing model feature columns")
 

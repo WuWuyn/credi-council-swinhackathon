@@ -46,9 +46,8 @@ class IntelligentImputer:
     Uses available context to estimate missing field values.
     """
 
-    def __init__(self, use_mock: bool = False):
-        self.llm = LLMService(use_mock=use_mock)
-        self.use_mock = use_mock
+    def __init__(self):
+        self.llm = LLMService()
 
     def impute_field(
         self,
@@ -57,8 +56,7 @@ class IntelligentImputer:
         context_data: dict[str, Any],
     ) -> dict[str, Any]:
         """Impute a single missing field."""
-        if self.use_mock:
-            return self._mock_impute(field_name, context_data)
+
 
         prompt = IMPUTATION_USER.format(
             field_name=field_name,
@@ -124,11 +122,4 @@ class IntelligentImputer:
         logger.info(f"Imputation: {len(imputed_values)}/{len(missing_fields)} fields imputed")
         return imputed_values, imputation_log
 
-    def _mock_impute(self, field_name: str, context_data: dict[str, Any]) -> dict[str, Any]:
-        """Mock imputation for development."""
-        return {
-            "estimated_value": None,
-            "confidence": 0.70,
-            "reasoning": f"Mock estimation for {field_name}",
-            "source": "mock_context",
-        }
+

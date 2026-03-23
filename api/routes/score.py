@@ -77,7 +77,6 @@ async def score_application(
         customer_type=customer_type,
         documents=doc_list,
         bank_statement_path=bank_statement_path,
-        use_mock=True,  # Use mock in dev mode
     )
 
     return ScoreResponse(

@@ -275,6 +275,7 @@ class LocalDocumentParser:
         field_map = {
             # Vietnamese diacritics versions
             "Loại hình nhà ở": ("housing_type", 0.92),
+            "Loại tòa nhà": ("housetype_mode", 0.90),
             "Diện tích sử dụng": ("living_area", 0.90),
             "Diện tích": ("living_area", 0.90),
             "Năm xây dựng": ("year_built", 0.88),
@@ -297,8 +298,30 @@ class LocalDocumentParser:
             "Đăng ký cùng vùng sống": ("reg_live_same_region", 0.88),
             "Đăng ký cùng TP làm việc": ("reg_work_same_city", 0.88),
             "Sống cùng vùng làm việc": ("live_work_same_region", 0.88),
+            # City-level cross-check fields
+            "Đăng ký cùng TP sống": ("reg_city_same_live_city", 0.88),
+            "Đăng ký cùng TP làm việc (TP)": ("reg_city_same_work_city", 0.88),
+            "Sống cùng TP làm việc (TP)": ("live_city_same_work_city", 0.88),
+            # Normalized housing detail fields (0-1 range)
+            "Diện tích căn hộ (norm)": ("apartments_norm", 0.90),
+            "Diện tích tầng hầm (norm)": ("basementarea_norm", 0.90),
+            "Năm bắt đầu sử dụng (norm)": ("years_beginexpluatation_norm", 0.90),
+            "Năm xây dựng (norm)": ("years_build_norm", 0.90),
+            "Diện tích chung (norm)": ("commonarea_norm", 0.90),
+            "Thang máy (norm)": ("elevators_norm", 0.90),
+            "Lối vào (norm)": ("entrances_norm", 0.90),
+            "Số tầng max (norm)": ("floorsmax_norm", 0.90),
+            "Số tầng min (norm)": ("floorsmin_norm", 0.90),
+            "Diện tích đất (norm)": ("landarea_norm", 0.90),
+            "Diện tích ở (căn hộ, norm)": ("livingapartments_norm", 0.90),
+            "Diện tích sống (norm)": ("livingarea_norm", 0.90),
+            "Diện tích phi ở (phòng, norm)": ("nonlivingapartments_norm", 0.90),
+            "Diện tích phi ở (norm)": ("nonlivingarea_norm", 0.90),
+            "Tổng diện tích (norm)": ("totalarea_norm", 0.90),
+            "Quỹ sửa chữa": ("fond_kapremont", 0.85),
             # ASCII fallbacks
             "Loai hinh nha o": ("housing_type", 0.92),
+            "Loai toa nha": ("housetype_mode", 0.90),
             "Dien tich su dung": ("living_area", 0.90),
             "Dien tich": ("living_area", 0.90),
             "Nam xay dung": ("year_built", 0.88),
@@ -321,6 +344,57 @@ class LocalDocumentParser:
             "Dang ky cung vung song": ("reg_live_same_region", 0.88),
             "Dang ky cung TP lam viec": ("reg_work_same_city", 0.88),
             "Song cung vung lam viec": ("live_work_same_region", 0.88),
+            # ASCII city-level cross-check
+            "Dang ky cung TP song": ("reg_city_same_live_city", 0.88),
+            "Dang ky cung TP lam viec (TP)": ("reg_city_same_work_city", 0.88),
+            "Song cung TP lam viec (TP)": ("live_city_same_work_city", 0.88),
+            # ASCII normalized housing detail fields
+            "Dien tich can ho (norm)": ("apartments_norm", 0.90),
+            "Dien tich tang ham (norm)": ("basementarea_norm", 0.90),
+            "Nam bat dau su dung (norm)": ("years_beginexpluatation_norm", 0.90),
+            "Nam xay dung (norm)": ("years_build_norm", 0.90),
+            "Dien tich chung (norm)": ("commonarea_norm", 0.90),
+            "Thang may (norm)": ("elevators_norm", 0.90),
+            "Loi vao (norm)": ("entrances_norm", 0.90),
+            "So tang max (norm)": ("floorsmax_norm", 0.90),
+            "So tang min (norm)": ("floorsmin_norm", 0.90),
+            "Dien tich dat (norm)": ("landarea_norm", 0.90),
+            "Dien tich o (can ho, norm)": ("livingapartments_norm", 0.90),
+            "Dien tich song (norm)": ("livingarea_norm", 0.90),
+            "Dien tich phi o (phong, norm)": ("nonlivingapartments_norm", 0.90),
+            "Dien tich phi o (norm)": ("nonlivingarea_norm", 0.90),
+            "Tong dien tich (norm)": ("totalarea_norm", 0.90),
+            "Quy sua chua": ("fond_kapremont", 0.85),
+            # _MODE variant fields
+            "Dien tich can ho (mode)": ("apartments_mode_norm", 0.90),
+            "Dien tich tang ham (mode)": ("basementarea_mode_norm", 0.90),
+            "Nam bat dau su dung (mode)": ("years_beginexpluatation_mode_norm", 0.90),
+            "Nam xay dung (mode)": ("years_build_mode_norm", 0.90),
+            "Dien tich chung (mode)": ("commonarea_mode_norm", 0.90),
+            "Thang may (mode)": ("elevators_mode_norm", 0.90),
+            "Loi vao (mode)": ("entrances_mode_norm", 0.90),
+            "So tang max (mode)": ("floorsmax_mode_norm", 0.90),
+            "So tang min (mode)": ("floorsmin_mode_norm", 0.90),
+            "Dien tich dat (mode)": ("landarea_mode_norm", 0.90),
+            "Dien tich o (can ho, mode)": ("livingapartments_mode_norm", 0.90),
+            "Dien tich song (mode)": ("livingarea_mode_norm", 0.90),
+            "Dien tich phi o (phong, mode)": ("nonlivingapartments_mode_norm", 0.90),
+            "Dien tich phi o (mode)": ("nonlivingarea_mode_norm", 0.90),
+            # _MEDI variant fields
+            "Dien tich can ho (medi)": ("apartments_medi_norm", 0.90),
+            "Dien tich tang ham (medi)": ("basementarea_medi_norm", 0.90),
+            "Nam bat dau su dung (medi)": ("years_beginexpluatation_medi_norm", 0.90),
+            "Nam xay dung (medi)": ("years_build_medi_norm", 0.90),
+            "Dien tich chung (medi)": ("commonarea_medi_norm", 0.90),
+            "Thang may (medi)": ("elevators_medi_norm", 0.90),
+            "Loi vao (medi)": ("entrances_medi_norm", 0.90),
+            "So tang max (medi)": ("floorsmax_medi_norm", 0.90),
+            "So tang min (medi)": ("floorsmin_medi_norm", 0.90),
+            "Dien tich dat (medi)": ("landarea_medi_norm", 0.90),
+            "Dien tich o (can ho, medi)": ("livingapartments_medi_norm", 0.90),
+            "Dien tich song (medi)": ("livingarea_medi_norm", 0.90),
+            "Dien tich phi o (phong, medi)": ("nonlivingapartments_medi_norm", 0.90),
+            "Dien tich phi o (medi)": ("nonlivingarea_medi_norm", 0.90),
         }
 
         for kv_key, (field_name, conf) in field_map.items():
@@ -349,6 +423,41 @@ class LocalDocumentParser:
             nums = re.findall(r"\d+", str(fields["region_rating_w_city"]))
             if nums:
                 fields["region_rating_w_city"] = int(nums[0])
+
+        # Parse normalized housing fields (0-1 float values)
+        norm_fields = [
+            "apartments_norm", "basementarea_norm", "years_beginexpluatation_norm",
+            "years_build_norm", "commonarea_norm", "elevators_norm", "entrances_norm",
+            "floorsmax_norm", "floorsmin_norm", "landarea_norm", "livingapartments_norm",
+            "livingarea_norm", "nonlivingapartments_norm", "nonlivingarea_norm",
+            "totalarea_norm",
+            # _MODE and _MEDI variants
+            "apartments_mode_norm", "basementarea_mode_norm", "years_beginexpluatation_mode_norm",
+            "years_build_mode_norm", "commonarea_mode_norm", "elevators_mode_norm", "entrances_mode_norm",
+            "floorsmax_mode_norm", "floorsmin_mode_norm", "landarea_mode_norm", "livingapartments_mode_norm",
+            "livingarea_mode_norm", "nonlivingapartments_mode_norm", "nonlivingarea_mode_norm",
+            "apartments_medi_norm", "basementarea_medi_norm", "years_beginexpluatation_medi_norm",
+            "years_build_medi_norm", "commonarea_medi_norm", "elevators_medi_norm", "entrances_medi_norm",
+            "floorsmax_medi_norm", "floorsmin_medi_norm", "landarea_medi_norm", "livingapartments_medi_norm",
+            "livingarea_medi_norm", "nonlivingapartments_medi_norm", "nonlivingarea_medi_norm",
+        ]
+        for nf in norm_fields:
+            if nf in fields:
+                val_str = str(fields[nf]).strip()
+                if val_str.upper() in ("N/A", "NA", "NULL", "NONE", "-", ""):
+                    fields[nf] = None
+                else:
+                    nums = re.findall(r"[\d.]+", val_str)
+                    if nums:
+                        fields[nf] = float(nums[0])
+                    else:
+                        fields[nf] = None
+
+        # Parse city cross-check boolean fields
+        for bf in ["reg_city_same_live_city", "reg_city_same_work_city", "live_city_same_work_city"]:
+            if bf in fields:
+                val = str(fields[bf]).lower()
+                fields[bf] = val in ("có", "co", "yes", "true", "1")
 
         return {"fields": fields, "confidence": confidence}
 
@@ -392,9 +501,17 @@ class LocalDocumentParser:
             "Nguoi dong hanh": ("type_suite", 0.88),
             "So di dong lien lac duoc": ("flag_cont_mobile", 0.95),
             "So dien thoai ban": ("flag_phone", 0.90),
+            "Dien thoai noi lam viec": ("flag_emp_phone", 0.90),
+            "Dien thoai ban cong ty": ("flag_work_phone", 0.90),
             "Ngay doi SDT gan nhat": ("days_last_phone_change_info", 0.85),
             "SDT": ("phone_number", 0.95),
+            "Ngay nop don": ("weekday_appr", 0.90),
+            "Gio nop don": ("hour_appr", 0.90),
         }
+
+        # Add FLAG_DOCUMENT field mappings (Tai lieu 2..21)
+        for i in range(2, 22):
+            field_map[f"Tai lieu {i}"] = (f"flag_document_{i}", 0.95)
 
         for kv_key, (field_name, conf) in field_map.items():
             if kv_key in kv:
@@ -424,7 +541,25 @@ class LocalDocumentParser:
         for bin_field in ["has_car", "has_realty", "flag_cont_mobile", "flag_phone", "flag_email"]:
             if bin_field in fields:
                 val = str(fields[bin_field]).lower()
-                fields[bin_field] = 1 if val in ("có", "co", "yes", "1", "true") else 0
+                fields[bin_field] = 1 if val in ("co", "yes", "1", "true") else 0
+
+        # Parse FLAG_EMP_PHONE and FLAG_WORK_PHONE as integers
+        for flag_field in ["flag_emp_phone", "flag_work_phone"]:
+            if flag_field in fields:
+                nums = re.findall(r"\d+", str(fields[flag_field]))
+                fields[flag_field] = int(nums[0]) if nums else 0
+
+        # Parse FLAG_DOCUMENT_* as integers
+        for i in range(2, 22):
+            fkey = f"flag_document_{i}"
+            if fkey in fields:
+                nums = re.findall(r"\d+", str(fields[fkey]))
+                fields[fkey] = int(nums[0]) if nums else 0
+
+        # Parse hour_appr as integer
+        if "hour_appr" in fields:
+            nums = re.findall(r"\d+", str(fields["hour_appr"]))
+            fields["hour_appr"] = int(nums[0]) if nums else 0
 
         return {"fields": fields, "confidence": confidence}
 

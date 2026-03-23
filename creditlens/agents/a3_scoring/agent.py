@@ -182,6 +182,8 @@ class ScoringAgent:
             import shap
             from creditlens.config.feature_config import get_label_vi, get_5c_dimension
 
+            import warnings
+
             if self._shap_explainer is None:
                 # Extract inner LightGBM model from BaggingClassifier
                 model_obj = self.model.model
@@ -194,7 +196,9 @@ class ScoringAgent:
                         model_obj = bag
                 self._shap_explainer = shap.TreeExplainer(model_obj)
 
-            shap_values = self._shap_explainer.shap_values(features_df)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*LightGBM binary classifier.*")
+                shap_values = self._shap_explainer.shap_values(features_df)
 
             # For binary classification, use class 1 (positive = default)
             if isinstance(shap_values, list):

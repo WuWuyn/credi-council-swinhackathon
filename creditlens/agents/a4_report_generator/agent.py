@@ -141,9 +141,8 @@ class ReportGeneratorAgent:
     Converts SHAP output into human-readable Vietnamese 5C reports (6 sections).
     """
 
-    def __init__(self, use_mock: bool = False):
-        self.llm = LLMService(use_mock=use_mock)
-        self.use_mock = use_mock
+    def __init__(self):
+        self.llm = LLMService()
 
     def generate(
         self,
@@ -572,12 +571,7 @@ class ReportGeneratorAgent:
         app_row: dict | None = None,
     ) -> dict[str, Any]:
         """Generate 5C narrative using LLM or mock."""
-        if self.use_mock:
-            return self._mock_narrative(
-                shap_values, credit_score, llm_feats or {},
-                financial_ratios=financial_ratios or {},
-                app_row=app_row or {},
-            )
+
 
         five_c_alloc = shap_values.get("five_c_shap_allocation", {})
         financial_info = self._build_financial_context(llm_feats or {}, financial_ratios or {})

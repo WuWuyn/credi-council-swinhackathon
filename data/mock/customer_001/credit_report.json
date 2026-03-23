@@ -1,54 +1,54 @@
 {
   "customer_info": {
-    "summary": "Khách hàng cá nhân với điểm tín dụng 694, thuộc nhóm rủi ro AA, có tỷ lệ xác suất vỡ nợ (PD) là 3.13%. Hồ sơ không phải là thin-file."
+    "summary": "Khách hàng cá nhân với điểm tín dụng 681, thuộc nhóm rủi ro AA, xác suất vỡ nợ 3.92%. Hồ sơ không phải là thin-file."
   },
   "executive_summary": {
-    "credit_score": 694,
+    "credit_score": 681,
     "risk_band": "AA",
-    "pd_pct": 3.13,
+    "pd_pct": 3.92,
     "recommendation": "REVIEW",
-    "five_c_total": 59,
+    "five_c_total": 52,
     "five_c_scores": {
-      "character": 18,
-      "capacity": 30,
+      "character": 15,
+      "capacity": 25,
       "capital": 5,
-      "conditions": 6,
+      "conditions": 7,
       "collateral": 0
     },
     "five_c_shap_allocation": {
       "character": {
-        "shap_sum": 1.0262,
-        "pct": 18
+        "shap_sum": 0.9946,
+        "pct": 17
       },
       "capacity": {
-        "shap_sum": 0.8413,
+        "shap_sum": 0.8606,
         "pct": 15
       },
       "capital": {
-        "shap_sum": 0.1103,
+        "shap_sum": 0.117,
         "pct": 2
       },
       "conditions": {
-        "shap_sum": 3.6441,
+        "shap_sum": 3.6765,
         "pct": 64
       },
       "collateral": {
-        "shap_sum": 0.0889,
-        "pct": 2
+        "shap_sum": 0.0522,
+        "pct": 1
       }
     },
     "model_info": {
       "model_version": "lgb1_ref_v1",
       "auc": "0.803",
       "shap_verified": true,
-      "inference_timestamp": "2026-03-23T09:45:54.893545+00:00"
+      "inference_timestamp": "2026-03-23T22:44:14.367629+00:00"
     },
     "financial_ratios": {
-      "income_annual_vnd": 315000.0,
+      "income_annual_vnd": 315000,
       "income_monthly_vnd": 26250.0,
       "annuity_monthly_vnd": 3750.0,
-      "credit_total_vnd": 900000.0,
-      "goods_price_vnd": 900000.0,
+      "credit_total_vnd": 900000,
+      "goods_price_vnd": 900000,
       "dti": 0.1429,
       "dti_pct": "14.3%",
       "dscr": 7.0,
@@ -58,74 +58,96 @@
   },
   "five_c_scorecard": {
     "character_assessment": {
-      "score": 18,
-      "status": "DAT",
-      "shap_pct": "18%",
+      "score": 15,
+      "status": "XEM_XET",
+      "shap_pct": "17%",
       "indicators_met": [
-        "EXT_SOURCE_2 (Điểm tín dụng ngoại 2): Giá trị 0.7802, đóng góp tiêu cực cho xác suất vỡ nợ.",
-        "EXT_SOURCE_1 (Điểm tín dụng ngoại 1): Giá trị 0.8923, đóng góp tiêu cực cho xác suất vỡ nợ.",
-        "EXT_SOURCE_3 (Điểm tín dụng ngoại 3): Giá trị 0.8625, đóng góp tiêu cực cho xác suất vỡ nợ.",
-        "inst_mean_DPD_SCALE (Trả góp mean_DPD_SCALE): Giá trị 0.0, đóng góp tiêu cực cho xác suất vỡ nợ."
+        "EXT_SOURCE_2 (Điểm tín dụng ngoại 2): 0.7802",
+        "EXT_SOURCE_3 (Điểm tín dụng ngoại 3): 0.8625",
+        "EXT_SOURCE_1 (Điểm tín dụng ngoại 1): 0.8923",
+        "inst_mean_DPD_SCALE (Trả góp mean_DPD_SCALE): 0.0"
       ],
-      "indicators_review": [],
-      "narrative": "Yếu tố Uy tín (Character) chiếm 18% trong phân bổ SHAP, cho thấy mức độ ảnh hưởng đáng kể. Các điểm tín dụng ngoại (EXT_SOURCE_1, EXT_SOURCE_2, EXT_SOURCE_3) có giá trị cao, đóng góp tiêu cực vào khả năng vỡ nợ. Tuy nhiên, chỉ số 'Trả góp mean_DPD_SCALE' ở mức 0.0 cũng có đóng góp tiêu cực. Dựa trên các yếu tố này, khách hàng được đánh giá là Đạt về mặt Uy tín."
+      "indicators_review": [
+        "EXT_SOURCE_2 (Điểm tín dụng ngoại 2) có giá trị 0.7802, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "EXT_SOURCE_3 (Điểm tín dụng ngoại 3) có giá trị 0.8625, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "EXT_SOURCE_1 (Điểm tín dụng ngoại 1) có giá trị 0.8923, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "inst_mean_DPD_SCALE (Trả góp mean_DPD_SCALE) có giá trị 0.0, đóng góp tiêu cực cho khả năng vỡ nợ."
+      ],
+      "narrative": "Yếu tố Uy tín (Character) có đóng góp 17% vào mô hình, với các chỉ số như điểm tín dụng ngoại (EXT_SOURCE_1, EXT_SOURCE_2, EXT_SOURCE_3) và lịch sử trả nợ (inst_mean_DPD_SCALE) đều có ảnh hưởng tiêu cực đến khả năng vỡ nợ. Cụ thể, điểm tín dụng ngoại lần lượt là 0.8923, 0.7802, 0.8625 và chỉ số trả góp mean_DPD_SCALE là 0.0. Các yếu tố này cho thấy có những dấu hiệu cần xem xét kỹ lưỡng về uy tín và lịch sử tín dụng của khách hàng."
     },
     "capacity_assessment": {
-      "score": 30,
-      "status": "DAT",
+      "score": 25,
+      "status": "XEM_XET",
       "shap_pct": "15%",
       "indicators_met": [
-        "AMT_ANNUITY_to_prev_approved (Trả góp hiện tại / TB đơn đã duyệt): Giá trị 45,000,000 VND, đóng góp tích cực cho khả năng trả nợ.",
-        "AMT_CREDIT_to_prev_approved (Tín dụng hiện tại / TB đơn đã duyệt): Giá trị 900,000,000 VND, đóng góp tích cực cho khả năng trả nợ.",
-        "NEW_EMPLOY_TO_BIRTH_RATIO (Tỷ lệ thời gian công tác/tuổi): Giá trị -999.0, đóng góp tích cực cho khả năng trả nợ.",
-        "prev_avg_AMT_APPLICATION (TB đơn vay trước số tiền đề nghị): Giá trị 297,454.5, đóng góp tích cực cho khả năng trả nợ.",
-        "DAYS_EMPLOYED (Thời gian công tác): Giá trị -999.0, đóng góp tích cực cho khả năng trả nợ.",
-        "AMT_CREDIT_GOODS_PERC (Tỷ lệ tín dụng/giá trị hàng): Giá trị 1.0, đóng góp tiêu cực cho khả năng trả nợ."
+        "AMT_ANNUITY_to_prev_approved (Trả góp hiện tại / TB đơn đã duyệt): 45,000,000.0",
+        "NEW_EMPLOY_TO_BIRTH_RATIO (Tỷ lệ thời gian công tác/tuổi): -999.0",
+        "prev_avg_AMT_APPLICATION (TB đơn vay trước số tiền đề nghị): 297,454.5",
+        "AMT_ANNUITY (Khoản trả hàng kỳ): 45,000.0",
+        "AMT_CREDIT_GOODS_PERC (Tỷ lệ tín dụng/giá trị hàng): 1.0"
       ],
-      "indicators_review": [],
-      "narrative": "Năng lực trả nợ (Capacity) chiếm 15% trong phân bổ SHAP. Các chỉ số như 'Trả góp hiện tại / TB đơn đã duyệt' (45,000,000 VND) và 'Tín dụng hiện tại / TB đơn đã duyệt' (900,000,000 VND) cho thấy khả năng quản lý nợ tốt. Thời gian công tác dài (-999.0 ngày) và tỷ lệ thời gian công tác/tuổi (-999.0) cũng là những yếu tố tích cực. Tuy nhiên, tỷ lệ tín dụng/giá trị hàng ở mức 1.0 cần được xem xét thêm. Tổng thể, khách hàng được đánh giá là Đạt về Năng lực trả nợ."
+      "indicators_review": [
+        "AMT_ANNUITY_to_prev_approved (Trả góp hiện tại / TB đơn đã duyệt) có giá trị 45,000,000.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "NEW_EMPLOY_TO_BIRTH_RATIO (Tỷ lệ thời gian công tác/tuổi) có giá trị -999.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "prev_avg_AMT_APPLICATION (TB đơn vay trước số tiền đề nghị) có giá trị 297,454.5, đóng góp tích cực cho khả năng vỡ nợ.",
+        "AMT_ANNUITY (Khoản trả hàng kỳ) có giá trị 45,000.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "AMT_CREDIT_GOODS_PERC (Tỷ lệ tín dụng/giá trị hàng) có giá trị 1.0, đóng góp tiêu cực cho khả năng vỡ nợ."
+      ],
+      "narrative": "Khả năng trả nợ (Capacity) chiếm 15% trong đánh giá, với các yếu tố như khoản trả hàng kỳ (AMT_ANNUITY) là 45,000.0 và tỷ lệ trả góp hiện tại so với các khoản đã duyệt (AMT_ANNUITY_to_prev_approved) là 45,000,000.0 cho thấy khả năng chi trả tốt. Tuy nhiên, tỷ lệ tín dụng trên giá trị hàng (AMT_CREDIT_GOODS_PERC) là 1.0, cùng với tỷ lệ thời gian công tác/tuổi (-999.0) và trung bình các đơn vay trước (prev_avg_AMT_APPLICATION) là 297,454.5, cần được xem xét cẩn trọng để đảm bảo khả năng trả nợ bền vững."
     },
     "capital_assessment": {
       "score": 5,
-      "status": "XEM_XET",
+      "status": "KHONG_DAT",
       "shap_pct": "2%",
       "indicators_met": [
-        "bureau_sum_AMT_CREDIT_SUM (Tổng dư nợ CIC): Giá trị -999.0, đóng góp tích cực cho vốn tự có."
+        "bureau_sum_AMT_CREDIT_SUM (Tổng dư nợ CIC): -999.0"
       ],
-      "indicators_review": [],
-      "narrative": "Vốn tự có (Capital) chỉ chiếm 2% trong phân bổ SHAP, cho thấy mức độ ảnh hưởng thấp từ các yếu tố được phân tích. Chỉ số 'Tổng dư nợ CIC' (-999.0) có đóng góp tích cực. Tuy nhiên, với tỷ lệ đóng góp thấp và thiếu các chỉ số tài chính chi tiết về vốn chủ sở hữu, khách hàng được đánh giá ở mức Xem xét."
+      "indicators_review": [
+        "bureau_sum_AMT_CREDIT_SUM (Tổng dư nợ CIC) có giá trị -999.0, đóng góp tích cực cho khả năng vỡ nợ."
+      ],
+      "narrative": "Yếu tố Vốn tự có (Capital) chỉ chiếm 2% trong đánh giá, với chỉ số duy nhất được ghi nhận là tổng dư nợ CIC (bureau_sum_AMT_CREDIT_SUM) là -999.0. Chỉ số này có đóng góp tích cực cho khả năng vỡ nợ, cho thấy có thể có rủi ro liên quan đến nợ hiện tại của khách hàng. Do thiếu thông tin chi tiết và chỉ số này có ảnh hưởng tiêu cực, phần đánh giá vốn tự có chưa đạt yêu cầu."
     },
     "conditions_assessment": {
-      "score": 6,
+      "score": 7,
       "status": "XEM_XET",
       "shap_pct": "64%",
       "indicators_met": [
-        "prev_refused_DAYS_DECISION_MAX (Đơn bị từ chối — DAYS_DECISION_MAX): Giá trị 0.0, đóng góp tích cực cho khả năng trả nợ.",
-        "region_mean_income_rel (Thu nhập so với TB khu vực): Giá trị 314,999.0, đóng góp tích cực cho khả năng trả nợ.",
-        "AMT_PAY_YEAR (Khoản trả hàng năm): Giá trị 20.0, đóng góp tích cực cho khả năng trả nợ.",
-        "CNT_ADULT (Cnt adult): Giá trị 1.0, đóng góp tích cực cho khả năng trả nợ.",
-        "NEW_EXT_SOURCES_MEAN (Trung bình điểm tín dụng ngoại): Giá trị 0.845, đóng góp tiêu cực cho khả năng trả nợ.",
-        "NEW_SOURCES_PROD (Tích điểm tín dụng ngoại): Giá trị 0.6004, đóng góp tiêu cực cho khả năng trả nợ.",
-        "NEW_DOC_IND_KURT (Kurtosis tài liệu đã nộp): Giá trị 0.0, đóng góp tiêu cực cho khả năng trả nợ.",
-        "NAME_EDUCATION_TYPE (Trình độ học vấn): Giá trị 1.0, đóng góp tiêu cực cho khả năng trả nợ.",
-        "YEARS_BEGINEXPLUATATION_MODE (Years beginexpluatation mode): Giá trị 0.995, đóng góp tiêu cực cho khả năng trả nợ."
+        "REG_CITY_NOT_LIVE_CITY (Reg city not live city): 1.0",
+        "prev_refused_DAYS_DECISION_MAX (Đơn bị từ chối — DAYS_DECISION_MAX): 0.0",
+        "AMT_PAY_YEAR (Khoản trả hàng năm): 20.0",
+        "CNT_ADULT (Cnt adult): 1.0",
+        "region_mean_income_rel (Thu nhập so với TB khu vực): 314,999.0",
+        "NEW_EXT_SOURCES_MEAN (Trung bình điểm tín dụng ngoại): 0.845",
+        "NEW_SOURCES_PROD (Tích điểm tín dụng ngoại): 0.6004",
+        "NAME_EDUCATION_TYPE (Trình độ học vấn): 1.0",
+        "NEW_DOC_IND_KURT (Kurtosis tài liệu đã nộp): 0.0",
+        "inst_sum_DBD_SCALE (Trả góp sum_DBD_SCALE): 118.9151"
       ],
-      "indicators_review": [],
-      "narrative": "Các yếu tố Điều kiện (Conditions) chiếm tỷ trọng lớn nhất (64%) trong phân bổ SHAP. Các chỉ số như 'Đơn bị từ chối — DAYS_DECISION_MAX' (0.0) và 'Thu nhập so với TB khu vực' (314,999.0) cho thấy những điểm tích cực. Tuy nhiên, các chỉ số về điểm tín dụng ngoại (NEW_EXT_SOURCES_MEAN, NEW_SOURCES_PROD) và các yếu tố liên quan đến tài liệu, học vấn lại có đóng góp tiêu cực đáng kể. Do sự phân tán của các yếu tố, khách hàng được đánh giá ở mức Xem xét."
+      "indicators_review": [
+        "REG_CITY_NOT_LIVE_CITY (Reg city not live city) có giá trị 1.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "prev_refused_DAYS_DECISION_MAX (Đơn bị từ chối — DAYS_DECISION_MAX) có giá trị 0.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "AMT_PAY_YEAR (Khoản trả hàng năm) có giá trị 20.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "CNT_ADULT (Cnt adult) có giá trị 1.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "region_mean_income_rel (Thu nhập so với TB khu vực) có giá trị 314,999.0, đóng góp tích cực cho khả năng vỡ nợ.",
+        "NEW_EXT_SOURCES_MEAN (Trung bình điểm tín dụng ngoại) có giá trị 0.845, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "NEW_SOURCES_PROD (Tích điểm tín dụng ngoại) có giá trị 0.6004, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "NAME_EDUCATION_TYPE (Trình độ học vấn) có giá trị 1.0, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "NEW_DOC_IND_KURT (Kurtosis tài liệu đã nộp) có giá trị 0.0, đóng góp tiêu cực cho khả năng vỡ nợ.",
+        "inst_sum_DBD_SCALE (Trả góp sum_DBD_SCALE) có giá trị 118.9151, đóng góp tiêu cực cho khả năng vỡ nợ."
+      ],
+      "narrative": "Yếu tố Điều kiện (Conditions) chiếm tỷ trọng lớn nhất (64%) trong đánh giá. Các chỉ số như REG_CITY_NOT_LIVE_CITY (1.0), prev_refused_DAYS_DECISION_MAX (0.0), AMT_PAY_YEAR (20.0), CNT_ADULT (1.0) và thu nhập so với khu vực (region_mean_income_rel: 314,999.0) đều có ảnh hưởng tích cực đến khả năng vỡ nợ. Tuy nhiên, các chỉ số về điểm tín dụng ngoại (NEW_EXT_SOURCES_MEAN: 0.845, NEW_SOURCES_PROD: 0.6004), trình độ học vấn (NAME_EDUCATION_TYPE: 1.0) và trả góp (inst_sum_DBD_SCALE: 118.9151) lại có ảnh hưởng tiêu cực, cho thấy sự phức tạp trong các điều kiện của khách hàng."
     },
     "collateral_assessment": {
       "score": 0,
       "status": "KHONG_DAT",
       "indicators_met": [],
-      "indicators_review": [
-        "Chưa có thông tin chi tiết về tài sản bảo đảm."
-      ],
-      "narrative": "Tài sản bảo đảm (Collateral) chỉ chiếm 2% trong phân bổ SHAP. Hiện tại, chưa có thông tin chi tiết về tài sản bảo đảm được cung cấp trong dữ liệu. Do đó, khách hàng được đánh giá là Không Đạt về mặt Tài sản bảo đảm."
+      "indicators_review": [],
+      "narrative": "Không có thông tin chi tiết về tài sản bảo đảm được cung cấp trong dữ liệu SHAP. Do đó, không thể đánh giá yếu tố Tài sản bảo đảm (Collateral) và phần này chưa đạt yêu cầu."
     }
   },
   "financial_summary": {
-    "income_analysis": "Thu nhập tháng: 26,250 VND. Tỷ lệ DTI 14.3% cho thấy khả năng chi trả cho các khoản vay mới là hợp lý.",
-    "debt_analysis": "Trả nợ tháng: 3,750 VND. DSCR là 7.00, cho thấy khả năng trả nợ tốt.",
+    "income_analysis": "Thu nhập tháng là 26,250 VND, trả nợ tháng là 3,750 VND.",
+    "debt_analysis": "Tỷ lệ DTI là 14.3%, DSCR là 7.00, cho thấy khả năng trả nợ tốt dựa trên thu nhập và chi phí hiện tại.",
     "key_ratios": {
       "dti": "14.3%",
       "dscr": "7.00",
@@ -174,18 +196,17 @@
     "score": 0,
     "status": "KHONG_DAT",
     "indicators_met": [],
-    "indicators_review": [
-      "Chưa có thông tin chi tiết về tài sản bảo đảm."
-    ],
-    "narrative": "Tài sản bảo đảm (Collateral) chỉ chiếm 2% trong phân bổ SHAP. Hiện tại, chưa có thông tin chi tiết về tài sản bảo đảm được cung cấp trong dữ liệu. Do đó, khách hàng được đánh giá là Không Đạt về mặt Tài sản bảo đảm."
+    "indicators_review": [],
+    "narrative": "Không có thông tin chi tiết về tài sản bảo đảm được cung cấp trong dữ liệu SHAP. Do đó, không thể đánh giá yếu tố Tài sản bảo đảm (Collateral) và phần này chưa đạt yêu cầu."
   },
   "suggested_terms": {
     "max_amount_vnd": 500000000,
     "max_term_months": 36,
     "interest_rate_suggestion": "theo biểu phí hiện hành",
     "conditions": [
-      "Cung cấp thông tin chi tiết về tài sản bảo đảm.",
-      "Làm rõ các yếu tố tiêu cực liên quan đến điểm tín dụng ngoại và tài liệu nộp."
+      "Cần có tài sản bảo đảm phù hợp để giảm thiểu rủi ro.",
+      "Yêu cầu bổ sung hồ sơ chứng minh thu nhập chi tiết và ổn định.",
+      "Xem xét kỹ lưỡng lịch sử tín dụng ngoại và các khoản vay hiện có."
     ]
   },
   "reward_assessment": {
@@ -193,9 +214,9 @@
     "loan_amount_fmt": "900,000 VND",
     "term_months": 20,
     "gross_income_fmt": "142,500 VND",
-    "expected_loss_fmt": "12,676 VND",
-    "risk_adj_income_fmt": "129,824 VND",
-    "raroc_pct": "14.4%",
+    "expected_loss_fmt": "15,876 VND",
+    "risk_adj_income_fmt": "126,624 VND",
+    "raroc_pct": "14.1%",
     "verdict": "Tốt",
     "verdict_flag": "OK",
     "verdict_color": "green",
@@ -204,22 +225,33 @@
       "Bảo hiểm tài sản",
       "Thẻ tín dụng cơ bản"
     ],
-    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 14.4% — Tốt. Phân khúc: Mid-tier. Thu nhập lãi ước tính: 142,500 VND, Tổn thất kỳ vọng: 12,676 VND."
+    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 14.1% — Tốt. Phân khúc: Mid-tier. Thu nhập lãi ước tính: 142,500 VND, Tổn thất kỳ vọng: 15,876 VND."
   },
   "llm_insights": {
     "loan_purpose": "CONSUMPTION",
-    "positive_signals": [],
+    "positive_signals": [
+      "Good credit score (681/850)",
+      "Low average installment payment to approved loan average (AMT_ANNUITY_to_prev_approved = 45,000,000.0)",
+      "Reasonable current installment payment (AMT_ANNUITY = 45,000.0)",
+      "Reasonable average previous loan application amount (prev_avg_AMT_APPLICATION = 297,454.5)",
+      "Low average days past due (inst_mean_DPD_SCALE = 0.0)",
+      "Stable employment indicated by NEW_EMPLOY_TO_BIRTH_RATIO (-999.0, though the value is unusual, the AI interpreted it as stable)"
+    ],
     "risk_flags": [
-      "Inconsistent income documentation",
-      "Unclear loan purpose"
+      "Pensioner status may indicate limited future income potential",
+      "Low stated monthly income (26,250 VND)",
+      "High ratio of credit to goods value (AMT_CREDIT_GOODS_PERC = 1.0)",
+      "External credit scores are average and may increase risk",
+      "Collateral is not met (CHƯA ĐẠT)"
     ]
   },
   "caveats": [
     "Đánh giá dựa trên dữ liệu SHAP values được cung cấp.",
-    "Cần bổ sung thông tin chi tiết về tài sản bảo đảm để có đánh giá đầy đủ."
+    "Thiếu thông tin chi tiết về tài sản bảo đảm.",
+    "Các yếu tố có đóng góp tiêu cực cho khả năng vỡ nợ cần được xem xét kỹ lưỡng trong quá trình phê duyệt."
   ],
   "audit_reference": {
     "model_version": "lgb1_ref_v1",
-    "inference_timestamp": "2026-03-23T09:45:54.893545+00:00"
+    "inference_timestamp": "2026-03-23T22:44:14.367629+00:00"
   }
 }

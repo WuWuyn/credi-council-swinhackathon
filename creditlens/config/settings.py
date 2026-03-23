@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     model_path: str = "models/lgbm_ref_v1.pkl"
     data_dir: str = "home-credit-default-risk"
 
+    # ── Ingestion Pipeline ──
+    use_ocr: bool = True  # True → OCR parse PDFs | False → read application_row.json directly
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"

@@ -28,7 +28,6 @@ def build_graph(
     feature_engineer_agent=None,
     scoring_agent=None,
     report_generator_agent=None,
-    use_mock: bool = False,
 ) -> StateGraph:
     """Build the CreditLens LangGraph StateGraph.
 
@@ -42,7 +41,6 @@ def build_graph(
         feature_engineer_agent: A2 FeatureEngineerAgent instance.
         scoring_agent: A3 ScoringAgent instance.
         report_generator_agent: A4 ReportGeneratorAgent instance.
-        use_mock: Use mock implementations if agents not provided.
 
     Returns:
         Compiled LangGraph StateGraph.
@@ -52,15 +50,15 @@ def build_graph(
     # ── Initialize agents if not provided ──
     if ingestion_agent is None:
         from creditlens.agents.a1_ingestion.agent import IngestionAgent
-        ingestion_agent = IngestionAgent(use_mock=use_mock)
+        ingestion_agent = IngestionAgent()
 
     if feature_engineer_agent is None:
         from creditlens.agents.a2_feature_engineer.agent import FeatureEngineerAgent
-        feature_engineer_agent = FeatureEngineerAgent(use_mock=use_mock)
+        feature_engineer_agent = FeatureEngineerAgent()
 
     if report_generator_agent is None:
         from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
-        report_generator_agent = ReportGeneratorAgent(use_mock=use_mock)
+        report_generator_agent = ReportGeneratorAgent()
 
     # ── Define node functions ──
 
@@ -303,7 +301,7 @@ def run_pipeline(
     customer_type: str = "INDIVIDUAL",
     documents: list[dict] | None = None,
     bank_statement_path: str | None = None,
-    use_mock: bool = False,
+    use_mock: bool = False,  # deprecated, kept for API compat
     scoring_agent=None,
 ) -> CreditState:
     """Run the full CreditLens pipeline.
@@ -315,13 +313,12 @@ def run_pipeline(
         customer_type: INDIVIDUAL or SME.
         documents: List of {type, bytes} for PDF documents.
         bank_statement_path: Path to bank statement CSV.
-        use_mock: Use mock AWS services.
         scoring_agent: Pre-built A3 ScoringAgent (with trained model).
 
     Returns:
         Final CreditState with all agent outputs.
     """
-    graph = build_graph(use_mock=use_mock, scoring_agent=scoring_agent)
+    graph = build_graph(scoring_agent=scoring_agent)
 
     initial_state: CreditState = {
         "application_id": applicant_id,

@@ -344,28 +344,10 @@ def generate_pdfs_for_customer(data, customer_dir):
         c.line(2.2 * cm, y - 0.15 * cm, A4[0] - 2 * cm, y - 0.15 * cm)
         return y - 0.7 * cm
 
-    # ── Map categorical values for display ──
-    gender_map = {"M": "Nam", "F": "Nu", "XNA": "N/A"}
-    gender_display = gender_map.get(app.get("CODE_GENDER", "M"), "N/A")
-
-    family_map = {
-        "Married": "Da ket hon",
-        "Single / not married": "Doc than",
-        "Separated": "Ly hon",
-        "Widow": "Goa",
-        "Civil marriage": "Song chung",
-        "Unknown": "N/A",
-    }
-    family_display = family_map.get(app.get("NAME_FAMILY_STATUS", ""), "N/A")
-
-    education_map = {
-        "Higher education": "Dai hoc",
-        "Secondary / secondary special": "Trung hoc",
-        "Incomplete higher": "Cao dang",
-        "Lower secondary": "Trung hoc co so",
-        "Academic degree": "Thac si / Tien si",
-    }
-    education_display = education_map.get(app.get("NAME_EDUCATION_TYPE", ""), str(app.get("NAME_EDUCATION_TYPE", "")))
+    # ── Use original English enum values directly for round-trip fidelity ──
+    gender_display = str(app.get("CODE_GENDER", "M"))
+    family_display = str(app.get("NAME_FAMILY_STATUS", "Married"))
+    education_display = str(app.get("NAME_EDUCATION_TYPE", ""))
 
     # ── 1. CCCD PDF ──
     path = os.path.join(customer_dir, "01_cccd.pdf")
@@ -375,7 +357,7 @@ def generate_pdfs_for_customer(data, customer_dir):
     y = draw_field(c, y, "So CCCD", f"0{sk_id}")
     y = draw_field(c, y, "Ho va ten", f"Customer_{sk_id}")
     y = draw_field(c, y, "Ngay sinh", days_to_date(app.get("DAYS_BIRTH")))
-    y = draw_field(c, y, "Gioi tinh", gender_display)
+    y = draw_field(c, y, "Gioi tinh", gender_display)  # English enum: M/F/XNA
     y = draw_field(c, y, "Quoc tich", "Viet Nam")
     y = draw_field(c, y, "Noi thuong tru", f"Address of customer {sk_id}")
     y = draw_section(c, y, "THONG TIN CAP VA HIEU LUC")
@@ -396,13 +378,13 @@ def generate_pdfs_for_customer(data, customer_dir):
     c = canvas.Canvas(path, pagesize=A4)
     y = draw_header(c, "HOP DONG LAO DONG")
     y = draw_section(c, y, "BEN SU DUNG LAO DONG (BEN A)")
-    y = draw_field(c, y, "Ten doanh nghiep", str(app.get("ORGANIZATION_TYPE", "N/A")))
+    y = draw_field(c, y, "Ten doanh nghiep", str(app.get("ORGANIZATION_TYPE", "N/A")))  # English enum
     y = draw_field(c, y, "Dien thoai", "028 1234 5678" if app.get("FLAG_EMP_PHONE") == 1 else "Khong co")
     y = draw_section(c, y, "NGUOI LAO DONG (BEN B)")
     y = draw_field(c, y, "Ho va ten", f"Customer_{sk_id}")
-    y = draw_field(c, y, "Chuc danh", str(app.get("OCCUPATION_TYPE", "N/A")))
+    y = draw_field(c, y, "Chuc danh", str(app.get("OCCUPATION_TYPE", "N/A")))  # English enum
     y = draw_field(c, y, "Ngay bat dau", days_to_date(app.get("DAYS_EMPLOYED")))
-    y = draw_field(c, y, "Loai hop dong", "Khong xac dinh thoi han" if app.get("NAME_INCOME_TYPE") == "Working" else str(app.get("NAME_INCOME_TYPE", "")))
+    y = draw_field(c, y, "Loai hop dong", str(app.get("NAME_INCOME_TYPE", "Working")))  # English enum directly
     # Page 2 - salary
     c.showPage()
     y = draw_header(c, "HOP DONG LAO DONG (tiep theo)")
@@ -435,6 +417,7 @@ def generate_pdfs_for_customer(data, customer_dir):
     y = draw_header(c, "PHIEU THAM DINH TAI SAN / NHA O")
     y = draw_section(c, y, "THONG TIN BAT DONG SAN")
     y = draw_field(c, y, "Loai hinh nha o", str(app.get("NAME_HOUSING_TYPE", "N/A")))
+    y = draw_field(c, y, "Loai toa nha", str(app.get("HOUSETYPE_MODE", "block of flats")))  # Separate from NAME_HOUSING_TYPE
 
     # Housing features: use LIVINGAREA_AVG as proxy for living_area
     living_area_norm = app.get("LIVINGAREA_AVG")
@@ -463,7 +446,73 @@ def generate_pdfs_for_customer(data, customer_dir):
     quality_score = f"{quality * 10:.1f} / 10" if quality else "N/A"
     y = draw_field(c, y, "Chat luong can ho (1-10)", quality_score)
 
-    # Page 2 - Region info
+    # Page 2 - Normalized housing detail fields
+    c.showPage()
+    y = draw_header(c, "PHIEU THAM DINH (tiep theo)")
+    y = draw_section(c, y, "CHI TIET BAT DONG SAN (NORMALIZED 0-1)")
+
+    # Helper to format normalized value or N/A
+    def _fmt_norm(val):
+        if val is None:
+            return "N/A"
+        return str(val)
+
+    y = draw_field(c, y, "Dien tich can ho (norm)", _fmt_norm(app.get("APARTMENTS_AVG")))
+    y = draw_field(c, y, "Dien tich tang ham (norm)", _fmt_norm(app.get("BASEMENTAREA_AVG")))
+    y = draw_field(c, y, "Nam bat dau su dung (norm)", _fmt_norm(app.get("YEARS_BEGINEXPLUATATION_AVG")))
+    y = draw_field(c, y, "Nam xay dung (norm)", _fmt_norm(app.get("YEARS_BUILD_AVG")))
+    y = draw_field(c, y, "Dien tich chung (norm)", _fmt_norm(app.get("COMMONAREA_AVG")))
+    y = draw_field(c, y, "Thang may (norm)", _fmt_norm(app.get("ELEVATORS_AVG")))
+    y = draw_field(c, y, "Loi vao (norm)", _fmt_norm(app.get("ENTRANCES_AVG")))
+    y = draw_field(c, y, "So tang max (norm)", _fmt_norm(app.get("FLOORSMAX_AVG")))
+    y = draw_field(c, y, "So tang min (norm)", _fmt_norm(app.get("FLOORSMIN_AVG")))
+    y = draw_field(c, y, "Dien tich dat (norm)", _fmt_norm(app.get("LANDAREA_AVG")))
+    y = draw_field(c, y, "Dien tich o (can ho, norm)", _fmt_norm(app.get("LIVINGAPARTMENTS_AVG")))
+    y = draw_field(c, y, "Dien tich song (norm)", _fmt_norm(app.get("LIVINGAREA_AVG")))
+    y = draw_field(c, y, "Dien tich phi o (phong, norm)", _fmt_norm(app.get("NONLIVINGAPARTMENTS_AVG")))
+    y = draw_field(c, y, "Dien tich phi o (norm)", _fmt_norm(app.get("NONLIVINGAREA_AVG")))
+    y = draw_field(c, y, "Tong dien tich (norm)", _fmt_norm(app.get("TOTALAREA_MODE")))
+    y = draw_field(c, y, "Quy sua chua", _fmt_norm(app.get("FONDKAPREMONT_MODE")))
+
+    # Page 2b - _MODE variant fields
+    c.showPage()
+    y = draw_header(c, "PHIEU THAM DINH (tiep theo)")
+    y = draw_section(c, y, "CHI TIET BAT DONG SAN (MODE)")
+    y = draw_field(c, y, "Dien tich can ho (mode)", _fmt_norm(app.get("APARTMENTS_MODE")))
+    y = draw_field(c, y, "Dien tich tang ham (mode)", _fmt_norm(app.get("BASEMENTAREA_MODE")))
+    y = draw_field(c, y, "Nam bat dau su dung (mode)", _fmt_norm(app.get("YEARS_BEGINEXPLUATATION_MODE")))
+    y = draw_field(c, y, "Nam xay dung (mode)", _fmt_norm(app.get("YEARS_BUILD_MODE")))
+    y = draw_field(c, y, "Dien tich chung (mode)", _fmt_norm(app.get("COMMONAREA_MODE")))
+    y = draw_field(c, y, "Thang may (mode)", _fmt_norm(app.get("ELEVATORS_MODE")))
+    y = draw_field(c, y, "Loi vao (mode)", _fmt_norm(app.get("ENTRANCES_MODE")))
+    y = draw_field(c, y, "So tang max (mode)", _fmt_norm(app.get("FLOORSMAX_MODE")))
+    y = draw_field(c, y, "So tang min (mode)", _fmt_norm(app.get("FLOORSMIN_MODE")))
+    y = draw_field(c, y, "Dien tich dat (mode)", _fmt_norm(app.get("LANDAREA_MODE")))
+    y = draw_field(c, y, "Dien tich o (can ho, mode)", _fmt_norm(app.get("LIVINGAPARTMENTS_MODE")))
+    y = draw_field(c, y, "Dien tich song (mode)", _fmt_norm(app.get("LIVINGAREA_MODE")))
+    y = draw_field(c, y, "Dien tich phi o (phong, mode)", _fmt_norm(app.get("NONLIVINGAPARTMENTS_MODE")))
+    y = draw_field(c, y, "Dien tich phi o (mode)", _fmt_norm(app.get("NONLIVINGAREA_MODE")))
+
+    # Page 2c - _MEDI variant fields
+    c.showPage()
+    y = draw_header(c, "PHIEU THAM DINH (tiep theo)")
+    y = draw_section(c, y, "CHI TIET BAT DONG SAN (MEDI)")
+    y = draw_field(c, y, "Dien tich can ho (medi)", _fmt_norm(app.get("APARTMENTS_MEDI")))
+    y = draw_field(c, y, "Dien tich tang ham (medi)", _fmt_norm(app.get("BASEMENTAREA_MEDI")))
+    y = draw_field(c, y, "Nam bat dau su dung (medi)", _fmt_norm(app.get("YEARS_BEGINEXPLUATATION_MEDI")))
+    y = draw_field(c, y, "Nam xay dung (medi)", _fmt_norm(app.get("YEARS_BUILD_MEDI")))
+    y = draw_field(c, y, "Dien tich chung (medi)", _fmt_norm(app.get("COMMONAREA_MEDI")))
+    y = draw_field(c, y, "Thang may (medi)", _fmt_norm(app.get("ELEVATORS_MEDI")))
+    y = draw_field(c, y, "Loi vao (medi)", _fmt_norm(app.get("ENTRANCES_MEDI")))
+    y = draw_field(c, y, "So tang max (medi)", _fmt_norm(app.get("FLOORSMAX_MEDI")))
+    y = draw_field(c, y, "So tang min (medi)", _fmt_norm(app.get("FLOORSMIN_MEDI")))
+    y = draw_field(c, y, "Dien tich dat (medi)", _fmt_norm(app.get("LANDAREA_MEDI")))
+    y = draw_field(c, y, "Dien tich o (can ho, medi)", _fmt_norm(app.get("LIVINGAPARTMENTS_MEDI")))
+    y = draw_field(c, y, "Dien tich song (medi)", _fmt_norm(app.get("LIVINGAREA_MEDI")))
+    y = draw_field(c, y, "Dien tich phi o (phong, medi)", _fmt_norm(app.get("NONLIVINGAPARTMENTS_MEDI")))
+    y = draw_field(c, y, "Dien tich phi o (medi)", _fmt_norm(app.get("NONLIVINGAREA_MEDI")))
+
+    # Page 3 - Region info + city cross-checks
     c.showPage()
     y = draw_header(c, "PHIEU THAM DINH (tiep theo)")
     y = draw_section(c, y, "THONG TIN KHU VUC")
@@ -476,6 +525,14 @@ def generate_pdfs_for_customer(data, customer_dir):
                    "Co" if app.get("REG_REGION_NOT_WORK_REGION") == 0 else "Khong")
     y = draw_field(c, y, "Song cung vung lam viec",
                    "Co" if app.get("LIVE_REGION_NOT_WORK_REGION") == 0 else "Khong")
+
+    y = draw_section(c, y, "DIA CHI CROSS-CHECK (THANH PHO)")
+    y = draw_field(c, y, "Dang ky cung TP song",
+                   "Co" if app.get("REG_CITY_NOT_LIVE_CITY") == 0 else "Khong")
+    y = draw_field(c, y, "Dang ky cung TP lam viec (TP)",
+                   "Co" if app.get("REG_CITY_NOT_WORK_CITY") == 0 else "Khong")
+    y = draw_field(c, y, "Song cung TP lam viec (TP)",
+                   "Co" if app.get("LIVE_CITY_NOT_WORK_CITY") == 0 else "Khong")
     c.save()
     print(f"  Created: {path}")
 
@@ -488,8 +545,10 @@ def generate_pdfs_for_customer(data, customer_dir):
     y = draw_field(c, y, "So CCCD", f"0{sk_id}")
     y = draw_field(c, y, "Ngay sinh", days_to_date(app.get("DAYS_BIRTH")))
     y = draw_field(c, y, "Gioi tinh", gender_display)
-    y = draw_field(c, y, "Trinh do hoc van", education_display)
-    y = draw_field(c, y, "Tinh trang hon nhan", family_display)
+    y = draw_field(c, y, "Trinh do hoc van", education_display)  # English enum directly
+    y = draw_field(c, y, "Tinh trang hon nhan", family_display)  # English enum directly
+    y = draw_field(c, y, "Dien thoai noi lam viec", "1" if app.get("FLAG_EMP_PHONE") == 1 else "0")
+    y = draw_field(c, y, "Dien thoai ban cong ty", "1" if app.get("FLAG_WORK_PHONE") == 1 else "0")
 
     # Car/Realty
     y = draw_field(c, y, "Co xe o to", "Co" if app.get("FLAG_OWN_CAR") == "Y" else "Khong")
@@ -508,6 +567,12 @@ def generate_pdfs_for_customer(data, customer_dir):
         y = draw_field(c, y, "Ngay doi SDT gan nhat",
                        f"{days_to_date(phone_change)} (khoang {abs(int(phone_change))} ngay truoc)")
 
+    # Weekday/Hour of application (stored for round-trip)
+    weekday = app.get("WEEKDAY_APPR_PROCESS_START", "MONDAY")
+    hour = app.get("HOUR_APPR_PROCESS_START", 10)
+    y = draw_field(c, y, "Ngay nop don", str(weekday))
+    y = draw_field(c, y, "Gio nop don", str(int(hour)))
+
     y = draw_section(c, y, "II. THONG TIN KHOAN VAY")
     y = draw_field(c, y, "Loai hop dong", str(app.get("NAME_CONTRACT_TYPE", "Cash loans")))
     credit = app.get("AMT_CREDIT")
@@ -516,6 +581,15 @@ def generate_pdfs_for_customer(data, customer_dir):
     y = draw_field(c, y, "Tra hang thang (du kien)", f"{annuity:,.0f} VND" if annuity else "N/A")
     goods = app.get("AMT_GOODS_PRICE")
     y = draw_field(c, y, "Gia tri hang hoa", f"{goods:,.0f} VND" if goods else "N/A")
+
+    # Page 2 - FLAG_DOCUMENT values
+    c.showPage()
+    y = draw_header(c, "DON DE NGHI VAY VON (tiep theo)")
+    y = draw_section(c, y, "III. TAI LIEU DA NOP")
+    for i in range(2, 22):
+        flag_key = f"FLAG_DOCUMENT_{i}"
+        y = draw_field(c, y, f"Tai lieu {i}", str(int(app.get(flag_key, 0))))
+
     c.save()
     print(f"  Created: {path}")
 

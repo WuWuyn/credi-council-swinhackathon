@@ -43,9 +43,9 @@ class FeatureEngineerAgent:
     This is the bridge between raw data and ML scoring.
     """
 
-    def __init__(self, use_mock: bool = False):
-        self.semantic_extractor = SemanticExtractor(use_mock=use_mock)
-        self.imputer = IntelligentImputer(use_mock=use_mock)
+    def __init__(self):
+        self.semantic_extractor = SemanticExtractor()
+        self.imputer = IntelligentImputer()
 
     def process(self, a1_output: dict[str, Any]) -> dict[str, Any]:
         """Run A2 feature engineering pipeline.
@@ -70,11 +70,21 @@ class FeatureEngineerAgent:
         imputation_log: list[dict] = []
         llm_feats: dict[str, Any] = {}
 
-        # ── Step 1: Semantic extraction from OCR text ──
+        # ── Step 1: Semantic extraction ──
+        # Source: OCR text (from PDFs) or structured summary (from application_row)
         raw_texts = a1_output.get("raw_texts", {})
         if raw_texts:
-            ocr_combined = " ".join(str(v) for v in raw_texts.values())
-            semantic = self.semantic_extractor.extract_loan_features(ocr_combined)
+            # USE_OCR=true: combine raw OCR text from all PDFs
+            input_text = " ".join(str(v) for v in raw_texts.values())
+            logger.info("  Step 1: Semantic extraction from OCR text")
+        else:
+            # USE_OCR=false: build structured summary from application_row
+            # This is actually MORE accurate than noisy OCR text
+            input_text = self._build_text_from_application_row(application_row)
+            logger.info("  Step 1: Semantic extraction from application_row summary")
+
+        if input_text.strip():
+            semantic = self.semantic_extractor.extract_loan_features(input_text)
             llm_feats.update(semantic)
             logger.info(f"  Step 1: {len(semantic)} semantic features extracted")
             logger.info(f"    Purpose: {semantic.get('loan_purpose_category')}")
@@ -191,3 +201,99 @@ class FeatureEngineerAgent:
             import traceback
             traceback.print_exc()
             return None
+
+    @staticmethod
+    def _build_text_from_application_row(app: dict) -> str:
+        """Convert application_row dict into structured text for LLM semantic extraction.
+
+        This produces a text summary that the SemanticExtractor can analyze,
+        enabling semantic features even when OCR text is not available (USE_OCR=false).
+        """
+        lines = []
+
+        # Personal info
+        gender = app.get("CODE_GENDER", "N/A")
+        education = app.get("NAME_EDUCATION_TYPE", "N/A")
+        family = app.get("NAME_FAMILY_STATUS", "N/A")
+        housing = app.get("NAME_HOUSING_TYPE", "N/A")
+        income_type = app.get("NAME_INCOME_TYPE", "N/A")
+        occupation = app.get("OCCUPATION_TYPE", "N/A")
+        org_type = app.get("ORGANIZATION_TYPE", "N/A")
+
+        lines.append(f"Applicant: {gender}, {education}, {family}")
+        lines.append(f"Housing: {housing}")
+        lines.append(f"Income type: {income_type}, Occupation: {occupation}")
+        lines.append(f"Organization: {org_type}")
+
+        # Age and employment
+        days_birth = app.get("DAYS_BIRTH")
+        if days_birth:
+            age_years = abs(int(days_birth)) // 365
+            lines.append(f"Age: {age_years} years")
+
+        days_employed = app.get("DAYS_EMPLOYED")
+        if days_employed and int(days_employed) < 0:
+            emp_years = abs(int(days_employed)) / 365
+            lines.append(f"Employment duration: {emp_years:.1f} years")
+
+        # Income and loan
+        income = app.get("AMT_INCOME_TOTAL")
+        credit = app.get("AMT_CREDIT")
+        annuity = app.get("AMT_ANNUITY")
+        goods = app.get("AMT_GOODS_PRICE")
+        contract = app.get("NAME_CONTRACT_TYPE", "N/A")
+
+        if income:
+            lines.append(f"Annual income: {income:,.0f}")
+        if credit:
+            lines.append(f"Loan amount: {credit:,.0f}")
+        if annuity:
+            lines.append(f"Annuity: {annuity:,.0f}")
+        if goods:
+            lines.append(f"Goods price: {goods:,.0f}")
+        lines.append(f"Contract type: {contract}")
+
+        # DTI ratio
+        if income and annuity:
+            dti = (annuity / 12) / (income / 12) * 100
+            lines.append(f"DTI ratio: {dti:.1f}%")
+
+        # Assets
+        has_car = app.get("FLAG_OWN_CAR", "N")
+        has_realty = app.get("FLAG_OWN_REALTY", "N")
+        lines.append(f"Own car: {has_car}, Own property: {has_realty}")
+
+        car_age = app.get("OWN_CAR_AGE")
+        if car_age is not None:
+            lines.append(f"Car age: {car_age} years")
+
+        # External scores (CIC)
+        for i in [1, 2, 3]:
+            ext = app.get(f"EXT_SOURCE_{i}")
+            if ext is not None:
+                lines.append(f"External credit score {i}: {ext:.4f}")
+
+        # Children and family
+        children = app.get("CNT_CHILDREN", 0)
+        family_members = app.get("CNT_FAM_MEMBERS")
+        if children:
+            lines.append(f"Children: {children}")
+        if family_members:
+            lines.append(f"Family members: {int(family_members)}")
+
+        # Contact info
+        flags = []
+        if app.get("FLAG_MOBIL") == 1: flags.append("mobile")
+        if app.get("FLAG_EMP_PHONE") == 1: flags.append("employer phone")
+        if app.get("FLAG_WORK_PHONE") == 1: flags.append("work phone")
+        if app.get("FLAG_PHONE") == 1: flags.append("landline")
+        if app.get("FLAG_EMAIL") == 1: flags.append("email")
+        if flags:
+            lines.append(f"Contact methods: {', '.join(flags)}")
+
+        # Region
+        region_rating = app.get("REGION_RATING_CLIENT")
+        if region_rating:
+            lines.append(f"Region rating: {region_rating}")
+
+        return "\n".join(lines)

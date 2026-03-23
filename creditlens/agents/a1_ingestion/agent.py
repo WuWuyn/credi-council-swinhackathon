@@ -47,9 +47,9 @@ class IngestionAgent:
     matching the Home Credit dataset format for feature engineering.
     """
 
-    def __init__(self, use_mock: bool = False):
+    def __init__(self):
         self.doc_parser = LocalDocumentParser()
-        self.cic = CICService(use_mock=use_mock)
+        self.cic = CICService()
         self.internal_db = InternalDBReader()
 
     def ingest(
@@ -91,13 +91,19 @@ class IngestionAgent:
         logger.info(f"  Applicant ID: {applicant_id}")
         logger.info(f"{'='*60}")
 
-        # ── Fast-path: load directly from application_row.json ─────────
-        # When application_row.json exists, skip PDF OCR entirely.
-        # This gives 100% feature coverage (all 122 dataset columns) vs
-        # ~60% from OCR parsing, and is ~10x faster for demo mode.
+        # ── Mode selection: OCR vs Fast-path ─────────────────────────────
+        # Controlled by USE_OCR in .env (default: true)
+        # USE_OCR=true  → Always parse PDFs via OCR pipeline (full pipeline)
+        # USE_OCR=false → Read application_row.json directly (fast-path, demo)
+        from creditlens.config.settings import get_settings
+        settings = get_settings()
+
         app_row_path = customer_dir / "application_row.json"
-        if app_row_path.exists():
+        if not settings.use_ocr and app_row_path.exists():
+            logger.info("  Mode: FAST-PATH (USE_OCR=false, reading application_row.json)")
             return self._ingest_from_json(customer_dir, app_row_path, applicant_id)
+
+        logger.info("  Mode: OCR PIPELINE (USE_OCR=true, parsing PDFs)")
         # ── Channel 1: Parse PDF documents ─────────────────────────────
         doc_fields = {}
         confidence_map = {}
@@ -321,10 +327,10 @@ class IngestionAgent:
             "ORGANIZATION_TYPE": self._map_org_type(employment.get("employer_name")),
             "OCCUPATION_TYPE": self._map_occupation(employment.get("position")),
 
-            # Contact flags (from Đơn vay)
+            # Contact flags (from Dơn vay)
             "FLAG_MOBIL": 1,  # Always 1 for application
-            "FLAG_EMP_PHONE": 1 if employment.get("employer_phone") else 0,
-            "FLAG_WORK_PHONE": 1 if employment.get("employer_phone") else 0,
+            "FLAG_EMP_PHONE": loan_app.get("flag_emp_phone", 1 if employment.get("employer_phone") else 0),
+            "FLAG_WORK_PHONE": loan_app.get("flag_work_phone", 1 if employment.get("employer_phone") else 0),
             "FLAG_CONT_MOBILE": loan_app.get("flag_cont_mobile", 1),
             "FLAG_PHONE": loan_app.get("flag_phone", 0),
             "FLAG_EMAIL": loan_app.get("flag_email", 1),
@@ -347,14 +353,14 @@ class IngestionAgent:
             "REG_REGION_NOT_LIVE_REGION": 0 if housing.get("reg_live_same_region") else 1,
             "REG_REGION_NOT_WORK_REGION": 0 if housing.get("reg_work_same_city") else 1,
             "LIVE_REGION_NOT_WORK_REGION": 0 if housing.get("live_work_same_region") else 1,
-            "REG_CITY_NOT_LIVE_CITY": 0,
-            "REG_CITY_NOT_WORK_CITY": 0,
-            "LIVE_CITY_NOT_WORK_CITY": 0,
+            "REG_CITY_NOT_LIVE_CITY": 0 if housing.get("reg_city_same_live_city") else 1,
+            "REG_CITY_NOT_WORK_CITY": 0 if housing.get("reg_city_same_work_city") else 1,
+            "LIVE_CITY_NOT_WORK_CITY": 0 if housing.get("live_city_same_work_city") else 1,
 
-            # Application process (auto-captured)
-            "WEEKDAY_APPR_PROCESS_START": today.strftime("%A").upper()[:3]
-                                          if today.weekday() < 5 else "MONDAY",
-            "HOUR_APPR_PROCESS_START": datetime.now().hour,
+            # Application process (from PDF if available, else auto-captured)
+            "WEEKDAY_APPR_PROCESS_START": loan_app.get("weekday_appr",
+                today.strftime("%A").upper()[:3] if today.weekday() < 5 else "MONDAY"),
+            "HOUR_APPR_PROCESS_START": loan_app.get("hour_appr", datetime.now().hour),
 
             # Phone change
             "DAYS_LAST_PHONE_CHANGE": self._parse_days_phone_change(
@@ -384,7 +390,7 @@ class IngestionAgent:
             **self._build_housing_features(housing),
 
             # Document flags — which docs were submitted
-            **self._build_document_flags(doc_fields),
+            **self._build_document_flags(doc_fields, loan_app),
         }
 
         return row
@@ -393,86 +399,122 @@ class IngestionAgent:
         """Build normalized housing features from housing survey data.
 
         Maps housing survey fields to the 46 housing columns in application_train.
+
+        Strategy:
+        - If individual normalized fields (*_norm) are available from the PDF,
+          use them directly for _AVG, and derive _MODE/_MEDI with small offsets.
+        - Otherwise, fall back to computing from raw fields (floors, area, year)
+          or using apartment_quality as a last-resort proxy.
         """
-        quality = housing.get("apartment_quality")
-        if quality:
-            try:
-                # Normalize quality score from "7.5 / 10" to 0-1
-                nums = [float(n) for n in str(quality).split("/") if n.strip().replace(".", "").isdigit()]
-                if len(nums) == 2:
-                    quality_norm = nums[0] / nums[1]
-                elif len(nums) == 1:
-                    quality_norm = nums[0] / 10
+        housing_feats: dict[str, Any] = {}
+
+        # ── Map from parsed normalized fields to Home Credit columns ──
+        # Each base column maps to a parsed field name from the PDF.
+        NORM_FIELD_MAP = {
+            "APARTMENTS":            "apartments_norm",
+            "BASEMENTAREA":          "basementarea_norm",
+            "YEARS_BEGINEXPLUATATION":"years_beginexpluatation_norm",
+            "YEARS_BUILD":           "years_build_norm",
+            "COMMONAREA":            "commonarea_norm",
+            "ELEVATORS":             "elevators_norm",
+            "ENTRANCES":             "entrances_norm",
+            "FLOORSMAX":             "floorsmax_norm",
+            "FLOORSMIN":             "floorsmin_norm",
+            "LANDAREA":              "landarea_norm",
+            "LIVINGAPARTMENTS":      "livingapartments_norm",
+            "LIVINGAREA":            "livingarea_norm",
+            "NONLIVINGAPARTMENTS":   "nonlivingapartments_norm",
+            "NONLIVINGAREA":         "nonlivingarea_norm",
+        }
+
+        # Check if we have individual normalized fields from the PDF
+        has_norm_fields = any(housing.get(nf) is not None for nf in NORM_FIELD_MAP.values())
+
+        if has_norm_fields:
+            # ── Path A: Use individually parsed normalized values ──
+            for hc_base, parsed_field in NORM_FIELD_MAP.items():
+                val = housing.get(parsed_field)
+                if val is not None:
+                    fval = float(val)
+                    housing_feats[hc_base + "_AVG"] = fval
+                    # Use separate _MODE/_MEDI values if available, else fall back to AVG
+                    mode_field = parsed_field.replace("_norm", "_mode_norm")
+                    medi_field = parsed_field.replace("_norm", "_medi_norm")
+                    mode_val = housing.get(mode_field)
+                    medi_val = housing.get(medi_field)
+                    housing_feats[hc_base + "_MODE"] = float(mode_val) if mode_val is not None else fval
+                    housing_feats[hc_base + "_MEDI"] = float(medi_val) if medi_val is not None else fval
                 else:
-                    quality_norm = None
-            except (ValueError, ZeroDivisionError):
-                quality_norm = None
+                    housing_feats[hc_base + "_AVG"] = None
+                    housing_feats[hc_base + "_MODE"] = None
+                    housing_feats[hc_base + "_MEDI"] = None
         else:
+            # ── Path B: Fallback — use apartment_quality as proxy ──
+            quality = housing.get("apartment_quality")
             quality_norm = None
+            if quality:
+                try:
+                    nums = [float(n) for n in str(quality).split("/")
+                            if n.strip().replace(".", "").isdigit()]
+                    if len(nums) == 2:
+                        quality_norm = nums[0] / nums[1]
+                    elif len(nums) == 1:
+                        quality_norm = nums[0] / 10
+                except (ValueError, ZeroDivisionError):
+                    pass
 
-        # Parse areas
-        living_area = housing.get("living_area")
-        if isinstance(living_area, str):
-            nums = [float(n) for n in living_area.split() if n.replace(".", "").isdigit()]
-            living_area = nums[0] if nums else None
+            for hc_base in NORM_FIELD_MAP:
+                for suffix in ["_AVG", "_MODE", "_MEDI"]:
+                    housing_feats[hc_base + suffix] = quality_norm
 
-        # Normalized housing values (Home Credit uses 0-1 normalized values)
-        # We use the quality score as proxy for all quality metrics
-        housing_feats = {}
-        housing_norm_cols = [
-            "APARTMENTS", "BASEMENTAREA", "YEARS_BEGINEXPLUATATION",
-            "YEARS_BUILD", "COMMONAREA", "ELEVATORS", "ENTRANCES",
-            "FLOORSMAX", "FLOORSMIN", "LANDAREA", "LIVINGAPARTMENTS",
-            "LIVINGAREA", "NONLIVINGAPARTMENTS", "NONLIVINGAREA",
-        ]
+            # Override specific values where we have raw data
+            def _safe_float(val):
+                if val is None:
+                    return None
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    import re as _re
+                    nums = _re.findall(r"[\d.]+", str(val))
+                    return float(nums[0]) if nums else None
 
-        for col in housing_norm_cols:
-            for suffix in ["_AVG", "_MODE", "_MEDI"]:
-                housing_feats[col + suffix] = quality_norm
+            max_floors_val = _safe_float(housing.get("max_floors"))
+            if max_floors_val and max_floors_val > 0:
+                floor_norm = min(1.0, max_floors_val / 50)
+                for s in ["_AVG", "_MODE", "_MEDI"]:
+                    housing_feats["FLOORSMAX" + s] = floor_norm
 
-        # Helper: safely convert to float
-        def _safe_float(val):
-            if val is None:
-                return None
-            try:
-                return float(val)
-            except (ValueError, TypeError):
-                import re as _re
-                nums = _re.findall(r"[\d.]+", str(val))
-                return float(nums[0]) if nums else None
+            living_area = housing.get("living_area")
+            if isinstance(living_area, str):
+                nums = [float(n) for n in living_area.split()
+                        if n.replace(".", "").isdigit()]
+                living_area = nums[0] if nums else None
+            living_area_val = _safe_float(living_area) if living_area else None
+            if living_area_val and living_area_val > 0:
+                area_norm = min(1.0, living_area_val / 200)
+                for s in ["_AVG", "_MODE", "_MEDI"]:
+                    housing_feats["LIVINGAREA" + s] = area_norm
 
-        # Override specific values where we have actual data
-        max_floors_val = _safe_float(housing.get("max_floors"))
-        if max_floors_val and max_floors_val > 0:
-            floor_norm = min(1.0, max_floors_val / 50)
-            housing_feats["FLOORSMAX_AVG"] = floor_norm
-            housing_feats["FLOORSMAX_MODE"] = floor_norm
-            housing_feats["FLOORSMAX_MEDI"] = floor_norm
+            year_built_val = _safe_float(housing.get("year_built"))
+            if year_built_val and year_built_val > 1900:
+                year_norm = min(1.0, max(0, (year_built_val - 1950) / 80))
+                for s in ["_AVG", "_MODE", "_MEDI"]:
+                    housing_feats["YEARS_BUILD" + s] = year_norm
 
-        living_area_val = _safe_float(living_area) if living_area else None
-        if living_area_val and living_area_val > 0:
-            area_norm = min(1.0, living_area_val / 200)
-            housing_feats["LIVINGAREA_AVG"] = area_norm
-            housing_feats["LIVINGAREA_MODE"] = area_norm
-            housing_feats["LIVINGAREA_MEDI"] = area_norm
+            if housing.get("has_elevator"):
+                elev = 1.0 if str(housing["has_elevator"]).lower() in (
+                    "co", "yes", "true", "1") else 0.0
+                for s in ["_AVG", "_MODE", "_MEDI"]:
+                    housing_feats["ELEVATORS" + s] = elev
 
-        year_built_val = _safe_float(housing.get("year_built"))
-        if year_built_val and year_built_val > 1900:
-            year_norm = min(1.0, max(0, (year_built_val - 1950) / 80))
-            housing_feats["YEARS_BUILD_AVG"] = year_norm
-            housing_feats["YEARS_BUILD_MODE"] = year_norm
-            housing_feats["YEARS_BUILD_MEDI"] = year_norm
-
-        if housing.get("has_elevator"):
-            elev = 1.0 if str(housing["has_elevator"]).lower() in ("co", "yes", "true", "1") else 0.0
-            housing_feats["ELEVATORS_AVG"] = elev
-            housing_feats["ELEVATORS_MODE"] = elev
-            housing_feats["ELEVATORS_MEDI"] = elev
-
-        # Categorical housing fields
-        housing_feats["FONDKAPREMONT_MODE"] = housing.get("fond_kapremont", "reg oper account")
-        housing_feats["HOUSETYPE_MODE"] = housing.get("housing_type", "block of flats")
-        housing_feats["TOTALAREA_MODE"] = quality_norm if quality_norm else 0.0
+        # ── Categorical housing fields (same for both paths) ──
+        fond = housing.get("fond_kapremont")
+        # Normalize "N/A" string to None  
+        if fond and str(fond).strip().upper() in ("N/A", "NA", "NONE", "-"):
+            fond = None
+        housing_feats["FONDKAPREMONT_MODE"] = fond
+        housing_feats["HOUSETYPE_MODE"] = housing.get("housetype_mode", housing.get("housing_type", "block of flats"))
+        housing_feats["TOTALAREA_MODE"] = housing.get("totalarea_norm", 0.0)
         housing_feats["WALLSMATERIAL_MODE"] = housing.get("wall_material", "Panel")
         housing_feats["EMERGENCYSTATE_MODE"] = (
             "No" if "khong" in str(housing.get("emergency_state", "")).lower()
@@ -482,38 +524,48 @@ class IngestionAgent:
 
         return housing_feats
 
-    def _build_document_flags(self, doc_fields: dict) -> dict[str, int]:
+    def _build_document_flags(self, doc_fields: dict, loan_app: dict) -> dict[str, int]:
         """Build FLAG_DOCUMENT_2 through FLAG_DOCUMENT_21."""
         flags = {}
-        # Document submission flags — set based on which docs we received
-        has_cccd = "cccd" in doc_fields
-        has_employment = "employment" in doc_fields
-        has_household = "household" in doc_fields
-        has_housing = "housing" in doc_fields
-        has_loan = "loan_application" in doc_fields
+        # Document submission flags
+        # If parsed from PDF (flag_document_N fields), use those values directly.
+        # Otherwise fall back to auto-detecting which doc types were submitted.
+        has_parsed_flags = any(
+            loan_app.get(f"flag_document_{i}") is not None for i in range(2, 22)
+        )
 
-        # Home Credit FLAG_DOCUMENT_* flags:
-        # 3 is most common (identity doc), 8 is second common
-        flags["FLAG_DOCUMENT_2"] = 0
-        flags["FLAG_DOCUMENT_3"] = 1 if has_cccd else 0
-        flags["FLAG_DOCUMENT_4"] = 0
-        flags["FLAG_DOCUMENT_5"] = 0
-        flags["FLAG_DOCUMENT_6"] = 1 if has_employment else 0
-        flags["FLAG_DOCUMENT_7"] = 0
-        flags["FLAG_DOCUMENT_8"] = 1 if has_housing else 0
-        flags["FLAG_DOCUMENT_9"] = 0
-        flags["FLAG_DOCUMENT_10"] = 0
-        flags["FLAG_DOCUMENT_11"] = 0
-        flags["FLAG_DOCUMENT_12"] = 0
-        flags["FLAG_DOCUMENT_13"] = 0
-        flags["FLAG_DOCUMENT_14"] = 0
-        flags["FLAG_DOCUMENT_15"] = 0
-        flags["FLAG_DOCUMENT_16"] = 1 if has_household else 0
-        flags["FLAG_DOCUMENT_17"] = 0
-        flags["FLAG_DOCUMENT_18"] = 1 if has_loan else 0
-        flags["FLAG_DOCUMENT_19"] = 0
-        flags["FLAG_DOCUMENT_20"] = 0
-        flags["FLAG_DOCUMENT_21"] = 0
+        if has_parsed_flags:
+            # Path A: Use explicit FLAG_DOCUMENT values from PDF
+            for i in range(2, 22):
+                flags[f"FLAG_DOCUMENT_{i}"] = int(loan_app.get(f"flag_document_{i}", 0))
+        else:
+            # Path B: Fallback — auto-detect from submitted documents
+            has_cccd = "cccd" in doc_fields
+            has_employment = "employment" in doc_fields
+            has_household = "household" in doc_fields
+            has_housing = "housing" in doc_fields
+            has_loan = "loan_application" in doc_fields
+
+            flags["FLAG_DOCUMENT_2"] = 0
+            flags["FLAG_DOCUMENT_3"] = 1 if has_cccd else 0
+            flags["FLAG_DOCUMENT_4"] = 0
+            flags["FLAG_DOCUMENT_5"] = 0
+            flags["FLAG_DOCUMENT_6"] = 1 if has_employment else 0
+            flags["FLAG_DOCUMENT_7"] = 0
+            flags["FLAG_DOCUMENT_8"] = 1 if has_housing else 0
+            flags["FLAG_DOCUMENT_9"] = 0
+            flags["FLAG_DOCUMENT_10"] = 0
+            flags["FLAG_DOCUMENT_11"] = 0
+            flags["FLAG_DOCUMENT_12"] = 0
+            flags["FLAG_DOCUMENT_13"] = 0
+            flags["FLAG_DOCUMENT_14"] = 0
+            flags["FLAG_DOCUMENT_15"] = 0
+            flags["FLAG_DOCUMENT_16"] = 1 if has_household else 0
+            flags["FLAG_DOCUMENT_17"] = 0
+            flags["FLAG_DOCUMENT_18"] = 1 if has_loan else 0
+            flags["FLAG_DOCUMENT_19"] = 0
+            flags["FLAG_DOCUMENT_20"] = 0
+            flags["FLAG_DOCUMENT_21"] = 0
 
         return flags
 
@@ -577,14 +629,23 @@ class IngestionAgent:
     def _map_marital_status(status: str | None) -> str:
         if not status:
             return "Married"
-        s = str(status).lower()
-        if "ket hon" in s or "married" in s or "da ket" in s:
+        s = str(status)
+        # Pass through valid English enum values
+        VALID_STATUSES = {
+            "Married", "Single / not married", "Separated",
+            "Widow", "Civil marriage", "Unknown",
+        }
+        if s in VALID_STATUSES:
+            return s
+        # Vietnamese mapping fallback
+        s_lower = s.lower()
+        if "ket hon" in s_lower or "married" in s_lower or "da ket" in s_lower:
             return "Married"
-        elif "doc than" in s or "single" in s:
+        elif "doc than" in s_lower or "single" in s_lower:
             return "Single / not married"
-        elif "ly hon" in s or "divorced" in s:
+        elif "ly hon" in s_lower or "divorced" in s_lower:
             return "Separated"
-        elif "goa" in s or "widow" in s:
+        elif "goa" in s_lower or "widow" in s_lower:
             return "Widow"
         return "Married"
 
@@ -592,25 +653,57 @@ class IngestionAgent:
     def _map_income_type(contract_type: str | None) -> str:
         if not contract_type:
             return "Working"
-        ct = str(contract_type).lower()
-        if "huu" in ct or "pension" in ct:
+        ct = str(contract_type)
+        # Pass through valid English enum values
+        VALID_INCOME_TYPES = {
+            "Working", "Commercial associate", "Pensioner",
+            "State servant", "Unemployed", "Student",
+            "Businessman", "Maternity leave",
+        }
+        if ct in VALID_INCOME_TYPES:
+            return ct
+        # Otherwise try Vietnamese mapping
+        ct_lower = ct.lower()
+        if "huu" in ct_lower or "pension" in ct_lower:
             return "Pensioner"
-        elif "kinh doanh" in ct or "business" in ct:
+        elif "kinh doanh" in ct_lower or "business" in ct_lower:
             return "Commercial associate"
+        elif "nha nuoc" in ct_lower or "state" in ct_lower:
+            return "State servant"
         return "Working"
 
     @staticmethod
     def _map_org_type(employer_name: str | None) -> str:
         if not employer_name:
             return "Business Entity Type 3"
-        name = str(employer_name).lower()
-        if "cong nghe" in name or "tech" in name or "it" in name:
+        name = str(employer_name)
+        # Pass through valid English enum values (there are 58 types in HC dataset)
+        VALID_ORG_TYPES = {
+            "Business Entity Type 1", "Business Entity Type 2", "Business Entity Type 3",
+            "XNA", "Self-employed", "Other", "Medicine", "Government",
+            "School", "Kindergarten", "Construction", "Trade: type 7",
+            "Industry: type 11", "Military", "Services", "Security Ministries",
+            "Transport: type 2", "Transport: type 4", "Police", "Restaurant",
+            "Agriculture", "University", "Industry: type 9", "Bank",
+            "Industry: type 3", "Industry: type 1", "Postal", "Trade: type 2",
+            "Security", "Trade: type 6", "Industry: type 7",
+            "Housing", "Electricity", "Hotel", "Cleaning", "Culture",
+            "Telecom", "Insurance", "Emergency", "Legal Services",
+            "Advertising", "Mobile", "Realtor", "Industry: type 5",
+            "Religion", "Trade: type 1", "Trade: type 3",
+            "Industry: type 4", "Industry: type 2",
+        }
+        if name in VALID_ORG_TYPES:
+            return name
+        # Otherwise try Vietnamese mapping
+        name_lower = name.lower()
+        if "cong nghe" in name_lower or "tech" in name_lower or "it" in name_lower:
             return "Business Entity Type 3"
-        elif "ngan hang" in name or "bank" in name:
+        elif "ngan hang" in name_lower or "bank" in name_lower:
             return "Bank"
-        elif "benh vien" in name or "hospital" in name:
+        elif "benh vien" in name_lower or "hospital" in name_lower:
             return "Medicine"
-        elif "truong" in name or "school" in name or "university" in name:
+        elif "truong" in name_lower or "school" in name_lower or "university" in name_lower:
             return "School"
         return "Business Entity Type 3"
 
@@ -618,16 +711,28 @@ class IngestionAgent:
     def _map_occupation(position: str | None) -> str:
         if not position:
             return "Laborers"
-        p = str(position).lower()
-        if "engineer" in p or "developer" in p or "ky su" in p:
+        p = str(position)
+        # Pass through valid English enum values
+        VALID_OCCUPATIONS = {
+            "Laborers", "Core staff", "Accountants", "Managers",
+            "Drivers", "Sales staff", "Cleaning staff", "Cooking staff",
+            "Security staff", "Medicine staff", "Private service staff",
+            "High skill tech staff", "Low-skill Laborers", "Waiters/barmen staff",
+            "Secretaries", "HR staff", "IT staff", "Realty agents",
+        }
+        if p in VALID_OCCUPATIONS:
+            return p
+        # Otherwise try Vietnamese mapping
+        p_lower = p.lower()
+        if "engineer" in p_lower or "developer" in p_lower or "ky su" in p_lower:
             return "Core staff"
-        elif "manager" in p or "director" in p or "giam doc" in p:
+        elif "manager" in p_lower or "director" in p_lower or "giam doc" in p_lower:
             return "Managers"
-        elif "accountant" in p or "ke toan" in p:
+        elif "accountant" in p_lower or "ke toan" in p_lower:
             return "Accountants"
-        elif "driver" in p or "lai xe" in p:
+        elif "driver" in p_lower or "lai xe" in p_lower:
             return "Drivers"
-        elif "sale" in p:
+        elif "sale" in p_lower:
             return "Sales staff"
         return "Core staff"
 
