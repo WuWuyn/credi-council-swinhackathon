@@ -19,7 +19,7 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -85,7 +85,7 @@ def get_agents():
     if not Path(model_path).is_absolute():
         model_path = str(PROJECT_ROOT / model_path)
 
-    _agents["a1"] = IngestionAgent()
+    _agents["a1"] = IngestionAgent(use_mock=True)  # Always mock — local data files, not real AWS
     _agents["a2"] = FeatureEngineerAgent(use_mock=use_mock)
     _agents["a3"] = ScoringAgent(model_path=model_path)
     _agents["a4"] = ReportGeneratorAgent(use_mock=use_mock)
@@ -204,7 +204,7 @@ async def score_json(data: dict[str, Any]):
         a3_output = agents["a3"].score(a2_output)
 
         logger.info("[4/4] A4: Report...")
-        a4_output = agents["a4"].generate(a1_output, a3_output)
+        a4_output = agents["a4"].generate(a3_output, a2_output, a1_output)
 
         return _format_result(a3_output, a4_output)
 
@@ -250,6 +250,70 @@ async def score_mock_customer(customer_id: str = Form(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ─── PDF Report endpoint ──────────────────────────────────────────────────────
+
+@app.get("/v1/report/{customer_id}/pdf")
+async def get_report_pdf(customer_id: str, download: int = 0):
+    """Generate or serve cached PDF credit report for a customer.
+
+    Used by the frontend PDF viewer.
+    First checks for cached PDF; if not found, generates from cached JSON report.
+    """
+    folder_name = _MOCK_FOLDERS.get(customer_id)
+    if not folder_name:
+        raise HTTPException(status_code=400, detail=f"Unknown customer_id: {customer_id}")
+
+    customer_folder = PROJECT_ROOT / "data" / "mock" / folder_name
+
+    # Check for cached PDF
+    pdf_path = customer_folder / "credit_report.pdf"
+    if pdf_path.exists():
+        content_disp = "attachment" if download else "inline"
+        return StreamingResponse(
+            open(pdf_path, "rb"),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'{content_disp}; filename="credit_report_{customer_id}.pdf"'
+            },
+        )
+
+    # No cached PDF — try to generate from cached JSON report
+    report_path = customer_folder / "credit_report.json"
+    shap_path = customer_folder / "shap_values.json"
+
+    if not report_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"No report found for customer {customer_id}. Run pipeline first."
+        )
+
+    try:
+        report_data = json.loads(report_path.read_text(encoding="utf-8"))
+        shap_data = json.loads(shap_path.read_text(encoding="utf-8")) if shap_path.exists() else {}
+
+        from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+        pdf_bytes = generate_credit_pdf(
+            report_data=report_data,
+            shap_data=shap_data,
+            customer_name=f"Customer_{customer_id}",
+        )
+
+        # Cache the PDF for next time
+        pdf_path.write_bytes(pdf_bytes)
+
+        content_disp = "attachment" if download else "inline"
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'{content_disp}; filename="credit_report_{customer_id}.pdf"'
+            },
+        )
+    except Exception as e:
+        logger.error(f"PDF generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+
+
 # ─── Pipeline runner ──────────────────────────────────────────────────────────
 
 def _run_pipeline(agents: dict, customer_folder: str, sk_id_curr: int = None) -> dict:
@@ -265,7 +329,31 @@ def _run_pipeline(agents: dict, customer_folder: str, sk_id_curr: int = None) ->
     a3_output = agents["a3"].score(a2_output)
 
     logger.info("[4/4] A4: Report Generation...")
-    a4_output = agents["a4"].generate(a3_output, a2_output)
+    a4_output = agents["a4"].generate(a3_output, a2_output, a1_output)
+
+    # Cache report + SHAP for PDF generation
+    try:
+        folder = Path(customer_folder)
+        report = a4_output.get("final_report", {})
+        shap_data = a3_output.get("shap_values", {})
+
+        with open(folder / "credit_report.json", "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2, default=str)
+        with open(folder / "shap_values.json", "w", encoding="utf-8") as f:
+            json.dump(shap_data, f, ensure_ascii=False, indent=2, default=str)
+
+        # Delete stale PDF cache so next /v1/report/{id}/pdf regenerates from new JSON
+        pdf_cache = folder / "credit_report.pdf"
+        if pdf_cache.exists():
+            pdf_cache.unlink()
+
+        # Also generate and cache PDF
+        from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+        pdf_bytes = generate_credit_pdf(report_data=report, shap_data=shap_data)
+        pdf_cache.write_bytes(pdf_bytes)
+        logger.info(f"  PDF cached: {pdf_cache}")
+    except Exception as e:
+        logger.warning(f"Failed to cache reports: {e}")
 
     return _format_result(a3_output, a4_output)
 

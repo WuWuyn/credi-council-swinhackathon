@@ -28,7 +28,7 @@ def build_graph(
     feature_engineer_agent=None,
     scoring_agent=None,
     report_generator_agent=None,
-    use_mock: bool = True,
+    use_mock: bool = False,
 ) -> StateGraph:
     """Build the CreditLens LangGraph StateGraph.
 
@@ -303,7 +303,7 @@ def run_pipeline(
     customer_type: str = "INDIVIDUAL",
     documents: list[dict] | None = None,
     bank_statement_path: str | None = None,
-    use_mock: bool = True,
+    use_mock: bool = False,
     scoring_agent=None,
 ) -> CreditState:
     """Run the full CreditLens pipeline.

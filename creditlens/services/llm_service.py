@@ -19,27 +19,25 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Lazy import to avoid errors at module load time
-_genai = None
-_model = None
+# Lazy-initialized client (google.genai SDK)
+_client = None
+_MODEL_ID = "gemini-2.5-flash-lite"
 
 
-def _get_model():
-    """Lazy-initialize Gemini model."""
-    global _genai, _model
-    if _model is None:
-        import google.generativeai as genai
-        _genai = genai
+def _get_client():
+    """Lazy-initialize google.genai Client."""
+    global _client
+    if _client is None:
+        from google import genai  # new SDK: pip install google-genai
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError(
                 "GEMINI_API_KEY environment variable not set. "
                 "Set it in .env or export GEMINI_API_KEY=your_key"
             )
-        genai.configure(api_key=api_key)
-        _model = genai.GenerativeModel("gemini-2.5-flash-lite")
-        logger.info("Gemini model initialized: gemini-2.5-flash-lite")
-    return _model
+        _client = genai.Client(api_key=api_key)
+        logger.info(f"Gemini client initialized (google.genai), model={_MODEL_ID}")
+    return _client
 
 
 class LLMService:
@@ -99,18 +97,20 @@ class LLMService:
         if self.use_mock:
             return "[Mock LLM response]"
 
-        model = _get_model()
+        from google.genai import types
+        client = _get_client()
 
-        # Gemini combines system + user into a single prompt
+        # New SDK: combine system + user into one prompt
         full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
 
         try:
-            response = model.generate_content(
-                full_prompt,
-                generation_config={
-                    "max_output_tokens": max_tokens,
-                    "temperature": 0.2,
-                },
+            response = client.models.generate_content(
+                model=_MODEL_ID,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=max_tokens,
+                    temperature=0.2,
+                ),
             )
             text = response.text
             logger.debug(f"LLM response ({len(text)} chars)")

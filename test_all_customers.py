@@ -107,6 +107,21 @@ def run_single_customer(customer_dir, customer_name, use_mock):
         with open(shap_path, "w", encoding="utf-8") as f:
             json.dump(shap_full, f, ensure_ascii=False, indent=2, default=str)
 
+        # Generate PDF report
+        try:
+            from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+            pdf_bytes = generate_credit_pdf(
+                report_data=report,
+                shap_data=shap_full,
+                customer_name=customer_name,
+            )
+            pdf_path = os.path.join(customer_dir, "credit_report.pdf")
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_bytes)
+            result["pdf_path"] = pdf_path
+        except Exception as e:
+            result["pdf_error"] = f"{type(e).__name__}: {str(e)}"
+
         result["status"] = "OK"
 
     except Exception as e:
@@ -149,6 +164,10 @@ def main():
             print(f"  ✅ 5C: {r['five_c']} = {r['five_c_total']}/120")
             print(f"  ✅ Consistency: {r['consistency_passed']}")
             print(f"  ✅ Report saved: {r['report_path']}")
+            if r.get("pdf_path"):
+                print(f"  ✅ PDF saved: {r['pdf_path']}")
+            elif r.get("pdf_error"):
+                print(f"  ⚠️ PDF failed: {r['pdf_error']}")
         else:
             print(f"  ❌ FAILED: {r['error']}")
             if r.get("traceback"):

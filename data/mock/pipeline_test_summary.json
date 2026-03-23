@@ -27,10 +27,10 @@
       "character": 18,
       "capacity": 25,
       "capital": 5,
-      "conditions": 5,
+      "conditions": 7,
       "collateral": 5
     },
-    "five_c_total": 58,
+    "five_c_total": 60,
     "recommendation": "REVIEW",
     "consistency_passed": true,
     "report_sections": [
@@ -76,9 +76,9 @@
       "capacity": 20,
       "capital": 5,
       "conditions": 3,
-      "collateral": 5
+      "collateral": 0
     },
-    "five_c_total": 48,
+    "five_c_total": 43,
     "recommendation": "REJECT",
     "consistency_passed": true,
     "report_sections": [
@@ -123,58 +123,10 @@
       "character": 15,
       "capacity": 25,
       "capital": 5,
-      "conditions": 4,
+      "conditions": 5,
       "collateral": 5
     },
-    "five_c_total": 54,
-    "recommendation": "REVIEW",
-    "consistency_passed": true,
-    "report_sections": [
-      "customer_info",
-      "executive_summary",
-      "five_c_scorecard",
-      "financial_summary",
-      "collateral_detail",
-      "suggested_terms",
-      "llm_insights",
-      "caveats",
-      "audit_reference"
-    ],
-    "warnings_count": 24,
-    "report_path": "data/mock/customer_003\\credit_report.json"
-  },
-  {
-    "customer_dir": "data/mock/customer_004",
-    "customer_name": "Customer_169206",
-    "status": "OK",
-    "error": null,
-    "a1_fields": 121,
-    "a1_bureau": 7,
-    "a1_prev_apps": 1,
-    "a2_features": 753,
-    "a2_llm_purpose": "UNCLEAR",
-    "credit_score": 349,
-    "pd_pct": 72.28,
-    "risk_band": "CC",
-    "routing": "REJECT",
-    "shap_top_positive": [
-      "Trung bình điểm tín dụng ngoại",
-      "Điểm tín dụng ngoại 3 (CIC)",
-      "Điểm tín dụng ngoại 2 (CIC)"
-    ],
-    "shap_top_negative": [
-      "Tổng dư nợ tín dụng",
-      "Tuổi khách hàng",
-      "Tỷ lệ tín dụng/giá trị hàng"
-    ],
-    "five_c": {
-      "character": 22,
-      "capacity": 25,
-      "capital": 10,
-      "conditions": 8,
-      "collateral": 5
-    },
-    "five_c_total": 70,
+    "five_c_total": 55,
     "recommendation": "REVIEW",
     "consistency_passed": false,
     "report_sections": [
@@ -188,7 +140,55 @@
       "caveats",
       "audit_reference"
     ],
-    "warnings_count": 20,
+    "warnings_count": 27,
+    "report_path": "data/mock/customer_003\\credit_report.json"
+  },
+  {
+    "customer_dir": "data/mock/customer_004",
+    "customer_name": "Customer_169206",
+    "status": "OK",
+    "error": null,
+    "a1_fields": 121,
+    "a1_bureau": 7,
+    "a1_prev_apps": 1,
+    "a2_features": 753,
+    "a2_llm_purpose": "UNCLEAR",
+    "credit_score": 351,
+    "pd_pct": 71.4,
+    "risk_band": "CC",
+    "routing": "REJECT",
+    "shap_top_positive": [
+      "Trung bình điểm tín dụng ngoại",
+      "Điểm tín dụng ngoại 3 (CIC)",
+      "Điểm tín dụng ngoại 2 (CIC)"
+    ],
+    "shap_top_negative": [
+      "Tổng dư nợ tín dụng",
+      "Tuổi khách hàng",
+      "Tỷ lệ tín dụng/giá trị hàng"
+    ],
+    "five_c": {
+      "character": 18,
+      "capacity": 24,
+      "capital": 10,
+      "conditions": 6,
+      "collateral": 10
+    },
+    "five_c_total": 68,
+    "recommendation": "REVIEW",
+    "consistency_passed": true,
+    "report_sections": [
+      "customer_info",
+      "executive_summary",
+      "five_c_scorecard",
+      "financial_summary",
+      "collateral_detail",
+      "suggested_terms",
+      "llm_insights",
+      "caveats",
+      "audit_reference"
+    ],
+    "warnings_count": 18,
     "report_path": "data/mock/customer_004\\credit_report.json"
   }
 ]

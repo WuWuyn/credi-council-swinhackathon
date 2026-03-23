@@ -47,7 +47,7 @@ class IngestionAgent:
     matching the Home Credit dataset format for feature engineering.
     """
 
-    def __init__(self, use_mock: bool = True):
+    def __init__(self, use_mock: bool = False):
         self.doc_parser = LocalDocumentParser()
         self.cic = CICService(use_mock=use_mock)
         self.internal_db = InternalDBReader()

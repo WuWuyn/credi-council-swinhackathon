@@ -141,7 +141,7 @@ class ReportGeneratorAgent:
     Converts SHAP output into human-readable Vietnamese 5C reports (6 sections).
     """
 
-    def __init__(self, use_mock: bool = True):
+    def __init__(self, use_mock: bool = False):
         self.llm = LLMService(use_mock=use_mock)
         self.use_mock = use_mock
 
@@ -250,12 +250,25 @@ class ReportGeneratorAgent:
                 "conditions_assessment": narrative.get("conditions_assessment", {}),
                 "collateral_assessment": narrative.get("collateral_assessment", {}),
             },
-            # Section IV: Tình hình tài chính
+            # Section IV: Tình hình tài chính + Debt Analyst
             "financial_summary": narrative.get("financial_summary", {}),
+            "debt_assessment": self._compute_debt_assessment(
+                financial_ratios=financial_ratios,
+                llm_feats=llm_feats,
+                app_row=app_row,
+            ),
             # Section V: Tài sản bảo đảm (detail from collateral assessment)
             "collateral_detail": narrative.get("collateral_assessment", {}),
-            # Section VI: Khuyến nghị & Caveats
+            # Section VI: Khuyến nghị & Caveats + Reward Modeler
             "suggested_terms": narrative.get("suggested_terms", {}),
+            "reward_assessment": self._compute_reward_assessment(
+                credit_score=credit_score,
+                pd_pct=pd_pct,
+                risk_band=risk_band,
+                financial_ratios=financial_ratios,
+                app_row=app_row,
+                llm_feats=llm_feats,
+            ),
             "llm_insights": {
                 "loan_purpose": llm_feats.get("loan_purpose_category"),
                 "positive_signals": llm_feats.get("positive_signals", []),
@@ -297,16 +310,19 @@ class ReportGeneratorAgent:
     def _compute_financial_ratios(self, app_row: dict) -> dict:
         """Compute real DTI, DSCR, and loan metrics from application_row.
 
-        Uses actual Home Credit dataset columns:
-          AMT_INCOME_TOTAL: annual income
-          AMT_ANNUITY: monthly installment amount
-          AMT_CREDIT: total loan amount requested
-          AMT_GOODS_PRICE: goods price (if consumer loan)
+        Home Credit dataset column semantics:
+          AMT_INCOME_TOTAL : annual income (raw unit, divide by 12 for monthly)
+          AMT_ANNUITY      : ANNUAL annuity/installment (NOT monthly — divide by 12)
+          AMT_CREDIT       : total loan amount
+          AMT_GOODS_PRICE  : goods price (collateral proxy)
         """
         income_annual = app_row.get("AMT_INCOME_TOTAL")
-        annuity_monthly = app_row.get("AMT_ANNUITY")   # monthly payment
+        annuity_annual = app_row.get("AMT_ANNUITY")   # annual — must divide by 12 for monthly
         credit_total = app_row.get("AMT_CREDIT")
         goods_price = app_row.get("AMT_GOODS_PRICE")
+
+        # Convert annuity to monthly for ratio calculations
+        annuity_monthly = annuity_annual / 12 if annuity_annual else None
 
         ratios = {
             "income_annual_vnd": income_annual,
@@ -345,6 +361,202 @@ class ReportGeneratorAgent:
             ratios["ltv_pct"] = "N/A"
 
         return ratios
+
+    def _compute_debt_assessment(self, financial_ratios: dict, llm_feats: dict, app_row: dict) -> dict:
+        """Debt Analyst — score DTI, DSCR, LTV and loan purpose quality.
+
+        Deterministic scoring. No LLM needed — uses ratios already computed.
+        Each metric contributes to an overall debt health score (0-100).
+        """
+        fr = financial_ratios or {}
+        feats = llm_feats or {}
+        score = 0
+        max_score = 100
+        metrics = []
+
+        # DTI scoring (40 pts)
+        dti = fr.get("dti")
+        if dti is not None:
+            if dti < 0.30:
+                score += 40; dti_status = "Tốt"; dti_flag = "OK"
+            elif dti < 0.40:
+                score += 30; dti_status = "Chấp nhận được"; dti_flag = "OK"
+            elif dti < 0.50:
+                score += 15; dti_status = "Cần theo dõi"; dti_flag = "!!"
+            else:
+                score += 0;  dti_status = "Rủi ro cao"; dti_flag = "!!"
+            metrics.append({
+                "name": "DTI (Nợ/Thu nhập)",
+                "value": fr.get("dti_pct", f"{dti*100:.1f}%"),
+                "threshold": "< 40%",
+                "status": dti_status,
+                "flag": dti_flag,
+            })
+        else:
+            metrics.append({"name": "DTI", "value": "N/A", "threshold": "< 40%", "status": "Không có dữ liệu", "flag": "—"})
+
+        # DSCR scoring (35 pts)
+        dscr = fr.get("dscr")
+        if dscr is not None:
+            if dscr >= 1.5:
+                score += 35; dscr_status = "Tốt"; dscr_flag = "OK"
+            elif dscr >= 1.2:
+                score += 25; dscr_status = "Đạt ngưỡng"; dscr_flag = "OK"
+            elif dscr >= 1.0:
+                score += 10; dscr_status = "Sát ngưỡng"; dscr_flag = "!!"
+            else:
+                score += 0;  dscr_status = "Dưới ngưỡng"; dscr_flag = "!!"
+            metrics.append({
+                "name": "DSCR (Dòng tiền/Nợ)",
+                "value": f"{dscr:.2f}",
+                "threshold": "> 1.20",
+                "status": dscr_status,
+                "flag": dscr_flag,
+            })
+        else:
+            metrics.append({"name": "DSCR", "value": "N/A", "threshold": "> 1.20", "status": "Không có dữ liệu", "flag": "—"})
+
+        # LTV scoring (15 pts)
+        ltv = fr.get("ltv")
+        if ltv is not None:
+            if ltv < 0.70:
+                score += 15; ltv_status = "Tốt"; ltv_flag = "OK"
+            elif ltv < 0.80:
+                score += 8;  ltv_status = "Chấp nhận"; ltv_flag = "OK"
+            else:
+                score += 0;  ltv_status = "Rủi ro"; ltv_flag = "!!"
+            metrics.append({
+                "name": "LTV (Vay/TSBĐ)",
+                "value": fr.get("ltv_pct", f"{ltv*100:.1f}%"),
+                "threshold": "< 70%",
+                "status": ltv_status,
+                "flag": ltv_flag,
+            })
+        else:
+            metrics.append({"name": "LTV", "value": "N/A", "threshold": "< 70%", "status": "Không có dữ liệu", "flag": "—"})
+
+        # Loan purpose (10 pts)
+        loan_purpose = feats.get("loan_purpose_category", "UNCLEAR")
+        purpose_score_map = {"PRODUCTION": 10, "INVESTMENT": 8, "CONSUMPTION": 6,
+                             "REFINANCING": 4, "UNCLEAR": 0}
+        purpose_pts = purpose_score_map.get((loan_purpose or "").upper(), 0)
+        score += purpose_pts
+        purpose_label_map = {"PRODUCTION": "Sản xuất kinh doanh", "INVESTMENT": "Đầu tư",
+                             "CONSUMPTION": "Tiêu dùng", "REFINANCING": "Tái cơ cấu nợ", "UNCLEAR": "Chưa rõ"}
+        metrics.append({
+            "name": "Mục đích vay",
+            "value": purpose_label_map.get((loan_purpose or "").upper(), loan_purpose or "N/A"),
+            "threshold": "PRODUCTION / INVESTMENT",
+            "status": "Rõ ràng" if purpose_pts >= 6 else "Cần làm rõ",
+            "flag": "OK" if purpose_pts >= 6 else "!!",
+        })
+
+        # Overall status
+        pct = score / max_score
+        if pct >= 0.70:
+            overall = "ĐẠT"; overall_color = "green"
+        elif pct >= 0.45:
+            overall = "XEM_XET"; overall_color = "orange"
+        else:
+            overall = "KHONG_DAT"; overall_color = "red"
+
+        return {
+            "score": score,
+            "max_score": max_score,
+            "score_pct": f"{pct*100:.0f}%",
+            "overall_status": overall,
+            "overall_color": overall_color,
+            "metrics": metrics,
+            "summary": (
+                f"Phân tích nợ tổng hợp: {score}/{max_score} điểm ({pct*100:.0f}%). "
+                f"Mục đích vay: {purpose_label_map.get((loan_purpose or '').upper(), 'N/A')}. "
+                + (f"DTI {fr.get('dti_pct', 'N/A')} — {'trong ngưỡng an toàn' if dti and dti < 0.40 else 'cần theo dõi'}. " if dti else "")
+                + (f"DSCR {dscr:.2f} — {'đạt ngưỡng' if dscr and dscr >= 1.2 else 'sát/dưới ngưỡng tối thiểu 1.2'}." if dscr else "")
+            ),
+        }
+
+    def _compute_reward_assessment(self, credit_score: int, pd_pct: float, risk_band: str,
+                                   financial_ratios: dict, app_row: dict, llm_feats: dict) -> dict:
+        """Reward Modeler — estimate risk-adjusted profitability.
+
+        Deterministic. Estimates expected yield, risk-adjusted return, and
+        customer lifetime value tier. Based on MASCA Reward Modeler concept.
+        """
+        fr = financial_ratios or {}
+        feats = llm_feats or {}
+        app = app_row or {}
+
+        # Interest rate proxy by risk band (Vietnamese market reference rates)
+        rate_by_band = {
+            "AAA": 0.085, "AA": 0.095, "A": 0.110,
+            "BBB": 0.130, "BB": 0.155, "B": 0.180, "CCC": 0.200, "CC": 0.220, "C": 0.240,
+        }
+        interest_rate = rate_by_band.get((risk_band or "").upper(), 0.120)
+
+        # Loan amount and term
+        loan_amount = fr.get("credit_total_vnd") or app.get("AMT_CREDIT") or 0
+        term_months = 36
+        if app.get("AMT_CREDIT") and app.get("AMT_ANNUITY") and app["AMT_ANNUITY"] > 0:
+            term_months = max(6, min(360, round(app["AMT_CREDIT"] / app["AMT_ANNUITY"])))
+
+        # Gross interest income over loan life
+        pd_decimal = (pd_pct or 0) / 100
+        gross_income = loan_amount * interest_rate * (term_months / 12) if loan_amount else 0
+
+        # Expected loss = PD × LGD (assume LGD = 45% industry standard)
+        lgd = 0.45
+        expected_loss = loan_amount * pd_decimal * lgd if loan_amount else 0
+
+        # Risk-adjusted return (RAROC proxy)
+        risk_adj_income = gross_income - expected_loss
+        raroc = (risk_adj_income / loan_amount) if loan_amount > 0 else 0
+
+        # Customer segment & LTV potential
+        if credit_score >= 720:
+            segment = "Premium"; upsell = ["Bảo hiểm nhân thọ", "Thẻ tín dụng hạng vàng", "Quỹ tiết kiệm"]
+        elif credit_score >= 640:
+            segment = "Mid-tier"; upsell = ["Bảo hiểm tài sản", "Thẻ tín dụng cơ bản"]
+        elif credit_score >= 560:
+            segment = "Mass"; upsell = ["Bảo hiểm khoản vay"]
+        else:
+            segment = "Sub-prime"; upsell = []
+
+        # Profitability verdict
+        if raroc >= 0.08:
+            verdict = "Tốt"; verdict_flag = "OK"; verdict_color = "green"
+        elif raroc >= 0.04:
+            verdict = "Chấp nhận được"; verdict_flag = "OK"; verdict_color = "orange"
+        elif raroc > 0:
+            verdict = "Thấp"; verdict_flag = "!!"; verdict_color = "orange"
+        else:
+            verdict = "Không khả thi"; verdict_flag = "!!"; verdict_color = "red"
+
+        def _fmt_vnd(v):
+            if not v: return "N/A"
+            if v >= 1_000_000_000: return f"{v/1_000_000_000:.1f} tỷ VND"
+            if v >= 1_000_000:     return f"{v/1_000_000:.0f} triệu VND"
+            return f"{v:,.0f} VND"
+
+        return {
+            "interest_rate_pct": f"{interest_rate*100:.1f}%",
+            "loan_amount_fmt": _fmt_vnd(loan_amount),
+            "term_months": term_months,
+            "gross_income_fmt": _fmt_vnd(gross_income),
+            "expected_loss_fmt": _fmt_vnd(expected_loss),
+            "risk_adj_income_fmt": _fmt_vnd(risk_adj_income),
+            "raroc_pct": f"{raroc*100:.1f}%",
+            "verdict": verdict,
+            "verdict_flag": verdict_flag,
+            "verdict_color": verdict_color,
+            "customer_segment": segment,
+            "upsell_opportunities": upsell,
+            "summary": (
+                f"Lợi nhuận điều chỉnh rủi ro (RAROC): {raroc*100:.1f}% — {verdict}. "
+                f"Phân khúc: {segment}. "
+                f"Thu nhập lãi ước tính: {_fmt_vnd(gross_income)}, "
+                f"Tổn thất kỳ vọng: {_fmt_vnd(expected_loss)}."
+            ),
+        }
 
     def _generate_narrative(
         self,

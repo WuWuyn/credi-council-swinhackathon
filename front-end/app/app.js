@@ -36,31 +36,31 @@ let lastResults = [];
 let currentModalData = null;
 
 // Customer metadata — extracted from Home Credit dataset
-// pass_1: SK=352956 TARGET=0 EXT=0.984 | pass_2: SK=251987 TARGET=0 EXT=0.977
-// fail_1: SK=272483 TARGET=1 EXT=0.051 | fail_2: SK=397495 TARGET=1 EXT=0.057
+// pass_1: SK=418735 TARGET=0 EXT=0.892 | pass_2: SK=394570 TARGET=0 EXT=0.856
+// fail_1: SK=272483 TARGET=1 EXT=0.103 | fail_2: SK=169206 TARGET=1 EXT=0.167
 const CUSTOMER_META = [
   {
-    id: "001", name: "KH #352956 — Approved", initials: "A1", avatarColor: "#1565c0",
+    id: "001", name: "KH #418735 — Approved", initials: "A1", avatarColor: "#1565c0",
     tag: "Pass", tagClass: "tag-standard",
     fields: [
-      { label:"SK_ID_CURR",    value:"352956" },
+      { label:"SK_ID_CURR",    value:"418735" },
       { label:"TARGET",        value:"0 (Repaid)",      cls:"green" },
-      { label:"Thu nhập/năm",  value:"189,000",          cls:"green" },
-      { label:"Khoản vay",     value:"286,875" },
-      { label:"EXT_SOURCE",    value:"0.984",            cls:"green" },
-      { label:"Bureau records",value:"1 records" },
+      { label:"Thu nhập/năm",  value:"315,000",          cls:"green" },
+      { label:"Khoản vay",     value:"900,000" },
+      { label:"EXT_SOURCE",    value:"0.892",            cls:"green" },
+      { label:"Bureau records",value:"5 records" },
     ]
   },
   {
-    id: "002", name: "KH #251987 — Approved", initials: "A2", avatarColor: "#2e7d32",
+    id: "002", name: "KH #394570 — Approved", initials: "A2", avatarColor: "#2e7d32",
     tag: "Pass", tagClass: "tag-standard",
     fields: [
-      { label:"SK_ID_CURR",    value:"251987" },
+      { label:"SK_ID_CURR",    value:"394570" },
       { label:"TARGET",        value:"0 (Repaid)",      cls:"green" },
-      { label:"Thu nhập/năm",  value:"157,500",          cls:"green" },
-      { label:"Khoản vay",     value:"1,214,145" },
-      { label:"EXT_SOURCE",    value:"0.977",            cls:"green" },
-      { label:"Bureau records",value:"0 (thin-file)",   cls:"yellow" },
+      { label:"Thu nhập/năm",  value:"90,000",           cls:"green" },
+      { label:"Khoản vay",     value:"254,700" },
+      { label:"EXT_SOURCE",    value:"0.856",            cls:"green" },
+      { label:"Bureau records",value:"3 records" },
     ]
   },
   {
@@ -71,37 +71,37 @@ const CUSTOMER_META = [
       { label:"TARGET",        value:"1 (Default)",     cls:"red" },
       { label:"Thu nhập/năm",  value:"112,500",          cls:"yellow" },
       { label:"Khoản vay",     value:"273,024" },
-      { label:"EXT_SOURCE",    value:"0.051",            cls:"red" },
+      { label:"EXT_SOURCE",    value:"0.103",            cls:"red" },
       { label:"Bureau records",value:"11 records",       cls:"red" },
     ]
   },
   {
-    id: "004", name: "KH #397495 — Rejected", initials: "F2", avatarColor: "#b71c1c",
+    id: "004", name: "KH #169206 — Rejected", initials: "F2", avatarColor: "#b71c1c",
     tag: "Fail", tagClass: "tag-high-risk",
     fields: [
-      { label:"SK_ID_CURR",    value:"397495" },
+      { label:"SK_ID_CURR",    value:"169206" },
       { label:"TARGET",        value:"1 (Default)",     cls:"red" },
-      { label:"Thu nhập/năm",  value:"157,500",          cls:"yellow" },
-      { label:"Khoản vay",     value:"450,000" },
-      { label:"EXT_SOURCE",    value:"0.057",            cls:"red" },
-      { label:"Bureau records",value:"22 records",       cls:"red" },
+      { label:"Thu nhập/năm",  value:"58,500",           cls:"yellow" },
+      { label:"Khoản vay",     value:"135,000" },
+      { label:"EXT_SOURCE",    value:"0.167",            cls:"red" },
+      { label:"Bureau records",value:"7 records",        cls:"red" },
     ]
   },
 ];
 
 // Pipeline stage definitions (static - visual only)
 const PIPELINE_STAGES = [
-  { label:"A1", cls:"a1", title:"Data Ingestion", metaFn: (r) => `120 fields · Dataset ground truth`,
-    steps: [{icon:'doc',name:"App Row JSON",sub:"Dataset"},{icon:'grid',name:"CIC API",sub:"Bureau"},{icon:'db',name:"Internal DB",sub:"Prev Loans"},{icon:'info',name:"EXT_SRC",sub:"Tổng hợp"}],
-    scoreFn: (r) => ({ num: '120', label:"fields ✓", cls:"green" }) },
+  { label:"A1", cls:"a1", title:"Data Ingestion", metaFn: (r) => `122 fields · Dataset ground truth`,
+    steps: [{icon:'doc',name:"App Row JSON",sub:"122 cột"},{icon:'grid',name:"CIC API",sub:"Bureau"},{icon:'db',name:"Internal DB",sub:"Prev Loans"}],
+    scoreFn: (r) => ({ num: '122', label:"fields ✓", cls:"green" }) },
   { label:"A2", cls:"a2", title:"LLM Feature Engineering", metaFn: (r) => `753 features · Gemini`,
-    steps: [{icon:'search',name:"Semantic",sub:"Phân tích"},{icon:'home',name:"Impute",sub:"Điền NaN"},{icon:'layers',name:"NixMoon",sub:"FE slice"},{icon:'check',name:"Validate",sub:"Kiểm tra"}],
+    steps: [{icon:'search',name:"Semantic",sub:"LLM Extract"},{icon:'home',name:"Impute",sub:"Điền NaN"},{icon:'layers',name:"FE Build",sub:"218→753"},{icon:'check',name:"Purpose",sub:"Loan Type"}],
     scoreFn: (r) => ({ num:"753", label:"feats ✓", cls:"yellow" }) },
   { label:"A3", cls:"a3", title:"ML Scoring", metaFn: (r) => `Score: ${r.credit_score} · PD: ${(r.pd_probability*100).toFixed(2)}%`,
-    steps: [{icon:'bars',name:"LightGBM",sub:"Dự đoán"},{icon:'target',name:"Score Map",sub:"Chuẩn hóa"},{icon:'cube',name:"MASCA",sub:"Điều chỉnh"},{icon:'shap',name:"SHAP",sub:"Giải thích"},{icon:'shield',name:"Risk Band",sub:r => r.risk_band||'—'}],
+    steps: [{icon:'bars',name:"LightGBM",sub:"Dự đoán"},{icon:'target',name:"Score Map",sub:"PD→300-850"},{icon:'cube',name:"Decision",sub:"Hard Rules"},{icon:'shap',name:"SHAP",sub:"Giải thích"},{icon:'shield',name:"Risk Band",sub:r => r.risk_band||'—'}],
     scoreFn: (r) => ({ num: r.credit_score, label:"Score ✓", cls: r.credit_score>=600?"green":r.credit_score>=450?"yellow":"red-score" }) },
-  { label:"A4", cls:"a4", title:"Report Generation", metaFn: (r) => `5C: ${r.five_c_total||'—'}/125 · ${r.recommendation}`,
-    steps: [{icon:'monitor',name:"MASCA",sub:"Biến đầu vào"},{icon:'star',name:"5C Score",sub:"Đánh giá"},{icon:'checkfull',name:"Consistency",sub: r => r.consistency_check?"PASSED":"WARN"},{icon:'filedoc',name:"PDF Gen",sub:"Xuất báo cáo"}],
+  { label:"A4", cls:"a4", title:"Report Generation", metaFn: (r) => `5C: ${r.five_c_total||'—'}/120 · ${r.recommendation}`,
+    steps: [{icon:'star',name:"5C Score",sub:"Đánh giá"},{icon:'monitor',name:"Debt Analyst",sub:"DTI/DSCR"},{icon:'bars',name:"Reward Model",sub:"RAROC"},{icon:'checkfull',name:"Consistency",sub: r => r.consistency_check?"PASSED":"WARN"},{icon:'filedoc',name:"PDF Gen",sub:"Xuất báo cáo"}],
     scoreFn: (r) => ({ num: r.five_c_total||'—', label:"5C pts ✓", cls: r.five_c_total>=80?"green":r.five_c_total>=50?"yellow":"red-score" }) },
 ];
 
@@ -389,7 +389,7 @@ function openModal(idx) {
   const fiveCMap = [
     { key:'character', name:'Character', max:30 },
     { key:'capacity',  name:'Capacity',  max:40 },
-    { key:'capital',   name:'Capital',   max:25 },
+    { key:'capital',   name:'Capital',   max:20 },
     { key:'conditions',name:'Conditions',max:10 },
     { key:'collateral',name:'Collateral',max:20 },
   ];
@@ -440,7 +440,7 @@ function openModal(idx) {
         <div class="score-card purple">
           <div class="score-card-label">TỔNG 5C</div>
           <div class="score-card-value">${api.five_c_total || '—'}</div>
-          <div class="score-card-sub">/ 125 điểm</div>
+          <div class="score-card-sub">/ 120 điểm</div>
         </div>
       </div>
     </div>

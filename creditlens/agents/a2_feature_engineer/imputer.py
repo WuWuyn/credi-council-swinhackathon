@@ -46,7 +46,7 @@ class IntelligentImputer:
     Uses available context to estimate missing field values.
     """
 
-    def __init__(self, use_mock: bool = True):
+    def __init__(self, use_mock: bool = False):
         self.llm = LLMService(use_mock=use_mock)
         self.use_mock = use_mock
 

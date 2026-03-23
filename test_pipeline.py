@@ -132,6 +132,22 @@ def run_pipeline():
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2, default=str)
     print(f"\n  Report saved: {report_path}")
+
+    # Generate PDF report
+    try:
+        from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+        shap_data = a3_output.get("shap_values", {})
+        pdf_bytes = generate_credit_pdf(
+            report_data=report,
+            shap_data=shap_data,
+            customer_name="Customer_418735",
+        )
+        pdf_path = "data/mock/customer_001/credit_report.pdf"
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+        print(f"  PDF saved: {pdf_path}")
+    except Exception as e:
+        print(f"  ⚠️ PDF failed: {e}")
     print("=" * 70)
 
     return a4_output

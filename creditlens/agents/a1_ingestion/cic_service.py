@@ -27,7 +27,7 @@ class CICService:
     In production mode, calls the real CIC API endpoint.
     """
 
-    def __init__(self, use_mock: bool = True):
+    def __init__(self, use_mock: bool = False):
         self.use_mock = use_mock
 
     def query(self, cic_data_path: str | Path | None = None) -> dict[str, Any]:

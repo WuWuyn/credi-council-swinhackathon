@@ -190,13 +190,13 @@ def _shap_chart(shap: dict, width_in=6.5, height_in=3.2) -> io.BytesIO:
     ax.set_yticklabels(labels, fontsize=7.5, color="#2C3E50")
     ax.axvline(0, color="#607080", linewidth=0.7)
     ax.set_xlabel("SHAP Value (log-odds)", fontsize=7.5, color="#607080")
-    ax.set_title("Phan tich SHAP — Muc do anh huong cua tung yeu to",
+    ax.set_title("Phân tích SHAP — Mức độ ảnh hưởng của từng yếu tố",
                  fontsize=9, color="#0D1F3C", fontweight="bold", pad=6)
     ax.grid(axis="x", linestyle="--", alpha=0.35, color="#B0BEC5")
     for sp in ["top","right"]: ax.spines[sp].set_visible(False)
 
-    pos_p = mpatches.Patch(color="#1565C0", label="Giam rui ro (tich cuc)")
-    neg_p = mpatches.Patch(color="#C62828", label="Tang rui ro (tieu cuc)")
+    pos_p = mpatches.Patch(color="#1565C0", label="Giảm rủi ro (tích cực)")
+    neg_p = mpatches.Patch(color="#C62828", label="Tăng rủi ro (tiêu cực)")
     ax.legend(handles=[pos_p, neg_p], loc="lower right", fontsize=6.5,
               framealpha=0.85, edgecolor="#CFD8DC")
 
@@ -447,7 +447,7 @@ class CreditReportPDF:
         canvas.setFont(F_NORMAL, 6.5)
         canvas.setFillColor(C_GREY)
         canvas.drawString(MARGIN, 0.75 * cm,
-            "CreditLens AI  |  To trinh tin dung  |  TT39/2016/TT-NHNN")
+            "CreditLens AI  |  Tờ trình tín dụng  |  TT39/2016/TT-NHNN")
         canvas.drawRightString(PAGE_W - MARGIN, 0.75 * cm, f"Trang {doc.page}")
         canvas.restoreState()
 
@@ -469,11 +469,11 @@ class CreditReportPDF:
             Paragraph(f"<b>CreditLens AI</b>",
                        _s("b1", fn=F_BOLD, fs=15, tc=C_WHITE)),
             Paragraph(
-                "<b>TO TRINH TIN DUNG</b><br/>"
-                "<font size='8'>Tham dinh Creditworthiness · AI-Assisted</font>",
+                "<b>TỜ TRÌNH TÍN DỤNG</b><br/>"
+                "<font size='8'>Thẩm định Creditworthiness · AI-Assisted</font>",
                 _s("b2", fn=F_BOLD, fs=13, tc=C_WHITE, alignment=TA_CENTER, leading=17)),
             Paragraph(
-                f"<font size='7'>Ngay: {ts or datetime.now().strftime('%d/%m/%Y')}</font>",
+                f"<font size='7'>Ngày: {ts or datetime.now().strftime('%d/%m/%Y')}</font>",
                 _s("b3", fs=7, tc=colors.HexColor("#90CAF9"),
                    alignment=TA_RIGHT, leading=10)),
         ]], colWidths=[5.5*cm, 9.5*cm, 3.5*cm])
@@ -490,28 +490,21 @@ class CreditReportPDF:
         self.story.append(self._sp(5))
 
         # ── Score tiles ───────────────────────────────────────────────────────
-        tile_w = (CONTENT_W - 3 * 3 * mm) / 4
+        tile_w = (CONTENT_W - 3 * mm) / 2
         tile_h = 2.6 * cm
 
         rec_vi = {
-            "APPROVE": "PHE DUYET", "APPROVE_REVIEW": "DUYET XEM XET",
-            "REJECT": "TU CHOI", "REVIEW": "XEM XET",
-            "ESCALATE": "LEO THANG", "CONDITIONAL": "CO DIEU KIEN",
+            "APPROVE": "PHÊ DUYỆT", "APPROVE_REVIEW": "DUYỆT XEM XÉT",
+            "REJECT": "TỪ CHỐI", "REVIEW": "XEM XÉT",
+            "ESCALATE": "LEO THANG", "CONDITIONAL": "CÓ ĐIỀU KIỆN",
         }.get((rec or "").upper(), rec or "REVIEW")
-
-        pd_colr = C_RED if float(pd or 0) > 35 else (C_ORANGE if float(pd or 0) > 8 else C_GREEN)
 
         tiles = Table([[
             ScoreCard(tile_w, tile_h, C_BLUE,
-                      "DIEM TIN DUNG", f"{score}/850", f"{band} — Risk Band"),
+                      "ĐIỂM TÍN DỤNG", f"{score}/850", f"{band} — Risk Band"),
             ScoreCard(tile_w, tile_h, _dec_color(rec),
-                      "DE XUAT", rec_vi[:13], "Quyet dinh so bo"),
-            ScoreCard(tile_w, tile_h, pd_colr,
-                      "XAC SUAT VO NO", f"{pd}%", "Probability of Default"),
-            ScoreCard(tile_w, tile_h, C_NAVY,
-                      "MO HINH", mi.get("model_version","lgbm_v1")[:12],
-                      f"AUC {mi.get('auc','0.803')} · SHAP OK"),
-        ]], colWidths=[tile_w]*4, rowHeights=[tile_h])
+                      "ĐỀ XUẤT", rec_vi[:13], "Quyết định sơ bộ"),
+        ]], colWidths=[tile_w]*2, rowHeights=[tile_h])
         tiles.setStyle(TableStyle([
             ("ALIGN",     (0,0), (-1,-1), "CENTER"),
             ("COLPADDING",(0,0), (-1,-1), 3),
@@ -523,34 +516,33 @@ class CreditReportPDF:
     # ── CUSTOMER INFO ─────────────────────────────────────────────────────────
     def _customer(self):
         ci = self.report.get("customer_info", {})
-        self.story.append(SectionTitle("I", "THONG TIN KHACH HANG", CONTENT_W))
+        self.story.append(SectionTitle("I", "THÔNG TIN KHÁCH HÀNG", CONTENT_W))
         self.story.append(self._sp(2))
-        summary = ci.get("summary") or f"Khach hang: {self.name}"
-        t = Table([["Tom tat ho so", summary]],
-                   colWidths=[3.5*cm, CONTENT_W - 3.5*cm])
+        summary = ci.get("summary") or f"Khách hàng: {self.name}"
+        label_w = 3.5 * cm
+        body_w  = CONTENT_W - label_w
+        t = Table([
+            [Paragraph("Tóm tắt hồ sơ", _s("ci_lbl", fn=F_BOLD, fs=8, tc=C_BLUE, leading=11)),
+             Paragraph(str(summary), _s("ci_val", fn=F_NORMAL, fs=8, tc=C_TEXT, leading=11))],
+        ], colWidths=[label_w, body_w])
         t.setStyle(TableStyle([
             ("BACKGROUND",  (0,0), (0,-1), C_BLUE_L),
-            ("FONTNAME",    (0,0), (0,-1), F_BOLD),
-            ("FONTSIZE",    (0,0), (-1,-1), 8),
-            ("FONTNAME",    (1,0), (1,-1), F_NORMAL),
-            ("TEXTCOLOR",   (0,0), (0,-1), C_BLUE),
             ("GRID",        (0,0), (-1,-1), 0.3, C_BORDER),
             ("TOPPADDING",  (0,0), (-1,-1), 7),
             ("BOTTOMPADDING",(0,0),(-1,-1), 7),
             ("LEFTPADDING", (0,0), (-1,-1), 8),
             ("VALIGN",      (0,0), (-1,-1), "TOP"),
-            ("FONTNAME", (1,0), (1,-1), F_NORMAL),
         ]))
         self.story.append(t)
         self.story.append(self._sp(4))
 
     # ── SHAP SECTION ──────────────────────────────────────────────────────────
     def _shap(self):
-        self.story.append(SectionTitle("II", "PHAN TICH SHAP — YEU TO ANH HUONG", CONTENT_W))
+        self.story.append(SectionTitle("II", "PHÂN TÍCH SHAP — YẾU TỐ ẢNH HƯỞNG", CONTENT_W))
         self.story.append(self._sp(2))
         self.story.append(P(
-            "Bieu do SHAP the hien dong gop cua tung yeu to du lieu. "
-            "<b>Xanh</b> = giam rui ro vo no. <b>Do</b> = tang rui ro."
+            "Biểu đồ SHAP thể hiện đóng góp của từng yếu tố dữ liệu. "
+            "<b>Xanh</b> = giảm rủi ro vỡ nợ. <b>Đỏ</b> = tăng rủi ro."
         ))
         self.story.append(self._sp(2))
 
@@ -568,7 +560,7 @@ class CreditReportPDF:
                        for f in all_sv), default=0.001)
 
         if pos:
-            self.story.append(P("<b>Yeu to tich cuc (giam rui ro vo no):</b>", "h3"))
+            self.story.append(P("<b>Yếu tố tích cực (giảm rủi ro vỡ nợ):</b>", "h3"))
             for f in pos:
                 sv = float(f.get("shap_value", f.get("shap", 0)) or 0)
                 lbl = f.get("label_vi") or f.get("feature", "—")
@@ -577,7 +569,7 @@ class CreditReportPDF:
 
         if neg:
             self.story.append(self._sp(2))
-            self.story.append(P("<b>Yeu to rui ro (tang xac suat vo no):</b>", "h3"))
+            self.story.append(P("<b>Yếu tố rủi ro (tăng xác suất vỡ nợ):</b>", "h3"))
             for f in neg:
                 sv = float(f.get("shap_value", f.get("shap", 0)) or 0)
                 lbl = f.get("label_vi") or f.get("feature", "—")
@@ -589,11 +581,11 @@ class CreditReportPDF:
                              .get("five_c_shap_allocation", {}))
         if alloc:
             self.story.append(self._sp(3))
-            self.story.append(P("<b>Phan bo SHAP theo 5C:</b>", "h3"))
+            self.story.append(P("<b>Phân bổ SHAP theo 5C:</b>", "h3"))
             lmap = {"character":"C1 Character","capacity":"C2 Capacity",
                     "capital":"C3 Capital","conditions":"C4 Conditions",
                     "collateral":"C5 Collateral"}
-            rows = [["Tieu chi", "SHAP Sum", "Ty trong"]]
+            rows = [["Tiêu chí", "SHAP Sum", "Tỷ trọng"]]
             for k, v in alloc.items():
                 rows.append([lmap.get(k, k),
                               f"{v.get('shap_sum',0):.4f}",
@@ -609,33 +601,36 @@ class CreditReportPDF:
 
     # ── 5C SCORECARD ──────────────────────────────────────────────────────────
     def _5c(self):
-        self.story.append(PageBreak())
-        self.story.append(SectionTitle("III", "DANH GIA 5C CHI TIET", CONTENT_W))
+        self.story.append(SectionTitle("III", "ĐÁNH GIÁ 5C CHI TIẾT", CONTENT_W))
         self.story.append(self._sp(3))
 
         fiveC  = self.report.get("five_c_scorecard", {})
         scores = self.report.get("executive_summary", {}).get("five_c_scores", {})
         total  = self.report.get("executive_summary", {}).get("five_c_total", "—")
 
-        # Chart + summary table side by side
-        chart_buf = _5c_chart(scores)
-        chart_img = Image(chart_buf, width=8*cm, height=5.5*cm)
+        # Row 1: Chart (full width)
+        chart_buf = _5c_chart(scores, width_in=5.5, height_in=2.8)
+        chart_img = Image(chart_buf, width=CONTENT_W, height=7*cm)
+        self.story.append(chart_img)
+        self.story.append(self._sp(4))
 
+        # Row 2: Summary table (full width)
         def _status(val, mx):
             p = val / mx if mx else 0
-            if p >= 0.7: return "DAT"
-            if p >= 0.4: return "XEM XET"
-            return "CHUA DAT"
+            if p >= 0.7: return "ĐẠT"
+            if p >= 0.4: return "XEM XÉT"
+            return "CHƯA ĐẠT"
 
-        srows = [["Tieu chi", "Diem", "Max", "Trang thai"]]
+        srows = [["Tiêu chí", "Điểm", "Max", "Trạng thái"]]
         for d in [("C1 Character","character",30), ("C2 Capacity","capacity",40),
                   ("C3 Capital","capital",20), ("C4 Conditions","conditions",10),
                   ("C5 Collateral","collateral",20)]:
             v = scores.get(d[1], 0)
             srows.append([d[0], str(v), str(d[2]), _status(v, d[2])])
-        srows.append(["TONG", str(total), "120", ""])
+        srows.append(["TỔNG", str(total), "120", ""])
 
-        stbl = Table(srows, colWidths=[4.5*cm, 1.8*cm, 1.8*cm, 3.2*cm])
+        tbl_col_w = CONTENT_W / 4
+        stbl = Table(srows, colWidths=[tbl_col_w]*4)
         stbl_style = TableStyle([
             ("BACKGROUND",   (0,0), (-1,0), C_NAVY),
             ("FONTNAME",     (0,0), (-1,0), F_BOLD),
@@ -656,31 +651,25 @@ class CreditReportPDF:
             ("VALIGN",       (0,0), (-1,-1), "MIDDLE"),
         ])
         stbl.setStyle(stbl_style)
-
-        side = Table([[chart_img, stbl]], colWidths=[8.5*cm, None])
-        side.setStyle(TableStyle([
-            ("VALIGN",      (0,0), (-1,-1), "TOP"),
-            ("COLPADDING",  (0,0), (-1,-1), 5),
-        ]))
-        self.story.append(side)
+        self.story.append(stbl)
         self.story.append(self._sp(5))
 
         # ── 5C Narratives ────────────────────────────────────────────────────
         DIM_CFG = [
-            ("character_assessment",  "C1 — Character (Uy tin / Tu cach)",   "character",  30, C_BLUE),
-            ("capacity_assessment",   "C2 — Capacity (Nang luc tra no)",      "capacity",   40, C_GREEN),
-            ("capital_assessment",    "C3 — Capital (Von tu co)",              "capital",    20, C_BLUE),
-            ("conditions_assessment", "C4 — Conditions (Dieu kien vay)",      "conditions", 10, C_ORANGE),
-            ("collateral_assessment", "C5 — Collateral (Tai san bao dam)",    "collateral", 20, C_GREY),
+            ("character_assessment",  "C1 — Character (Uy tín / Tư cách)",   "character",  30, C_BLUE),
+            ("capacity_assessment",   "C2 — Capacity (Năng lực trả nợ)",      "capacity",   40, C_GREEN),
+            ("capital_assessment",    "C3 — Capital (Vốn tự có)",              "capital",    20, C_BLUE),
+            ("conditions_assessment", "C4 — Conditions (Điều kiện vay)",      "conditions", 10, C_ORANGE),
+            ("collateral_assessment", "C5 — Collateral (Tài sản bảo đảm)",    "collateral", 20, C_GREY),
         ]
-        STATUS_CLR = {"DAT": C_GREEN, "XEM_XET": C_ORANGE, "KHONG_DAT": C_RED}
+        STATUS_CLR = {"ĐẠT": C_GREEN, "XEM_XÉT": C_ORANGE, "KHÔNG ĐẠT": C_RED}
 
         for key, title, sk, smax, color in DIM_CFG:
             asmnt = fiveC.get(key) or {}
             sv    = scores.get(sk, 0)
             status = asmnt.get("status", "—")
             shap_pct = asmnt.get("shap_pct", "—")
-            narrative = asmnt.get("narrative", "Khong co du lieu.")
+            narrative = asmnt.get("narrative", "Không có dữ liệu.")
             ind_met = asmnt.get("indicators_met", [])
             ind_rev = asmnt.get("indicators_review", [])
             st_clr = STATUS_CLR.get(status, C_GREY)
@@ -736,69 +725,120 @@ class CreditReportPDF:
     def _financial(self):
         fs = self.report.get("financial_summary", {})
         fr = self.report.get("executive_summary", {}).get("financial_ratios", {})
-        self.story.append(SectionTitle("IV", "TINH HINH TAI CHINH", CONTENT_W))
+        da = self.report.get("debt_assessment", {})
+        self.story.append(SectionTitle("IV", "TÌNH HÌNH TÀI CHÍNH & PHÂN TÍCH NỢ", CONTENT_W))
         self.story.append(self._sp(2))
 
-        kr = fs.get("key_ratios", {})
-        dti  = str(kr.get("dti")  or fr.get("dti_pct",  "N/A"))
-        dscr = str(kr.get("dscr") or fr.get("dscr",     "N/A"))
-        ltv  = str(kr.get("ltv")  or fr.get("ltv_pct",  "N/A"))
+        # ── Debt Analyst table (from computed debt_assessment) ──────────────
+        if da.get("metrics"):
+            # Header with overall score
+            score_pct = da.get("score_pct", "—")
+            overall   = da.get("overall_status", "—").replace("_", " ")
+            status_color = {"green": C_GREEN, "orange": C_ORANGE, "red": C_RED}.get(
+                da.get("overall_color", "grey"), C_GREY)
 
-        def _ev(v, thr, lo, hi, invert=False):
-            try:
-                n = float(str(v).replace("%",""))
-                good = (n < thr) if not invert else (n > thr)
-                return "OK" if good else "!!"
-            except: return "—"
+            hdr = Table([[
+                Paragraph("<b>Debt Analyst — Phân tích Khả năng Trả nợ</b>",
+                           _s("daH", fn=F_BOLD, fs=9, tc=C_NAVY, leading=12)),
+                Paragraph(f"<b>{score_pct}</b>",
+                           _s("daSc", fn=F_BOLD, fs=11, tc=status_color,
+                              alignment=TA_CENTER, leading=14)),
+                Paragraph(overall,
+                           _s("daSt", fn=F_BOLD, fs=8, tc=status_color,
+                              alignment=TA_RIGHT, leading=10)),
+            ]], colWidths=[10*cm, 3*cm, CONTENT_W - 13*cm])
+            hdr.setStyle(TableStyle([
+                ("BACKGROUND",   (0,0), (-1,-1), C_GREY_L),
+                ("LINEBELOW",    (0,0), (-1,-1), 2, C_NAVY),
+                ("TOPPADDING",   (0,0), (-1,-1), 6),
+                ("BOTTOMPADDING",(0,0), (-1,-1), 6),
+                ("LEFTPADDING",  (0,0), (-1,-1), 8),
+                ("VALIGN",       (0,0), (-1,-1), "MIDDLE"),
+            ]))
+            self.story.append(hdr)
 
-        rows = [
-            ["Chi so", "Gia tri", "Nguong tot", "Danh gia"],
-            ["DTI (No/Thu nhap)", dti, "< 40%", _ev(dti, 40, 0, 100)],
-            ["DSCR (Dong tien/No)", dscr, "> 1.20", _ev(dscr, 1.2, 0, 10, invert=True)],
-            ["LTV (Khoan vay/TSBD)", ltv, "< 80%", _ev(ltv, 80, 0, 100)],
-        ]
-        # Income rows
-        for key, label in [
-            ("income_monthly_vnd", "Thu nhap thang"),
-            ("annuity_monthly_vnd", "Tra no thang"),
-            ("credit_total_vnd", "Tong khoan vay"),
-        ]:
-            v = fr.get(key)
-            if v: rows.append([label, _fmt_vnd(v), "—", "—"])
+            debt_rows = [["Chỉ số", "Giá trị", "Ngưỡng tốt", "Đánh giá"]]
+            FLAG_CLR = {"OK": C_GREEN, "!!": C_ORANGE, "—": C_GREY}
+            for m in da["metrics"]:
+                flag = m.get("flag", "—")
+                flag_clr = FLAG_CLR.get(flag, C_GREY)
+                debt_rows.append([
+                    Paragraph(m["name"], _s("dbN", fn=F_BOLD, fs=8, tc=C_NAVY, leading=10)),
+                    Paragraph(str(m["value"]), _s("dbV", fs=8, tc=C_TEXT, alignment=TA_CENTER, leading=10)),
+                    Paragraph(str(m["threshold"]), _s("dbT", fs=7.5, tc=C_GREY, alignment=TA_CENTER, leading=10)),
+                    Paragraph(f"{flag} {m.get('status','')}",
+                              _s("dbF", fn=F_BOLD, fs=8, tc=flag_clr, alignment=TA_CENTER, leading=10)),
+                ])
+            cw_d = [7*cm, 3*cm, 4*cm, CONTENT_W - 14*cm]
+            dt = Table(debt_rows, colWidths=cw_d)
+            dt.setStyle(TableStyle([
+                *_base_tbl_style().getCommands(),
+                ("ALIGN", (1,0), (-1,-1), "CENTER"),
+            ]))
+            self.story.append(dt)
+            self.story.append(self._sp(2))
 
-        cw = CONTENT_W / 4
-        t = Table(rows, colWidths=[cw]*4)
-        t.setStyle(TableStyle([
-            *_base_tbl_style().getCommands(),
-            ("ALIGN", (1,0), (-1,-1), "CENTER"),
-            ("FONTNAME", (0,1), (0,-1), F_BOLD),
-        ]))
-        self.story.append(t)
-        self.story.append(self._sp(3))
+            # Summary line
+            summary = da.get("summary", "")
+            if summary:
+                self.story.append(P(summary, "narrative"))
+            self.story.append(self._sp(3))
+        else:
+            # Fallback: original simple table
+            kr = fs.get("key_ratios", {})
+            dti  = str(kr.get("dti")  or fr.get("dti_pct",  "N/A"))
+            dscr = str(kr.get("dscr") or fr.get("dscr",     "N/A"))
+            ltv  = str(kr.get("ltv")  or fr.get("ltv_pct",  "N/A"))
 
-        for key, label in [("income_analysis","Phan tich thu nhap"),
-                            ("debt_analysis","Phan tich no")]:
+            def _ev(v, thr, invert=False):
+                try:
+                    n = float(str(v).replace("%",""))
+                    good = (n < thr) if not invert else (n > thr)
+                    return "OK" if good else "!!"
+                except: return "—"
+
+            rows = [
+                ["Chỉ số", "Giá trị", "Ngưỡng tốt", "Đánh giá"],
+                ["DTI (Nợ/Thu nhập)", dti, "< 40%", _ev(dti, 40)],
+                ["DSCR (Dòng tiền/Nợ)", dscr, "> 1.20", _ev(dscr, 1.2, invert=True)],
+                ["LTV (Khoản vay/TSBĐ)", ltv, "< 80%", _ev(ltv, 80)],
+            ]
+            for key, label in [("income_monthly_vnd","Thu nhập tháng"),
+                               ("annuity_monthly_vnd","Trả nợ tháng"),
+                               ("credit_total_vnd","Tổng khoản vay")]:
+                v = fr.get(key)
+                if v: rows.append([label, _fmt_vnd(v), "—", "—"])
+            cw = CONTENT_W / 4
+            t = Table(rows, colWidths=[cw]*4)
+            t.setStyle(TableStyle([*_base_tbl_style().getCommands(),
+                                   ("ALIGN", (1,0), (-1,-1), "CENTER")]))
+            self.story.append(t)
+            self.story.append(self._sp(3))
+
+        for key, label in [("income_analysis","Phân tích thu nhập"),
+                            ("debt_analysis","Phân tích nợ")]:
             txt = fs.get(key, "")
             if txt:
                 self.story.append(P(f"<b>{label}:</b> {txt}"))
         self.story.append(self._sp(4))
 
+
     # ── COLLATERAL ────────────────────────────────────────────────────────────
     def _collateral(self):
         cd = self.report.get("collateral_detail", {})
-        self.story.append(SectionTitle("V", "TAI SAN BAO DAM", CONTENT_W))
+        self.story.append(SectionTitle("V", "TÀI SẢN BẢO ĐẢM", CONTENT_W))
         self.story.append(self._sp(2))
         if cd.get("indicators_met"):
             self.story.append(P("OK - " + "; ".join(cd["indicators_met"])))
         if cd.get("indicators_review"):
             self.story.append(P("!! - " + "; ".join(cd["indicators_review"])))
         self.story.append(P(cd.get("narrative",
-                "Chua co thong tin tai san bao dam chi tiet.")))
+                "Chưa có thông tin tài sản bảo đảm chi tiết.")))
         self.story.append(self._sp(4))
 
     # ── RECOMMENDATION ────────────────────────────────────────────────────────
     def _recommendation(self):
-        self.story.append(SectionTitle("VI", "KHUYEN NGHI & DIEU KIEN", CONTENT_W))
+        self.story.append(SectionTitle("VI", "KHUYẾN NGHỊ & ĐIỀU KIỆN", CONTENT_W))
         self.story.append(self._sp(3))
 
         rec   = self.report.get("executive_summary", {}).get("recommendation", "—")
@@ -806,14 +846,72 @@ class CreditReportPDF:
         caveats = list(dict.fromkeys(self.report.get("caveats", [])))[:10]
         audit   = self.report.get("audit_reference", {})
         llm_i   = self.report.get("llm_insights", {})
+        ra    = self.report.get("reward_assessment", {})
+
+        # ── Reward Modeler block ───────────────────────────────────────────────
+        if ra:
+            verdict_clr = {"green": C_GREEN, "orange": C_ORANGE, "red": C_RED}.get(
+                ra.get("verdict_color", "grey"), C_GREY)
+
+            rm_hdr = Table([[
+                Paragraph("<b>Reward Modeler — Đánh giá Hiệu quả Sinh lời</b>",
+                           _s("rmH", fn=F_BOLD, fs=9, tc=C_NAVY, leading=12)),
+                Paragraph(f"<b>{ra.get('raroc_pct','—')}</b> (RAROC)",
+                           _s("rmR", fn=F_BOLD, fs=10, tc=verdict_clr,
+                              alignment=TA_CENTER, leading=13)),
+                Paragraph(f"{ra.get('verdict_flag','')} {ra.get('verdict','')}",
+                           _s("rmV", fn=F_BOLD, fs=8.5, tc=verdict_clr,
+                              alignment=TA_RIGHT, leading=11)),
+            ]], colWidths=[9*cm, 4*cm, CONTENT_W - 13*cm])
+            rm_hdr.setStyle(TableStyle([
+                ("BACKGROUND",   (0,0), (-1,-1), C_GREY_L),
+                ("LINEBELOW",    (0,0), (-1,-1), 2, C_NAVY),
+                ("TOPPADDING",   (0,0), (-1,-1), 6),
+                ("BOTTOMPADDING",(0,0), (-1,-1), 6),
+                ("LEFTPADDING",  (0,0), (-1,-1), 8),
+                ("VALIGN",       (0,0), (-1,-1), "MIDDLE"),
+            ]))
+            self.story.append(rm_hdr)
+
+            rm_rows = [
+                ["Mục", "Giá trị"],
+                ["Hạn mức vay ước tính", ra.get("loan_amount_fmt", "N/A")],
+                ["Lãi suất tham chiếu", ra.get("interest_rate_pct", "N/A")],
+                ["Kỳ hạn", f"{ra.get('term_months', '—')} tháng"],
+                ["Thu nhập lãi ước tính", ra.get("gross_income_fmt", "N/A")],
+                ["Tổn thất kỳ vọng (PD×LGD 45%)", ra.get("expected_loss_fmt", "N/A")],
+                ["Lợi nhuận điều chỉnh rủi ro", ra.get("risk_adj_income_fmt", "N/A")],
+            ]
+            rm_t = Table(rm_rows, colWidths=[8*cm, CONTENT_W - 8*cm])
+            rm_t.setStyle(TableStyle([
+                ("BACKGROUND",   (0,0), (0,-1), C_BLUE_L),
+                ("FONTNAME",     (0,0), (0,-1), F_BOLD),
+                ("FONTSIZE",     (0,0), (-1,-1), 8),
+                ("TEXTCOLOR",    (0,0), (0,-1), C_BLUE),
+                ("GRID",         (0,0), (-1,-1), 0.3, C_BORDER),
+                ("TOPPADDING",   (0,0), (-1,-1), 5),
+                ("BOTTOMPADDING",(0,0), (-1,-1), 5),
+                ("LEFTPADDING",  (0,0), (-1,-1), 8),
+                ("ROWBACKGROUNDS",(0,0),(-1,-1), [C_WHITE, C_GREY_L]),
+            ]))
+            self.story.append(rm_t)
+            self.story.append(self._sp(2))
+
+            seg = ra.get("customer_segment", "")
+            upsell = ra.get("upsell_opportunities", [])
+            seg_line = f"<b>Phân khúc khách hàng:</b> {seg}"
+            if upsell:
+                seg_line += f" — Cơ hội upsell: {', '.join(upsell)}"
+            self.story.append(P(seg_line, "narrative"))
+            self.story.append(self._sp(4))
 
         # Decision band
         dec_vi = {
-            "APPROVE":"PHE DUYET","APPROVE_REVIEW":"DUYET + XEM XET",
-            "REJECT":"TU CHOI","REVIEW":"XEM XET",
-        }.get((rec or "").upper(), rec or "XEM XET")
+            "APPROVE":"PHÊ DUYỆT","APPROVE_REVIEW":"DUYỆT + XEM XÉT",
+            "REJECT":"TỪ CHỐI","REVIEW":"XEM XÉT",
+        }.get((rec or "").upper(), rec or "XEM XÉT")
 
-        dec_t = Table([[Paragraph(f"<b>DE XUAT: {dec_vi}</b>", STYLES["dec"])]],
+        dec_t = Table([[Paragraph(f"<b>ĐỀ XUẤT: {dec_vi}</b>", STYLES["dec"])]],
                       colWidths=[CONTENT_W])
         dec_t.setStyle(TableStyle([
             ("BACKGROUND", (0,0), (-1,-1), _dec_color(rec)),
@@ -825,17 +923,17 @@ class CreditReportPDF:
         self.story.append(self._sp(4))
 
         # Terms table
-        tdata = [["Muc", "Chi tiet"]]
+        tdata = [["Mục", "Chi tiết"]]
         if st.get("max_amount_vnd"):
-            tdata.append(["So tien de xuat", _fmt_vnd(st["max_amount_vnd"])])
+            tdata.append(["Số tiền đề xuất", _fmt_vnd(st["max_amount_vnd"])])
         if st.get("requested_term_months"):
-            tdata.append(["Ky han", f"{st['requested_term_months']} thang"])
-        tdata.append(["Lai suat", st.get("interest_rate_suggestion", "Theo bieu phi")])
+            tdata.append(["Kỳ hạn", f"{st['requested_term_months']} tháng"])
+        tdata.append(["Lãi suất", st.get("interest_rate_suggestion", "Theo biểu phí")])
         if st.get("dti_at_approval"):
-            tdata.append(["DTI tai thoi diem duyet", str(st["dti_at_approval"])])
+            tdata.append(["DTI tại thời điểm duyệt", str(st["dti_at_approval"])])
         conds = st.get("conditions", [])
         if conds:
-            tdata.append(["Dieu kien tien quyet",
+            tdata.append(["Điều kiện tiên quyết",
                            "\n".join(f"• {c}" for c in conds)])
 
         tt = Table(tdata, colWidths=[4.5*cm, CONTENT_W - 4.5*cm])
@@ -862,7 +960,7 @@ class CreditReportPDF:
             self.story.append(P(f"!!  {flag}", "caveat"))
         if caveats:
             self.story.append(self._sp(2))
-            self.story.append(P("<b>Canh bao du lieu (Imputation Log):</b>", "h3"))
+            self.story.append(P("<b>Cảnh báo dữ liệu (Imputation Log):</b>", "h3"))
             for c in caveats:
                 self.story.append(P(f"• {c}", "caveat"))
         self.story.append(self._sp(3))
@@ -910,7 +1008,7 @@ class CreditReportPDF:
 def generate_credit_pdf(
     report_data: dict,
     shap_data: dict | None = None,
-    customer_name: str = "Khach hang",
+    customer_name: str = "Khách hàng",
 ) -> bytes:
     """Generate professional credit report PDF."""
     return CreditReportPDF(

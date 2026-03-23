@@ -43,7 +43,7 @@ class FeatureEngineerAgent:
     This is the bridge between raw data and ML scoring.
     """
 
-    def __init__(self, use_mock: bool = True):
+    def __init__(self, use_mock: bool = False):
         self.semantic_extractor = SemanticExtractor(use_mock=use_mock)
         self.imputer = IntelligentImputer(use_mock=use_mock)
 
@@ -81,24 +81,42 @@ class FeatureEngineerAgent:
             logger.info(f"    Positive: {semantic.get('positive_signals')}")
             logger.info(f"    Risks: {semantic.get('risk_flags')}")
 
-        # ── Step 2: Imputation of missing fields ──
+        # ── Fallback: derive loan_purpose from application_row if UNCLEAR ──
+        if not llm_feats.get("loan_purpose_category") or \
+                str(llm_feats.get("loan_purpose_category", "")).upper() in ("UNCLEAR", "NONE", "NULL", ""):
+            contract_type = application_row.get("NAME_CONTRACT_TYPE", "")
+            goods_price = application_row.get("AMT_GOODS_PRICE")
+            income_type = application_row.get("NAME_INCOME_TYPE", "")
+
+            # Map Home Credit contract types to 5 loan purpose categories
+            CONTRACT_PURPOSE_MAP = {
+                "Cash loans":      "CONSUMPTION",      # personal cash loan
+                "Revolving loans": "CONSUMPTION",      # credit-card style
+            }
+            INCOME_PURPOSE_MAP = {
+                "Businessman":    "PRODUCTION",        # business owner → production
+                "Commercial associate": "INVESTMENT",  # commercial → investment
+            }
+
+            purpose = CONTRACT_PURPOSE_MAP.get(str(contract_type), None)
+            if not purpose:
+                purpose = INCOME_PURPOSE_MAP.get(str(income_type), None)
+            if not purpose:
+                # If goods_price is close to credit amount, likely consumer goods
+                credit = application_row.get("AMT_CREDIT")
+                if goods_price and credit and abs(goods_price - credit) / max(credit, 1) < 0.05:
+                    purpose = "CONSUMPTION"
+                else:
+                    purpose = "UNCLEAR"
+
+            llm_feats["loan_purpose_category"] = purpose
+            logger.info(f"  Loan purpose fallback: {contract_type} → {purpose}")
+
+
+        # ── Step 2: Log missing fields (no LLM imputation) ──
         missing_fields = [k for k, v in application_row.items() if v is None]
         if missing_fields:
-            imputed, imp_log = self.imputer.impute_missing_fields(
-                missing_fields, application_row
-            )
-            application_row.update(imputed)
-            imputation_log.extend(imp_log)
-
-            n_imputed = sum(1 for e in imp_log if e.get("imputation_flag"))
-            logger.info(f"  Step 2: {n_imputed}/{len(missing_fields)} fields imputed")
-
-            for entry in imp_log:
-                if entry.get("imputation_flag"):
-                    warnings.append(
-                        f"Field '{entry['field']}' was imputed "
-                        f"(confidence: {entry['confidence']:.0%})"
-                    )
+            logger.info(f"  Step 2: {len(missing_fields)} fields missing (skipped LLM imputation)")
 
         # ── Step 3: Feature engineering (218 raw → 753 features) ──
         logger.info("  Step 3: Running feature engineering pipeline...")
