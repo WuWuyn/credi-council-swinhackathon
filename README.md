@@ -18,6 +18,7 @@
 - [6. API Endpoints](#6-api-endpoints)
 - [7. Cấu hình](#7-cấu-hình)
 - [8. Training Model](#8-training-model)
+- [9. Demo Customers](#9-demo-customers)
 
 ---
 
@@ -28,6 +29,7 @@
 - Python 3.10+
 - Conda (khuyến nghị)
 - ~2GB RAM cho model LightGBM
+- NVIDIA GPU (tùy chọn, cho Docling OCR nhanh hơn)
 
 ### Bước 1: Tạo môi trường
 
@@ -47,7 +49,8 @@ Các thư viện chính:
 | Nhóm | Thư viện | Mục đích |
 |---|---|---|
 | ML | `lightgbm`, `shap`, `scikit-learn` | Scoring model & giải thích |
-| LLM | `google-genai` | Gemini API cho semantic extraction |
+| LLM | `google-genai`, `pydantic` | Gemini structured extraction |
+| OCR | `docling`, `easyocr`, `PyMuPDF` | PDF text extraction (smart dual-mode) |
 | PDF | `reportlab` | Tạo báo cáo PDF |
 | API | `fastapi`, `uvicorn` | REST API server |
 | Data | `pandas`, `numpy` | Xử lý dữ liệu |
@@ -62,17 +65,27 @@ Chỉnh sửa `.env`:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here   # Google AI Studio API key
-USE_MOCK=false                             # true = không gọi Gemini API
+USE_OCR=true                               # true = parse PDFs, false = read JSON
+USE_DOCLING=true                           # true = Docling+LLM, false = PyMuPDF+regex
+DOCLING_DEVICE=cpu                         # cpu | cuda | mps
 MODEL_PATH=models/lgbm_ref_v1.pkl         # Đường dẫn model đã train
-FE_STATS_PATH=models/fe_stats.pkl         # Feature engineering stats
+GEMINI_MODEL=gemini-2.5-flash             # Gemini model cho extraction
 ```
 
-> **Mock mode** (`USE_MOCK=true`): Chạy không cần Gemini API. A2 sẽ bỏ qua LLM extraction, A4 tạo report bằng logic deterministic. Phù hợp cho demo nhanh.
+### Bước 4: Khởi tạo RAG Policy Store (chỉ chạy 1 lần)
 
-### Bước 4: Chạy server
+```bash
+cd back-end
+python policy_docs/init_policy_store.py
+```
+
+Script sẽ upload các tài liệu chính sách ngân hàng (TT39, QĐ493, QĐ18, Basel...) lên Gemini FileSearchStore. Store name tự động thêm vào `.env`.
+
+### Bước 5: Chạy server
 
 ```bash
 conda activate swinburn_hackathon
+cd back-end
 uvicorn creditlens.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
@@ -89,23 +102,30 @@ Truy cập:
 
 ```bash
 conda activate swinburn_hackathon
+cd back-end
 python test_pipeline.py
 ```
 
-### Test toàn bộ 4 demo customers
+### Test toàn bộ demo customers
 
 ```bash
-conda activate swinburn_hackathon
 python test_all_customers.py
 ```
 
-Script này chạy pipeline A1→A4 cho 4 customers, so sánh kết quả và kiểm tra:
+Script này chạy pipeline A1→A4 cho tất cả customers, so sánh kết quả và kiểm tra:
 - Score spread (phải > 50 points giữa min/max)
 - High-risk < Standard (TARGET=1 phải có score thấp hơn TARGET=0)
 - 5C totals phải khác nhau giữa các customers
 - Consistency check phải PASS cho tất cả
 
 **Output**: `data/mock/pipeline_test_summary.json`
+
+### Test OCR pipeline (Docling+LLM vs ground truth)
+
+```bash
+python tests/unit/test_docling_coverage.py
+python tests/unit/test_ocr_coverage.py
+```
 
 ### Test qua API
 
@@ -117,43 +137,48 @@ curl -X POST http://localhost:8000/score/mock -d "customer_id=001"
 curl http://localhost:8000/v1/report/001/pdf -o report_001.pdf
 ```
 
-### Pytest
-
-```bash
-make test              # Chạy tất cả tests
-make test-unit         # Unit tests
-make test-integration  # Integration tests
-make test-cov          # Coverage report
-```
-
 ---
 
 ## 3. Kiến trúc hệ thống
 
 ```
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│  A1          │   │  A2          │   │  A3          │   │  A4          │
-│  Ingestion   │──▶│  Feature     │──▶│  Scoring     │──▶│  Report      │
-│              │   │  Engineer    │   │  (LightGBM)  │   │  Generator   │
-│ • PDF parse  │   │ • Semantic   │   │ • PD predict │   │ • 5C assess  │
-│ • CIC API    │   │   extraction │   │ • PD → Score │   │ • Debt Anlst │
-│ • Bank stmt  │   │ • Imputation │   │ • SHAP       │   │ • Reward Mdl │
-│ • Internal DB│   │ • 753 feats  │   │ • Decision   │   │ • PDF render │
-└─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘
-       │                 │                  │                  │
-       │         ┌───────┴──────────────────┴──────────────────┘
-       │         │
-       ▼         ▼
-┌─────────────────────────┐     ┌──────────────────┐
-│  FastAPI Service         │     │  Frontend (HTML)  │
-│  /score/mock             │◀────│  Dashboard UI     │
-│  /v1/report/{id}/pdf     │     │  PDF Viewer       │
-└─────────────────────────┘     └──────────────────┘
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────┐   ┌──────────────────┐
+│  A1              │   │  A2              │   │  A3          │   │  A4               │
+│  Ingestion       │──▶│  Feature         │──▶│  Scoring     │──▶│  Report           │
+│                  │   │  Engineer        │   │  (LightGBM)  │   │  Generator        │
+│ • Smart OCR      │   │ • Semantic LLM   │   │ • PD predict │   │ • 5C assessment   │
+│   (PyMuPDF/      │   │   extraction     │   │ • PD → Score │   │ • RAG policy cite │
+│    Docling)      │   │ • Pydantic valid. │   │ • SHAP       │   │ • Debt Analyst    │
+│ • LLM extraction │   │ • Imputation     │   │ • Decision   │   │ • Reward Modeler  │
+│ • CIC API        │   │ • 753 features   │   │              │   │ • PDF render      │
+│ • Internal DB    │   │                  │   │              │   │                   │
+└─────────────────┘   └─────────────────┘   └─────────────┘   └──────────────────┘
+       │                      │                   │                     │
+       │              ┌───────┴───────────────────┴─────────────────────┘
+       │              │
+       ▼              ▼
+┌─────────────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  FastAPI Service         │     │  Frontend (HTML)  │     │  Gemini RAG      │
+│  /score/mock             │◀────│  Dashboard UI     │     │  FileSearchStore │
+│  /v1/report/{id}/pdf     │     │  PDF Viewer       │     │  (Policy docs)   │
+└─────────────────────────┘     └──────────────────┘     └──────────────────┘
 ```
 
-**3-Tier Explainability:**
+### Core Technologies
+
+| Component | Technology | Mục đích |
+|---|---|---|
+| **OCR** | PyMuPDF + Docling + EasyOCR | Smart dual-mode text extraction |
+| **LLM Extraction** | Gemini + Pydantic `response_schema` | Type-safe field extraction |
+| **ML Scoring** | LightGBM (5-fold bagging) | Probability of Default |
+| **Explainability** | SHAP TreeExplainer | Feature-level attribution |
+| **RAG** | Gemini FileSearchStore | Policy citation (TT39, QĐ493, Basel...) |
+| **Report** | Gemini + ReportLab | 5C narrative + PDF rendering |
+
+### 3-Tier Explainability
+
 1. **SHAP Attribution** — Feature-level importance từ LightGBM
-2. **Grounded LLM Narrative** — Gemini viết nhận xét, chỉ trích dẫn SHAP factors
+2. **Grounded LLM Narrative** — Gemini viết nhận xét, chỉ trích dẫn SHAP factors + policy từ RAG
 3. **Audit Trail** — Timestamp, model version, consistency check cho mỗi step
 
 ---
@@ -162,60 +187,70 @@ make test-cov          # Coverage report
 
 ```
 swinburn_new/
-├── creditlens/                    # Core application package
-│   ├── agents/                   # 4 pipeline agents
-│   │   ├── a1_ingestion/         # Data ingestion
-│   │   │   ├── agent.py          # IngestionAgent — main orchestrator
-│   │   │   ├── document_parser.py # PDF → structured fields (PyMuPDF)
-│   │   │   ├── cic_service.py    # CIC API client (mock JSON)
-│   │   │   └── internal_db_reader.py # Internal DB → DataFrames
-│   │   ├── a2_feature_engineer/  # Feature engineering
-│   │   │   ├── agent.py          # FeatureEngineerAgent — orchestrator
-│   │   │   ├── semantic_extractor.py # LLM semantic extraction
-│   │   │   ├── imputer.py        # Missing value imputation
-│   │   │   └── single_customer_fe.py # 218 raw → 753 ML features
-│   │   ├── a3_scoring/           # ML scoring
-│   │   │   ├── agent.py          # ScoringAgent — LightGBM + SHAP
-│   │   │   ├── model.py          # Model wrapper (load/predict)
-│   │   │   ├── score_mapper.py   # PD% → Credit Score (300-850)
-│   │   │   └── decision_rules.py # Hard override rules
-│   │   └── a4_report_generator/  # Report generation
-│   │       ├── agent.py          # ReportGeneratorAgent — LLM narrative
-│   │       ├── pdf_generator.py  # PDF rendering (ReportLab)
-│   │       └── consistency_validator.py # SHAP-narrative consistency
-│   ├── api/
-│   │   └── main.py               # FastAPI app + endpoints
-│   ├── config/
-│   │   ├── feature_config.py     # Feature→5C mapping, risk bands, labels
-│   │   ├── feature_source_schema.json # 122-field schema
-│   │   ├── prompts.py            # LLM prompt templates
-│   │   └── settings.py           # App settings
-│   ├── services/
-│   │   └── llm_service.py        # Gemini API wrapper
-│   ├── orchestrator/
-│   │   └── graph.py              # LangGraph orchestration (optional)
-│   └── state/                    # State management
-├── models/                       # Trained model artifacts
-│   ├── lgbm_ref_v1.pkl           # LightGBM model (46MB)
-│   ├── fe_stats.pkl              # Feature engineering statistics
-│   ├── feature_names.json        # 753 feature names
-│   └── feature_importance.csv    # SHAP feature importance
-├── training/                     # Model training code
-│   ├── train_pipeline.py         # Main training script
-│   ├── feature_engineering.py    # Full FE pipeline (218→753)
-│   └── precompute_fe_stats.py    # Pre-compute FE stats for inference
-├── data/
-│   └── mock/                     # 4 demo customers
-│       ├── customer_001/         # TARGET=0 (good), Score ~694
-│       ├── customer_002/         # TARGET=0 (good), Score ~700+
-│       ├── customer_003/         # TARGET=1 (bad), Score ~400s
-│       └── customer_004/         # TARGET=1 (bad), Score ~300s
-├── front-end/app/                # Frontend dashboard (HTML/JS)
-├── test_pipeline.py              # Single customer test
-├── test_all_customers.py         # 4-customer comparison test
-├── requirements.txt
-├── Makefile
-└── .env.example
+├── back-end/                          # ⭐ Main application
+│   ├── creditlens/                    # Core application package
+│   │   ├── agents/                   # 4 pipeline agents
+│   │   │   ├── a1_ingestion/         # Data ingestion
+│   │   │   │   ├── agent.py          # IngestionAgent — main orchestrator
+│   │   │   │   ├── llm_field_extractor.py # ⭐ Gemini+Pydantic field extraction
+│   │   │   │   ├── document_parser.py # PDF → structured fields (regex fallback)
+│   │   │   │   ├── cic_service.py    # CIC API client (mock JSON)
+│   │   │   │   └── internal_db_reader.py # Internal DB → DataFrames
+│   │   │   ├── a2_feature_engineer/  # Feature engineering
+│   │   │   │   ├── agent.py          # FeatureEngineerAgent — orchestrator
+│   │   │   │   ├── semantic_extractor.py # ⭐ LLM semantic extraction (Pydantic)
+│   │   │   │   ├── imputer.py        # Missing value imputation
+│   │   │   │   └── single_customer_fe.py # 218 raw → 753 ML features
+│   │   │   ├── a3_scoring/           # ML scoring
+│   │   │   │   ├── agent.py          # ScoringAgent — LightGBM + SHAP
+│   │   │   │   ├── model.py          # Model wrapper (load/predict)
+│   │   │   │   ├── score_mapper.py   # PD% → Credit Score (300-850)
+│   │   │   │   └── decision_rules.py # Hard override rules
+│   │   │   └── a4_report_generator/  # Report generation
+│   │   │       ├── agent.py          # ReportGeneratorAgent — 5C + RAG
+│   │   │       ├── pdf_generator.py  # PDF rendering (ReportLab)
+│   │   │       └── consistency_validator.py # SHAP-narrative consistency
+│   │   ├── api/
+│   │   │   └── main.py               # FastAPI app + endpoints
+│   │   ├── config/
+│   │   │   ├── feature_config.py     # Feature→5C mapping, risk bands
+│   │   │   ├── feature_source_schema.json # 122-field schema
+│   │   │   ├── prompts.py            # LLM prompt templates
+│   │   │   └── settings.py           # App settings (USE_DOCLING, etc.)
+│   │   ├── schemas/
+│   │   │   └── document_schemas.py   # ⭐ Pydantic schemas (5 doc types)
+│   │   └── services/
+│   │       ├── llm_service.py        # ⭐ Unified Gemini API (JSON/text/structured)
+│   │       ├── docling_ocr_service.py # ⭐ Smart OCR (PyMuPDF→Docling fallback)
+│   │       └── policy_rag_service.py # ⭐ RAG FileSearchStore service
+│   ├── policy_docs/                  # Vietnamese banking policy documents
+│   │   ├── tt39_2016_cho_vay.md      # TT39/2016 — Quy định cho vay
+│   │   ├── qd493_2005_phan_loai_no.md # QĐ493 — Phân loại nợ
+│   │   ├── qd18_2007_xep_hang_tin_dung.md # QĐ18 — Xếp hạng tín dụng
+│   │   ├── basel_vietnam_car.md      # Basel III — CAR ratio
+│   │   └── init_policy_store.py      # Script khởi tạo Gemini RAG store
+│   ├── models/                       # Trained model artifacts
+│   │   ├── lgbm_ref_v1.pkl           # LightGBM model (46MB)
+│   │   ├── fe_stats.pkl              # Feature engineering statistics
+│   │   └── feature_names.json        # 753 feature names
+│   ├── training/                     # Model training code
+│   │   ├── train_pipeline.py         # Main training script
+│   │   ├── feature_engineering.py    # Full FE pipeline (218→753)
+│   │   └── precompute_fe_stats.py    # Pre-compute FE stats for inference
+│   ├── data/
+│   │   └── mock/                     # 50 demo customers
+│   │       ├── customer_001/ ... customer_050/
+│   │       ├── customer_map.json     # SK_ID → dir mapping
+│   │       └── extract_real_customers.py # Generate demo data from dataset
+│   ├── tests/
+│   │   └── unit/                     # Unit tests
+│   │       ├── test_docling_coverage.py # Docling+LLM vs ground truth
+│   │       └── test_ocr_coverage.py  # PyMuPDF+regex vs ground truth
+│   ├── test_pipeline.py              # Single customer pipeline test
+│   └── test_all_customers.py         # Multi-customer comparison test
+├── front-end/app/                    # Frontend dashboard (HTML/JS)
+├── .env.example                      # Environment template
+└── requirements.txt
 ```
 
 ---
@@ -229,6 +264,49 @@ swinburn_new/
 
 #### Nhiệm vụ
 Thu thập và chuẩn hóa dữ liệu từ 4 kênh khác nhau thành format tương thích Home Credit dataset.
+
+#### Dual-Mode OCR Engine
+
+A1 hỗ trợ 2 extraction engine, điều khiển bởi `USE_DOCLING`:
+
+| | Path A: Docling+LLM (`USE_DOCLING=true`) | Path B: PyMuPDF+regex (`USE_DOCLING=false`) |
+|---|---|---|
+| **Text extraction** | Smart 3-tier: PyMuPDF → Docling+EasyOCR → fallback | PyMuPDF only |
+| **Field extraction** | Gemini + Pydantic `response_schema` | Regex + rule-based |
+| **Accuracy** | 93/121 fields (76.9%) | 93/121 fields (76.9%) |
+| **Speed** (text-layer PDF) | 0.12s + ~20s LLM = ~20s | ~0.5s |
+| **Speed** (scanned PDF) | ~10s OCR + ~20s LLM = ~30s | N/A (regex chỉ hỗ trợ text) |
+| **Ưu điểm** | Robust, hỗ trợ PDF scan, type-safe | Nhanh, không cần API |
+
+##### Smart 3-Tier OCR (`DoclingOCRService`)
+
+```
+PDF input
+   ↓
+Tier 1: PyMuPDF (0.003s) — text layer extraction
+   ↓ (nếu text ≥ 50 chars → thành công, bỏ qua Tier 2)
+Tier 2: Docling + EasyOCR (5-10s) — cho scanned/image PDFs
+   ↓ (nếu thất bại)
+Tier 3: PyMuPDF fallback
+```
+
+- **`DOCLING_DEVICE`**: `cpu` | `cuda` | `mps` — chọn thiết bị tính toán cho Docling layout model, TableFormer, và EasyOCR
+- Docling chỉ lazy-load khi thực sự cần (scanned PDF) → không tốn RAM khởi tạo
+
+##### LLM Field Extraction (`LLMFieldExtractor`)
+
+Sử dụng `LLMService.generate_structured()` — shared Gemini client:
+
+```
+OCR text → Gemini API (response_schema=PydanticModel) → Pydantic validation → typed dict
+```
+
+5 Pydantic schemas cho 5 loại tài liệu:
+- `CCCDSchema` — Căn cước công dân (10 fields)
+- `EmploymentSchema` — Hợp đồng lao động (14 fields)
+- `HouseholdSchema` — Sổ hộ khẩu (4 fields)
+- `HousingSurveySchema` — Phiếu thẩm định nhà ở (62 fields)
+- `LoanApplicationSchema` — Đơn vay (40 fields)
 
 #### Input
 
@@ -260,31 +338,10 @@ Thư mục khách hàng chứa:
     "confidence_map": dict,         # Confidence per extracted field
     "identity_consistency_flag": str, # "OK" | "MISMATCH" | "MISSING"
     "thin_file_flag": bool,         # True nếu không có lịch sử CIC
-    "raw_texts": dict,              # OCR text từ từng document
+    "raw_texts": dict,              # OCR text từ từng document (dùng cho A2)
     "audit_trail": list[dict],      # Audit entries
 }
 ```
-
-#### Logic xử lý
-
-1. **Fast-path check**: Nếu `application_row.json` tồn tại → load trực tiếp 122 cột, bỏ qua OCR (100% coverage, 10x nhanh hơn)
-2. **PDF Parsing** (khi không có fast-path): PyMuPDF extract text → regex + rule-based parsing → map sang Home Credit columns
-3. **CIC API**: Load `07_cic_api_response.json` → extract `EXT_SOURCE_1/2/3`, bureau records, thin_file_flag
-4. **Internal DB**: Load `08_internal_db.json` → convert to DataFrames (previous_application, POS, installments, credit_card)
-5. **Cross-validation**: So sánh tên trên các tài liệu → `identity_consistency_flag`
-
-#### Các cột quan trọng trong `application_row`
-
-| Cột | Ý nghĩa | Nguồn |
-|---|---|---|
-| `AMT_INCOME_TOTAL` | Thu nhập hàng năm | HĐLĐ / application_row.json |
-| `AMT_CREDIT` | Tổng số tiền vay | Đơn vay |
-| `AMT_ANNUITY` | Tổng trả nợ hàng năm | Đơn vay |
-| `AMT_GOODS_PRICE` | Giá trị hàng hóa/TSBĐ | Đơn vay |
-| `EXT_SOURCE_1/2/3` | Điểm CIC bên ngoài (0–1) | CIC API |
-| `DAYS_BIRTH` | Số ngày từ sinh đến nay (âm) | CCCD |
-| `DAYS_EMPLOYED` | Số ngày làm việc (âm) | HĐLĐ |
-| `NAME_CONTRACT_TYPE` | Loại hợp đồng | Đơn vay |
 
 ---
 
@@ -296,9 +353,23 @@ Thư mục khách hàng chứa:
 #### Nhiệm vụ
 Chuyển đổi 218 cột raw data từ A1 thành 753 features cho ML model, kết hợp semantic extraction từ LLM.
 
-#### Input — `a1_output: dict`
+#### Semantic Extraction (`SemanticExtractor`)
 
-Output từ A1 (xem mục 5.1).
+Sử dụng `LLMService.generate_structured()` với Pydantic schema `SemanticFeatures`:
+
+```python
+class SemanticFeatures(BaseModel):
+    loan_purpose_category: str      # PRODUCTION|CONSUMPTION|INVESTMENT|REFINANCING|UNCLEAR
+    repayment_plan_quality: str     # DETAILED|GENERAL|VAGUE|NONE
+    stated_income_consistency: bool # Income matches employment docs?
+    risk_flags: list[str]           # Risk indicators
+    positive_signals: list[str]     # Positive indicators
+    extraction_confidence: float    # 0.0-1.0
+```
+
+**Smart text source selection:**
+- Khi `raw_texts` có sẵn (từ OCR) → dùng trực tiếp, không build lại
+- Khi `raw_texts` rỗng (fast-path) → tự build summary từ `application_row`
 
 #### Output — `dict`
 
@@ -307,19 +378,18 @@ Output từ A1 (xem mục 5.1).
     "feature_vector": pd.Series,   # 753 ML features (float)
     "application_row": dict,       # Pass-through từ A1
     "llm_feats": {                 # Semantic features từ LLM
-        "loan_purpose_category": str,      # "CONSUMPTION"|"PRODUCTION"|"INVESTMENT"|"REFINANCING"|"UNCLEAR"
-        "positive_signals": list[str],     # Tín hiệu tích cực
-        "risk_flags": list[str],           # Cảnh báo rủi ro
-        "income_stability_index": float,   # Chỉ số ổn định thu nhập (0-1)
-        "inflow_outflow_ratio": float,     # Tỷ lệ thu/chi
-        "collateral_type": str,            # Loại TSBĐ
-        "collateral_value_vnd": float,     # Giá trị TSBĐ
-        "thin_file_flag": bool,            # Thin-file flag
-        "income_imputed_flag": int,        # 1 nếu thu nhập được impute
-        "imputation_confidence": float,    # Confidence (0-1)
+        "loan_purpose_category": str,
+        "loan_purpose_category_encoded": int,
+        "repayment_plan_quality": str,
+        "repayment_plan_quality_encoded": int,
+        "stated_income_consistency": bool,
+        "risk_flags": list[str],
+        "risk_flag_count": int,
+        "positive_signals": list[str],
+        "extraction_confidence": float,
     },
-    "imputation_log": list[dict],  # Chi tiết imputation
-    "warnings": list[str],         # Cảnh báo
+    "imputation_log": list[dict],
+    "warnings": list[str],
     "audit_trail": list[dict],
 }
 ```
@@ -353,10 +423,6 @@ Output từ A1 (xem mục 5.1).
 #### Nhiệm vụ
 Chấm điểm tín dụng bằng LightGBM, tạo SHAP explanation, áp dụng decision rules.
 
-#### Input — `a2_output: dict`
-
-Output từ A2 (xem mục 5.2).
-
 #### Output — `dict`
 
 ```python
@@ -366,54 +432,27 @@ Output từ A2 (xem mục 5.2).
     "pd_prob": float,              # PD probability (0–1)
     "risk_band": str,              # "AAA"|"AA"|"A"|"BBB"|"BB"|"B"|"CCC"|"CC"
     "shap_values": {               # SHAP explanation
-        "credit_score": int,
-        "pd_prob": float,
-        "risk_band": str,
-        "top_positive_factors": [   # Top 10 yếu tố tăng rủi ro
-            {
-                "feature": str,         # Tên feature
-                "shap_value": float,    # SHAP value
-                "value": float,         # Giá trị feature thực tế
-                "label_vi": str,        # Nhãn tiếng Việt
-                "dimension_5c": str,    # character|capacity|capital|conditions|collateral
-                "direction": str,       # positive_for_default
-            }, ...
-        ],
+        "top_positive_factors": [...],  # Top 10 yếu tố tăng rủi ro
         "top_negative_factors": [...],  # Top 10 yếu tố giảm rủi ro
-        "five_c_shap_allocation": {     # Phân bổ SHAP theo 5C
-            "character":  {"shap_sum": float, "pct": int},
-            "capacity":   {"shap_sum": float, "pct": int},
-            "capital":    {"shap_sum": float, "pct": int},
-            "conditions": {"shap_sum": float, "pct": int},
-            "collateral": {"shap_sum": float, "pct": int},
-        },
-        "model_version": str,
-        "inference_timestamp": str,     # ISO 8601
+        "five_c_shap_allocation": {...}, # Phân bổ SHAP theo 5C
     },
     "routing": str,                # "APPROVE"|"REVIEW"|"REJECT"
-    "decision_details": dict,      # Chi tiết decision rules
-    "features_df": pd.DataFrame,   # Feature vector đã dùng
+    "decision_details": dict,
+    "features_df": pd.DataFrame,
     "audit_trail": list[dict],
 }
 ```
 
-#### Logic xử lý
+#### Score Mapping (piecewise linear trong log-PD space)
 
-1. **Build feature DataFrame**: Align 753 features từ A2 với `model.feature_names`. Missing features = 0.0.
-2. **LightGBM predict**: `model.predict_proba(features_df)` → PD probability (0–1)
-3. **Score Mapping** (piecewise linear trong log-PD space):
-
-   | PD% | Credit Score | Risk Band |
-   |---|---|---|
-   | ≤ 0.5% | 850 | AAA |
-   | 2% | 720 | AA |
-   | 8% | 640 | A |
-   | 18% | 560 | BBB |
-   | 35% | 460 | BB/B |
-   | ≥ 100% | 300 | CC |
-
-4. **SHAP TreeExplainer**: Tính SHAP values cho mỗi feature → sort by `|shap_value|` → top 10 positive + top 10 negative. Phân bổ vào 5C dimensions theo `feature_config.py`.
-5. **Hard Override Rules**: Kiểm tra EXT_SOURCE thấp, income quá nhỏ, thin-file → có thể override quyết định.
+| PD% | Credit Score | Risk Band |
+|---|---|---|
+| ≤ 0.5% | 850 | AAA |
+| 2% | 720 | AA |
+| 8% | 640 | A |
+| 18% | 560 | BBB |
+| 35% | 460 | BB/B |
+| ≥ 100% | 300 | CC |
 
 ---
 
@@ -423,206 +462,29 @@ Output từ A2 (xem mục 5.2).
 **Class**: `ReportGeneratorAgent`
 
 #### Nhiệm vụ
-Tạo báo cáo tín dụng 5C đầy đủ bằng tiếng Việt (6 phần), bao gồm Debt Analyst và Reward Modeler.
+Tạo báo cáo tín dụng 5C đầy đủ bằng tiếng Việt, với RAG policy citation.
 
-#### Input
+#### RAG Pipeline (Policy Documents)
 
-```python
-def generate(
-    a3_output: dict,      # Output từ A3 (credit_score, shap_values, pd_pct, ...)
-    a2_output: dict,      # Output từ A2 (llm_feats, warnings, ...)
-    a1_output: dict,      # Output từ A1 (application_row với AMT_* fields)
-) -> dict
-```
-
-#### Output — `dict`
-
-```python
-{
-    "credit_score": int,
-    "pd_pct": float,
-    "risk_band": str,
-    "five_c_scores": {             # Điểm 5C (tối đa 120)
-        "character": int,          # 0–30
-        "capacity": int,           # 0–40
-        "capital": int,            # 0–20
-        "conditions": int,         # 0–10
-        "collateral": int,         # 0–20
-    },
-    "narrative": dict,             # LLM-generated narrative (raw)
-    "consistency_check": {         # Kiểm tra tính nhất quán
-        "passed": bool,
-        "fabricated_features": list,  # Features LLM bịa ra (nếu có)
-    },
-    "final_report": {              # BÁO CÁO CHÍNH — 6 PHẦN
-        # ─── Section I ───
-        "customer_info": {"summary": str},
-
-        # ─── Section II ───
-        "executive_summary": {
-            "credit_score": int,
-            "risk_band": str,
-            "pd_pct": float,
-            "recommendation": str,   # "APPROVE"|"REVIEW"|"REJECT"
-            "five_c_total": int,     # /120
-            "five_c_scores": dict,
-            "five_c_shap_allocation": dict,
-            "model_info": {
-                "model_version": str,
-                "auc": str,
-                "shap_verified": bool,
-                "inference_timestamp": str,
-            },
-            "financial_ratios": dict,  # DTI, DSCR, LTV ...
-        },
-
-        # ─── Section III: Đánh giá 5C ───
-        "five_c_scorecard": {
-            "<dim>_assessment": {  # cho mỗi dim: character, capacity, capital, conditions, collateral
-                "score": int,
-                "status": str,        # "DAT"|"XEM_XET"|"KHONG_DAT"
-                "shap_pct": int,      # % SHAP contribution
-                "indicators_met": list[str],
-                "indicators_review": list[str],
-                "narrative": str,     # 100-150 chữ
-            }, ...
-        },
-
-        # ─── Section IV: Tài chính + Debt Analyst ───
-        "financial_summary": {
-            "income_analysis": str,
-            "debt_analysis": str,
-            "key_ratios": {"dti": str, "dscr": str, "ltv": str},
-        },
-        "debt_assessment": {           # ⭐ DEBT ANALYST
-            "score": int,              # 0–100
-            "max_score": 100,
-            "score_pct": str,          # e.g. "75%"
-            "overall_status": str,     # "ĐẠT"|"XEM_XET"|"KHONG_DAT"
-            "overall_color": str,      # "green"|"orange"|"red"
-            "metrics": [               # Bảng chi tiết
-                {
-                    "name": str,       # "DTI (Nợ/Thu nhập)"
-                    "value": str,      # "14.3%"
-                    "threshold": str,  # "< 40%"
-                    "status": str,     # "Tốt"
-                    "flag": str,       # "OK" | "!!"
-                }, ...                 # DTI(40pts) + DSCR(35pts) + LTV(15pts) + Mục đích vay(10pts)
-            ],
-            "summary": str,           # Tóm tắt narrative
-        },
-
-        # ─── Section V: TSBĐ ───
-        "collateral_detail": dict,
-
-        # ─── Section VI: Khuyến nghị + Reward Modeler ───
-        "suggested_terms": {
-            "requested_amount_vnd": float,
-            "max_amount_vnd": float,
-            "requested_term_months": int,
-            "interest_rate_suggestion": str,
-            "conditions": list[str],
-            "dti_at_approval": str,
-        },
-        "reward_assessment": {          # ⭐ REWARD MODELER
-            "interest_rate_pct": str,   # "9.5%" (theo risk band)
-            "loan_amount_fmt": str,     # "900 triệu VND"
-            "term_months": int,
-            "gross_income_fmt": str,    # Thu nhập lãi ước tính
-            "expected_loss_fmt": str,   # PD × LGD(45%)
-            "risk_adj_income_fmt": str, # Gross - Expected Loss
-            "raroc_pct": str,          # RAROC = risk_adj / loan_amount
-            "verdict": str,            # "Tốt"|"Chấp nhận"|"Thấp"|"Không khả thi"
-            "verdict_flag": str,       # "OK"|"!!"
-            "verdict_color": str,      # "green"|"orange"|"red"
-            "customer_segment": str,   # "Premium"|"Mid-tier"|"Mass"|"Sub-prime"
-            "upsell_opportunities": list[str],
-            "summary": str,
-        },
-        "llm_insights": dict,
-        "caveats": list[str],
-        "audit_reference": dict,
-    },
-    "warnings": list[str],
-    "audit_trail": list[dict],
-}
-```
-
-#### Logic xử lý chi tiết
-
-##### 1. Tính Financial Ratios (`_compute_financial_ratios`)
-
-Từ `application_row` (A1 output):
+A4 sử dụng **Gemini FileSearchStore** để trích dẫn quy định ngân hàng Việt Nam:
 
 ```
-monthly_income = AMT_INCOME_TOTAL / 12
-monthly_annuity = AMT_ANNUITY / 12     # AMT_ANNUITY là ANNUAL, chia 12
-
-DTI = monthly_annuity / monthly_income
-DSCR = monthly_income / monthly_annuity
-LTV = AMT_CREDIT / AMT_GOODS_PRICE
+SHAP context + Financial ratios
+        ↓
+PolicyRAGService.query() → Gemini FileSearchStore
+        ↓
+Policy excerpts + citations (TT39, QĐ493, QĐ18, Basel...)
+        ↓
+LLM narrative + grounded policy references
 ```
 
-##### 2. Generate LLM Narrative (`_generate_narrative`)
+**Policy documents:**
+- `tt39_2016_cho_vay.md` — TT39/2016 NHNN: Quy định cho vay
+- `qd493_2005_phan_loai_no.md` — QĐ493: Phân loại nợ
+- `qd18_2007_xep_hang_tin_dung.md` — QĐ18: Xếp hạng tín dụng
+- `basel_vietnam_car.md` — Basel III: Tỷ lệ an toàn vốn (CAR)
 
-- **Real mode**: Gửi SHAP values + financial context + collateral context cho Gemini → nhận JSON 5C assessment
-- **Mock mode**: Logic deterministic dựa trên `credit_score`:
-  - ≥ 700: Character 28/30, Capacity 35/40, ... → APPROVE
-  - ≥ 600: Giảm tương ứng → REVIEW
-  - ≥ 460: → CONDITIONAL
-  - < 460: → REJECT
-
-##### 3. Consistency Validation (`consistency_validator.py`)
-
-Kiểm tra LLM narrative chỉ trích dẫn features có trong SHAP output. Nếu phát hiện feature bịa đặt → `fabricated_features` list, `passed = false`.
-
-##### 4. Debt Analyst (`_compute_debt_assessment`)
-
-**100% deterministic, không dùng LLM.**
-
-| Metric | Điểm tối đa | Scoring |
-|---|---|---|
-| DTI (Nợ/Thu nhập) | 40 pts | < 30%: 40, < 40%: 30, < 50%: 15, ≥ 50%: 0 |
-| DSCR (Dòng tiền/Nợ) | 35 pts | ≥ 1.5: 35, ≥ 1.2: 25, ≥ 1.0: 10, < 1.0: 0 |
-| LTV (Vay/TSBĐ) | 15 pts | < 70%: 15, < 80%: 8, ≥ 80%: 0 |
-| Mục đích vay | 10 pts | PRODUCTION: 10, INVESTMENT: 8, CONSUMPTION: 6, REFINANCING: 4, UNCLEAR: 0 |
-
-**Overall:**
-- ≥ 70%: ĐẠT (green)
-- ≥ 45%: XEM_XET (orange)
-- < 45%: KHONG_DAT (red)
-
-##### 5. Reward Modeler (`_compute_reward_assessment`)
-
-**100% deterministic, không dùng LLM.**
-
-```
-interest_rate = f(risk_band)         # AAA:8.5%, AA:9.5%, A:11%, BBB:13%, ...
-term_months = AMT_CREDIT / AMT_ANNUITY (clamped 6–360)
-gross_income = loan_amount × interest_rate × (term/12)
-expected_loss = loan_amount × PD × LGD(45%)
-RAROC = (gross_income - expected_loss) / loan_amount
-```
-
-| RAROC | Verdict | Color |
-|---|---|---|
-| ≥ 8% | Tốt | green |
-| ≥ 4% | Chấp nhận được | orange |
-| > 0% | Thấp | orange |
-| ≤ 0% | Không khả thi | red |
-
-**Customer Segments:**
-
-| Credit Score | Segment | Upsell |
-|---|---|---|
-| ≥ 720 | Premium | Bảo hiểm nhân thọ, Thẻ vàng, Quỹ tiết kiệm |
-| ≥ 640 | Mid-tier | Bảo hiểm tài sản, Thẻ cơ bản |
-| ≥ 560 | Mass | Bảo hiểm khoản vay |
-| < 560 | Sub-prime | — |
-
-##### 6. PDF Generation (`pdf_generator.py`)
-
-Render `final_report` thành PDF báo cáo tín dụng chuyên nghiệp (6 phần), sử dụng ReportLab:
+#### Report Output — 6 Sections
 
 | Section | Nội dung | Dữ liệu nguồn |
 |---|---|---|
@@ -633,6 +495,25 @@ Render `final_report` thành PDF báo cáo tín dụng chuyên nghiệp (6 phầ
 | V | Tài sản bảo đảm | `collateral_detail` |
 | VI | Khuyến nghị & Điều kiện | `reward_assessment` + `suggested_terms` + `caveats` |
 
+#### Debt Analyst (100% deterministic)
+
+| Metric | Điểm tối đa | Scoring |
+|---|---|---|
+| DTI (Nợ/Thu nhập) | 40 pts | < 30%: 40, < 40%: 30, < 50%: 15, ≥ 50%: 0 |
+| DSCR (Dòng tiền/Nợ) | 35 pts | ≥ 1.5: 35, ≥ 1.2: 25, ≥ 1.0: 10, < 1.0: 0 |
+| LTV (Vay/TSBĐ) | 15 pts | < 70%: 15, < 80%: 8, ≥ 80%: 0 |
+| Mục đích vay | 10 pts | PRODUCTION: 10, INVESTMENT: 8, CONSUMPTION: 6, REFINANCING: 4, UNCLEAR: 0 |
+
+#### Reward Modeler (100% deterministic)
+
+```
+interest_rate = f(risk_band)         # AAA:8.5%, AA:9.5%, A:11%, BBB:13%, ...
+term_months = AMT_CREDIT / AMT_ANNUITY (clamped 6–360)
+gross_income = loan_amount × interest_rate × (term/12)
+expected_loss = loan_amount × PD × LGD(45%)
+RAROC = (gross_income - expected_loss) / loan_amount
+```
+
 ---
 
 ## 6. API Endpoints
@@ -640,30 +521,11 @@ Render `final_report` thành PDF báo cáo tín dụng chuyên nghiệp (6 phầ
 | Method | Path | Mô tả |
 |---|---|---|
 | `GET` | `/health` | Health check |
-| `POST` | `/score/mock` | Score demo customer (001–004) |
+| `POST` | `/score/mock` | Score demo customer (001–050) |
 | `POST` | `/score/customer-folder` | Score from folder path |
 | `POST` | `/score/upload` | Score from uploaded files |
 | `POST` | `/score/json` | Score from raw JSON |
 | `GET` | `/v1/report/{id}/pdf` | PDF report (generate/cached) |
-
-**Scoring response** (`ScoringResult`):
-
-```json
-{
-  "credit_score": 694,
-  "pd_probability": 3.13,
-  "risk_band": "AA",
-  "decision": "REVIEW",
-  "shap_top_positive": [...],
-  "shap_top_negative": [...],
-  "five_c_scores": {"character": 25, "capacity": 28, ...},
-  "five_c_total": 90,
-  "recommendation": "REVIEW",
-  "consistency_check": true,
-  "audit_trail": [...],
-  "warnings": [...]
-}
-```
 
 ---
 
@@ -673,10 +535,25 @@ Render `final_report` thành PDF báo cáo tín dụng chuyên nghiệp (6 phầ
 
 | Biến | Default | Mô tả |
 |---|---|---|
-| `GEMINI_API_KEY` | — | Google AI Studio API key |
-| `USE_MOCK` | `true` | `true` = mock LLM, `false` = real Gemini |
+| `GEMINI_API_KEY` | — | Google AI Studio API key (bắt buộc) |
+| `USE_OCR` | `true` | `true` = parse PDFs, `false` = read JSON directly |
+| `USE_DOCLING` | `true` | `true` = Docling+LLM extraction, `false` = PyMuPDF+regex |
+| `DOCLING_DEVICE` | `cpu` | `cpu` / `cuda` / `mps` — device cho AI models |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model cho field + semantic extraction |
+| `GEMINI_RAG_MODEL` | `gemini-2.5-flash` | Gemini model cho RAG policy query |
 | `MODEL_PATH` | `models/lgbm_ref_v1.pkl` | Đường dẫn model file |
-| `FE_STATS_PATH` | `models/fe_stats.pkl` | Feature engineering stats |
+| `FILE_SEARCH_STORE_NAME` | — | Gemini FileSearchStore name (từ init script) |
+
+### LLM Service Architecture
+
+```
+LLMService (shared Gemini client, auto-loads .env)
+  ├── generate_json()        → A4 report, free-form JSON
+  ├── generate_text()        → A4 narrative text
+  └── generate_structured()  → A1 field extraction + A2 semantic (Pydantic)
+        ├── LLMFieldExtractor (5 document schemas)
+        └── SemanticExtractor (SemanticFeatures schema)
+```
 
 ### Feature Config (`creditlens/config/feature_config.py`)
 
@@ -713,11 +590,23 @@ Pipeline:
 
 ---
 
-## Demo Customers
+## 9. Demo Customers
 
-| ID | SK_ID_CURR | TARGET | Score | Band | Profile |
-|---|---|---|---|---|---|
-| 001 | 418735 | 0 (pass) | ~694 | AA | Pensioner, Revolving loan, EXT high |
-| 002 | 394570 | 0 (pass) | ~700+ | AA | Working, Cash loan, EXT high |
-| 003 | 272483 | 1 (fail) | ~400s | B/CCC | Low EXT scores |
-| 004 | 169206 | 1 (fail) | ~300s | CC | Lowest EXT scores |
+**50 demo customers** (25 pass + 25 fail) được tạo từ Home Credit dataset thật:
+
+```bash
+cd back-end
+python data/mock/extract_real_customers.py
+```
+
+Mỗi customer folder chứa:
+- `01_cccd.pdf` — Căn cước công dân
+- `02_hop_dong_lao_dong.pdf` — Hợp đồng lao động
+- `03_so_ho_khau.pdf` — Sổ hộ khẩu
+- `04_tham_dinh_nha_o.pdf` — Phiếu thẩm định nhà ở
+- `05_don_vay.pdf` — Đơn đề nghị vay vốn
+- `07_cic_api_response.json` — CIC credit bureau response
+- `08_internal_db.json` — Internal loan history
+- `application_row.json` — Ground truth (122 columns)
+
+Selection strategy: Diverse PD score spread (from lowest to highest risk) across both TARGET groups.
