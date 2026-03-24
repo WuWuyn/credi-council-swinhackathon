@@ -18,7 +18,8 @@
 - [6. API Endpoints](#6-api-endpoints)
 - [7. Cấu hình](#7-cấu-hình)
 - [8. Training Model](#8-training-model)
-- [9. Demo Customers](#9-demo-customers)
+- [9. Evaluation — Đánh giá Model](#9-evaluation--đánh-giá-model)
+- [10. Demo Customers](#10-demo-customers)
 
 ---
 
@@ -234,7 +235,7 @@ swinburn_new/
 │   │   ├── fe_stats.pkl              # Feature engineering statistics
 │   │   └── feature_names.json        # 753 feature names
 │   ├── training/                     # Model training code
-│   │   ├── train_pipeline.py         # Main training script
+│   │   ├── train_pipeline.ipynb         # Main training script
 │   │   ├── feature_engineering.py    # Full FE pipeline (218→753)
 │   │   └── precompute_fe_stats.py    # Pre-compute FE stats for inference
 │   ├── data/
@@ -565,19 +566,28 @@ LLMService (shared Gemini client, auto-loads .env)
 
 ## 8. Training Model
 
+```bash
+conda activate swinburn_hackathon
+cd back-end/training
+```
+
 ### Pre-compute FE Statistics
 
 ```bash
-python training/precompute_fe_stats.py --data-dir home-credit-default-risk/
+python precompute_fe_stats.py --data-dir ../home-credit-default-risk/
 ```
 
 Tạo `models/fe_stats.pkl` chứa imputation values + encoding mappings.
 
-### Train LightGBM
+### Train LightGBM (Notebook)
+
+Mở `train_pipeline.ipynb` bằng Jupyter và chạy toàn bộ cells:
 
 ```bash
-python training/train_pipeline.py --data-dir home-credit-default-risk/
+jupyter notebook train_pipeline.ipynb
 ```
+
+> **Lưu ý**: Trong notebook, `data_dir` mặc định là `../home-credit-default-risk/`, `output_dir` là `../models/`. Chỉnh trực tiếp trong cell cuối nếu cần.
 
 Pipeline:
 1. Load 7 bảng từ Home Credit dataset
@@ -590,7 +600,110 @@ Pipeline:
 
 ---
 
-## 9. Demo Customers
+## 9. Evaluation — Đánh giá Model
+
+Module `evaluation/` cung cấp pipeline đánh giá toàn diện cho ML Core (A3 — LightGBM) trên tập Home Credit dataset.
+
+### Cấu trúc thư mục
+
+```
+back-end/evaluation/
+├── evaluate.py          # Main runner — orchestrate toàn bộ evaluation
+├── metrics.py           # Tính AUC-ROC, Gini, KS, PR-AUC, per-band breakdown
+├── plots.py             # Vẽ ROC, PR, Score Distribution, Calibration
+├── shap_analysis.py     # SHAP feature importance, beeswarm, 5C allocation
+└── results/             # Output: JSON, CSV, PNG
+```
+
+### Cách chạy
+
+> **Yêu cầu**: Cần có thư mục Home Credit dataset (chứa các file CSV: `application_train.csv`, `bureau.csv`, v.v.).
+
+```bash
+conda activate swinburn_hackathon
+cd back-end/evaluation
+```
+
+#### Evaluate model đã train (nhanh, không SHAP)
+
+```bash
+python evaluate.py --data-dir ../home-credit-default-risk/ --model-path ../models/lgbm_ref_v1.pkl --no-shap
+```
+
+#### Evaluate model đã train (đầy đủ, có SHAP analysis)
+
+```bash
+python evaluate.py --data-dir ../home-credit-default-risk/ --model-path ../models/lgbm_ref_v1.pkl
+```
+
+#### Train model mới rồi evaluate
+
+```bash
+python evaluate.py --data-dir ../home-credit-default-risk/ --train --no-shap
+```
+
+#### Giới hạn sample test set (chạy nhanh hơn)
+
+```bash
+python evaluate.py --data-dir ../home-credit-default-risk/ --model-path ../models/lgbm_ref_v1.pkl --no-shap --sample 10000
+```
+
+### CLI Arguments
+
+| Argument | Bắt buộc | Default | Mô tả |
+|---|---|---|---|
+| `--data-dir` | ✅ | — | Thư mục chứa Home Credit CSV files |
+| `--model-path` | ❌ | `None` | Path tới model `.pkl` đã train |
+| `--train` | ❌ | `false` | Train model mới trước khi evaluate |
+| `--no-shap` | ❌ | `false` | Bỏ qua SHAP analysis (nhanh hơn đáng kể) |
+| `--output-dir` | ❌ | `evaluation/results` | Thư mục lưu kết quả |
+| `--sample` | ❌ | `None` | Giới hạn số sample trong test set |
+| `--test-size` | ❌ | `0.20` | Tỷ lệ train/test split |
+
+> **Lưu ý**: Phải cung cấp `--model-path` hoặc `--train` (một trong hai).
+
+### Pipeline evaluation (6 bước)
+
+1. **Build feature matrix** — Load 7 bảng Home Credit, tạo 753 features
+2. **Stratified split** — 80/20 train/test (stratified theo TARGET)
+3. **Load/Train model** — Load model `.pkl` hoặc train mới
+4. **Inference** — Chạy predict trên test set, map PD → Credit Score → Risk Band
+5. **Compute metrics** — AUC-ROC, Gini, KS, PR-AUC, per risk-band breakdown + vẽ plots
+6. **SHAP analysis** (optional) — Feature importance, beeswarm plot, 5C allocation
+
+### Output Files
+
+Kết quả được lưu trong `evaluation/results/`:
+
+| File | Mô tả |
+|---|---|
+| `metrics_summary.json` | Tất cả metrics dạng JSON (AUC, Gini, KS, classification report...) |
+| `metrics_summary.csv` | Summary dạng bảng, dễ đọc |
+| `riskband_breakdown.csv` | Metrics per risk band (AAA/AA/A/BBB/CC) |
+| `classification_report.json` | Precision, Recall, F1, Confusion Matrix |
+| `roc_curve.png` | ROC Curve với AUC annotation + KS point |
+| `pr_curve.png` | Precision-Recall Curve |
+| `score_distribution.png` | Phân phối credit score theo class + pie chart risk band |
+| `calibration_plot.png` | Calibration plot (predicted vs actual PD) |
+| `shap_feature_importance.csv` | Global feature importance (mean \|SHAP\|) |
+| `shap_feature_importance.png` | Bar chart top 20 features |
+| `shap_beeswarm.png` | SHAP beeswarm summary plot |
+| `shap_5c_allocation.csv` | SHAP allocation theo 5C dimensions |
+| `shap_5c_allocation.png` | Pie chart SHAP contribution per 5C |
+
+### Metrics giải thích
+
+| Metric | Target | Ý nghĩa |
+|---|---|---|
+| **AUC-ROC** | ≥ 0.77 | Khả năng phân biệt default vs non-default |
+| **Gini** | ≥ 0.54 | 2×AUC − 1, đo discriminatory power |
+| **KS Statistic** | ≥ 0.35 | Max separation giữa CDF default và non-default |
+| **PR-AUC** | — | Average Precision, quan trọng với imbalanced data |
+| **SHAP Coverage** | ≥ 85% | % tổng SHAP được cover bởi top 5 features |
+
+---
+
+## 10. Demo Customers
 
 **50 demo customers** (25 pass + 25 fail) được tạo từ Home Credit dataset thật:
 

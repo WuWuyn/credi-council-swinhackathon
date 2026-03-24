@@ -332,7 +332,7 @@ Examples:
         help="Bỏ qua SHAP analysis (nhanh hơn)"
     )
     parser.add_argument(
-        "--output-dir", type=str, default="evaluation/results",
+        "--output-dir", type=str, default=None,
         help="Thư mục lưu kết quả (default: evaluation/results)"
     )
     parser.add_argument(
@@ -348,7 +348,7 @@ Examples:
 
     data_dir   = Path(args.data_dir)
     model_path = Path(args.model_path) if args.model_path else None
-    output_dir = Path(args.output_dir)
+    output_dir = Path(args.output_dir) if args.output_dir else RESULTS_DIR
 
     if not data_dir.exists():
         logger.error(f"Data directory not found: {data_dir}")

@@ -1,10 +1,10 @@
 {
-  "evaluation_timestamp": "2026-03-20T19:40:30.406246+00:00",
-  "model_path": "models\\lgbm_ref_v1.pkl",
+  "evaluation_timestamp": "2026-03-24T13:10:58.356579+00:00",
+  "model_path": "..\\models\\lgbm_ref_v1.pkl",
   "n_features": 755,
   "n_train_samples": 246008,
   "n_test_samples": 61503,
-  "elapsed_seconds": 154.9,
+  "elapsed_seconds": 142.2,
   "core_metrics": {
     "auc_roc": 0.7986,
     "gini": 0.5972,
