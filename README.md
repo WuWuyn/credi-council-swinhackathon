@@ -70,7 +70,9 @@ USE_OCR=true                               # true = parse PDFs, false = read JSO
 USE_DOCLING=true                           # true = Docling+LLM, false = PyMuPDF+regex
 DOCLING_DEVICE=cpu                         # cpu | cuda | mps
 MODEL_PATH=models/lgbm_ref_v1.pkl         # Đường dẫn model đã train
-GEMINI_MODEL=gemini-2.5-flash             # Gemini model cho extraction
+GEMINI_MODEL=gemini-3.1-flash-lite-preview
+GEMINI_RAG_MODEL=gemini-3.1-flash-lite-preview
+FILE_SEARCH_STORE_NAME=your_gemini_api_key_here
 ```
 
 ### Bước 4: Khởi tạo RAG Policy Store (chỉ chạy 1 lần)
@@ -82,6 +84,14 @@ python policy_docs/init_policy_store.py
 
 Script sẽ upload các tài liệu chính sách ngân hàng (TT39, QĐ493, QĐ18, Basel...) lên Gemini FileSearchStore. Store name tự động thêm vào `.env`.
 
+### Test pipeline đơn lẻ (1 customer)
+
+```bash
+conda activate swinburn_hackathon
+cd back-end
+python test_pipeline.py
+```
+
 ### Bước 5: Chạy server
 
 ```bash
@@ -92,51 +102,6 @@ uvicorn credicouncil.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 Truy cập:
 - **Dashboard**: http://localhost:8000/app
-- **API docs**: http://localhost:8000/docs
-- **Health check**: http://localhost:8000/health
-
----
-
-## 2. Test & Verify
-
-### Test pipeline đơn lẻ (1 customer)
-
-```bash
-conda activate swinburn_hackathon
-cd back-end
-python test_pipeline.py
-```
-
-### Test toàn bộ demo customers
-
-```bash
-python test_all_customers.py
-```
-
-Script này chạy pipeline A1→A4 cho tất cả customers, so sánh kết quả và kiểm tra:
-- Score spread (phải > 50 points giữa min/max)
-- High-risk < Standard (TARGET=1 phải có score thấp hơn TARGET=0)
-- 5C totals phải khác nhau giữa các customers
-- Consistency check phải PASS cho tất cả
-
-**Output**: `data/mock/pipeline_test_summary.json`
-
-### Test OCR pipeline (Docling+LLM vs ground truth)
-
-```bash
-python tests/unit/test_docling_coverage.py
-python tests/unit/test_ocr_coverage.py
-```
-
-### Test qua API
-
-```bash
-# Score mock customer 001
-curl -X POST http://localhost:8000/score/mock -d "customer_id=001"
-
-# Xem PDF report
-curl http://localhost:8000/v1/report/001/pdf -o report_001.pdf
-```
 
 ---
 
@@ -188,18 +153,18 @@ curl http://localhost:8000/v1/report/001/pdf -o report_001.pdf
 
 ```
 swinburn_new/
-├── back-end/                          # ⭐ Main application
+├── back-end/                          # Main application
 │   ├── credicouncil/                    # Core application package
 │   │   ├── agents/                   # 4 pipeline agents
 │   │   │   ├── a1_ingestion/         # Data ingestion
 │   │   │   │   ├── agent.py          # IngestionAgent — main orchestrator
-│   │   │   │   ├── llm_field_extractor.py # ⭐ Gemini+Pydantic field extraction
+│   │   │   │   ├── llm_field_extractor.py # Gemini+Pydantic field extraction
 │   │   │   │   ├── document_parser.py # PDF → structured fields (regex fallback)
 │   │   │   │   ├── cic_service.py    # CIC API client (mock JSON)
 │   │   │   │   └── internal_db_reader.py # Internal DB → DataFrames
 │   │   │   ├── a2_feature_engineer/  # Feature engineering
 │   │   │   │   ├── agent.py          # FeatureEngineerAgent — orchestrator
-│   │   │   │   ├── semantic_extractor.py # ⭐ LLM semantic extraction (Pydantic)
+│   │   │   │   ├── semantic_extractor.py # LLM semantic extraction (Pydantic)
 │   │   │   │   ├── imputer.py        # Missing value imputation
 │   │   │   │   └── single_customer_fe.py # 218 raw → 753 ML features
 │   │   │   ├── a3_scoring/           # ML scoring
@@ -219,11 +184,11 @@ swinburn_new/
 │   │   │   ├── prompts.py            # LLM prompt templates
 │   │   │   └── settings.py           # App settings (USE_DOCLING, etc.)
 │   │   ├── schemas/
-│   │   │   └── document_schemas.py   # ⭐ Pydantic schemas (5 doc types)
+│   │   │   └── document_schemas.py   # Pydantic schemas (5 doc types)
 │   │   └── services/
-│   │       ├── llm_service.py        # ⭐ Unified Gemini API (JSON/text/structured)
-│   │       ├── docling_ocr_service.py # ⭐ Smart OCR (PyMuPDF→Docling fallback)
-│   │       └── policy_rag_service.py # ⭐ RAG FileSearchStore service
+│   │       ├── llm_service.py        # Unified Gemini API (JSON/text/structured)
+│   │       ├── docling_ocr_service.py # Smart OCR (PyMuPDF→Docling fallback)
+│   │       └── policy_rag_service.py # RAG FileSearchStore service
 │   ├── policy_docs/                  # Vietnamese banking policy documents
 │   │   ├── tt39_2016_cho_vay.md      # TT39/2016 — Quy định cho vay
 │   │   ├── qd493_2005_phan_loai_no.md # QĐ493 — Phân loại nợ
