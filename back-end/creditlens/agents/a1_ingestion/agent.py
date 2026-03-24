@@ -103,7 +103,7 @@ class IngestionAgent:
             logger.info("  Mode: FAST-PATH (USE_OCR=false, reading application_row.json)")
             return self._ingest_from_json(customer_dir, app_row_path, applicant_id)
 
-        logger.info("  Mode: OCR PIPELINE (USE_OCR=true, parsing PDFs)")
+        logger.info(f"  Mode: OCR PIPELINE (USE_OCR=true, parsing PDFs)")
         # ── Channel 1: Parse PDF documents ─────────────────────────────
         doc_fields = {}
         confidence_map = {}
@@ -113,36 +113,87 @@ class IngestionAgent:
         # Known PDF filename prefixes (01_ to 05_) — skip others
         KNOWN_PDF_PREFIXES = ("01_", "02_", "03_", "04_", "05_")
 
+        # Doc type detection from filename prefix
+        PREFIX_DOC_TYPE = {
+            "01_": "cccd",
+            "02_": "employment",
+            "03_": "household",
+            "04_": "housing",
+            "05_": "loan_application",
+        }
+
         pdf_files = sorted(customer_dir.glob("*.pdf"))
-        for pdf_path in pdf_files:
-            # Skip non-standard PDFs (e.g. credit_report.pdf, generated outputs)
-            if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
-                logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
-                continue
 
-            logger.info(f"  Parsing: {pdf_path.name}")
-            result = self.doc_parser.extract_document(pdf_path)
-            doc_type = result.get("doc_type", "unknown")
-            fields = result.get("fields", {})
-            conf = result.get("confidence", {})
-            raw_texts[doc_type] = result.get("raw_text", "")
+        if settings.use_docling:
+            # ── Path A: Docling + EasyOCR + LLM extraction ────────────
+            logger.info("  Engine: DOCLING + EasyOCR + LLM extraction")
+            from creditlens.services.docling_ocr_service import DoclingOCRService
+            from creditlens.agents.a1_ingestion.llm_field_extractor import LLMFieldExtractor
 
-            # Merge fields — don't overwrite if doc_type already has richer data
-            if doc_type in doc_fields:
-                existing = doc_fields[doc_type]
-                if len(fields) > len(existing):
-                    doc_fields[doc_type] = fields
-                    logger.info(f"  Replaced {doc_type} ({len(existing)}→{len(fields)} fields)")
-                else:
-                    logger.info(f"  Kept existing {doc_type} ({len(existing)} fields, new only {len(fields)})")
-            else:
+            ocr_service = DoclingOCRService()
+            llm_extractor = LLMFieldExtractor()
+
+            for pdf_path in pdf_files:
+                if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
+                    logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
+                    continue
+
+                # Detect doc type from filename prefix
+                prefix = pdf_path.name[:3]
+                doc_type = PREFIX_DOC_TYPE.get(prefix, "unknown")
+
+                logger.info(f"  Docling OCR: {pdf_path.name} → {doc_type}")
+
+                # Step 1: Docling OCR (local)
+                ocr_result = ocr_service.extract(pdf_path)
+                ocr_text = ocr_result["markdown"] or ocr_result["raw_text"]
+                raw_texts[doc_type] = ocr_text
+
+                if not ocr_text.strip():
+                    logger.warning(f"  Empty OCR text for {pdf_path.name}, skipping LLM")
+                    continue
+
+                # Step 2: LLM extraction (Gemini + Pydantic)
+                fields, conf = llm_extractor.extract(doc_type, ocr_text)
                 doc_fields[doc_type] = fields
-            confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
+                confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
 
-            # Collect names for cross-validation
-            name = fields.get("full_name", "")
-            if name:
-                identity_names.append(name.strip().upper())
+                # Collect names
+                name = fields.get("full_name", "")
+                if name:
+                    identity_names.append(name.strip().upper())
+
+        else:
+            # ── Path B: PyMuPDF + regex (original) ────────────────────
+            logger.info("  Engine: PyMuPDF + regex parser")
+            for pdf_path in pdf_files:
+                if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
+                    logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
+                    continue
+
+                logger.info(f"  Parsing: {pdf_path.name}")
+                result = self.doc_parser.extract_document(pdf_path)
+                doc_type = result.get("doc_type", "unknown")
+                fields = result.get("fields", {})
+                conf = result.get("confidence", {})
+                raw_texts[doc_type] = result.get("raw_text", "")
+
+                # Merge fields — don't overwrite if doc_type already has richer data
+                if doc_type in doc_fields:
+                    existing = doc_fields[doc_type]
+                    if len(fields) > len(existing):
+                        doc_fields[doc_type] = fields
+                        logger.info(f"  Replaced {doc_type} ({len(existing)}→{len(fields)} fields)")
+                    else:
+                        logger.info(f"  Kept existing {doc_type} ({len(existing)} fields, new only {len(fields)})")
+                else:
+                    doc_fields[doc_type] = fields
+                confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
+
+                # Collect names for cross-validation
+                name = fields.get("full_name", "")
+                if name:
+                    identity_names.append(name.strip().upper())
 
         # Cross-document identity validation
         if len(identity_names) >= 2:
@@ -533,9 +584,12 @@ class IngestionAgent:
         housing_feats["HOUSETYPE_MODE"] = housing.get("housetype_mode", housing.get("housing_type", "block of flats"))
         housing_feats["TOTALAREA_MODE"] = housing.get("totalarea_norm", 0.0)
         housing_feats["WALLSMATERIAL_MODE"] = housing.get("wall_material", "Panel")
+        es_raw = str(housing.get("emergency_state", "")).strip().lower()
         housing_feats["EMERGENCYSTATE_MODE"] = (
-            "No" if "khong" in str(housing.get("emergency_state", "")).lower()
-               or "binh thuong" in str(housing.get("emergency_state", "")).lower()
+            "No" if (es_raw in ("no", "")
+                     or "khong" in es_raw
+                     or "binh thuong" in es_raw
+                     or "normal" in es_raw)
             else "Yes"
         )
 
@@ -635,10 +689,10 @@ class IngestionAgent:
     def _map_gender(gender_str: str | None) -> str:
         if not gender_str:
             return "M"
-        g = str(gender_str).lower()
-        if g in ("nam", "male", "m"):
+        g = str(gender_str).strip().lower()
+        if g in ("nam", "male", "m", "nam giới"):
             return "M"
-        elif g in ("nu", "female", "f"):
+        elif g in ("nữ", "nu", "female", "f", "nữ giới"):
             return "F"
         return "XNA"
 

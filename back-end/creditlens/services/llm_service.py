@@ -28,6 +28,20 @@ def _get_client():
     """Lazy-initialize google.genai Client."""
     global _client
     if _client is None:
+        # Ensure .env is loaded
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            search = Path(__file__).resolve().parent
+            for _ in range(6):
+                candidate = search / ".env"
+                if candidate.exists():
+                    load_dotenv(candidate, override=False)
+                    break
+                search = search.parent
+        except ImportError:
+            pass
+
         from google import genai  # new SDK: pip install google-genai
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
@@ -139,6 +153,67 @@ class LLMService:
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
             raise RuntimeError(f"LLM call failed: {e}") from e
+
+    def generate_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema_class: type,
+        max_tokens: int = 8192,
+        temperature: float = 0.1,
+    ) -> dict[str, Any]:
+        """Generate structured output validated by a Pydantic schema.
+
+        Uses Gemini response_schema for type-safe JSON output.
+
+        Args:
+            system_prompt: System instructions.
+            user_prompt: User prompt with context.
+            schema_class: Pydantic BaseModel class for response validation.
+            max_tokens: Max response tokens.
+            temperature: Sampling temperature.
+
+        Returns:
+            Validated dict from Pydantic model_dump().
+        """
+        from google.genai import types
+        client = _get_client()
+
+        try:
+            response = client.models.generate_content(
+                model=_MODEL_ID,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                    response_schema=schema_class,
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                ),
+            )
+            result = schema_class.model_validate_json(response.text)
+            return result.model_dump()
+
+        except Exception as e:
+            logger.warning(f"Structured extraction failed: {e}, trying fallback...")
+            # Fallback: plain JSON without schema constraint
+            try:
+                response = client.models.generate_content(
+                    model=_MODEL_ID,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        response_mime_type="application/json",
+                        temperature=temperature,
+                        max_output_tokens=max_tokens,
+                    ),
+                )
+                raw = json.loads(response.text)
+                result = schema_class.model_validate(raw)
+                return result.model_dump()
+            except Exception as e2:
+                logger.error(f"Fallback structured extraction also failed: {e2}")
+                return schema_class().model_dump()
 
     def _parse_json(self, text: str, required_keys: set[str]) -> dict[str, Any]:
         """Parse JSON from LLM response, with fallback regex extraction."""

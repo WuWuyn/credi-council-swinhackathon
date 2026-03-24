@@ -1,32 +1,56 @@
 """
-CreditLens A2 — Semantic Feature Extractor (Variant A).
+CreditLens A2 — Semantic Feature Extractor.
 
-# LOCAL_SUB: Uses Gemini API instead of Bedrock Claude.
-# See LOCAL_SUBSTITUTIONS.md for migration guide.
+Uses LLM + Pydantic structured output to extract semantic features
+from loan application text. These features are used by the ML model.
 
-Uses LLM to extract semantic features from unstructured
-loan application text. Always runs for every application with OCR text.
+Upgraded: Uses LLMService.generate_structured() with Pydantic schema
+for type-safe, validated output.
 """
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field
 
 from creditlens.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
-# Expected output keys
-REQUIRED_EXTRACTION_KEYS = {
-    "loan_purpose_category",
-    "repayment_plan_quality",
-    "stated_income_consistency",
-    "risk_flags",
-    "positive_signals",
-    "extraction_confidence",
-}
+
+# ── Pydantic Schema ──────────────────────────────────────────────────────────────
+
+class SemanticFeatures(BaseModel):
+    """Structured output for semantic loan analysis."""
+    loan_purpose_category: Optional[str] = Field(
+        None,
+        description="Loan purpose: PRODUCTION | CONSUMPTION | INVESTMENT | REFINANCING | UNCLEAR",
+    )
+    repayment_plan_quality: Optional[str] = Field(
+        None,
+        description="Repayment plan detail: DETAILED | GENERAL | VAGUE | NONE",
+    )
+    stated_income_consistency: Optional[bool] = Field(
+        None,
+        description="True if stated income is consistent with employment docs",
+    )
+    risk_flags: Optional[list[str]] = Field(
+        default_factory=list,
+        description="List of risk indicators found (e.g., address mismatch, unstable employment, high DTI)",
+    )
+    positive_signals: Optional[list[str]] = Field(
+        default_factory=list,
+        description="List of positive indicators (e.g., stable salary, property owner, low debt)",
+    )
+    extraction_confidence: Optional[float] = Field(
+        None,
+        description="Confidence score 0.0-1.0 of this extraction",
+    )
+
+
+# ── Mappings ─────────────────────────────────────────────────────────────────────
 
 LOAN_PURPOSE_MAP = {
     "PRODUCTION": 0, "CONSUMPTION": 1, "INVESTMENT": 2,
@@ -36,40 +60,36 @@ REPAYMENT_QUALITY_MAP = {
     "DETAILED": 3, "GENERAL": 2, "VAGUE": 1, "NONE": 0,
 }
 
-# ── Prompts ──
+# ── Prompts ──────────────────────────────────────────────────────────────────────
+
 SEMANTIC_SYSTEM = """You are a Vietnamese credit analyst AI. Analyze loan application documents
-and extract structured features. Respond ONLY with valid JSON, no other text.
+and extract structured features.
 
-Output JSON schema:
-{
-    "loan_purpose_category": "PRODUCTION|CONSUMPTION|INVESTMENT|REFINANCING|UNCLEAR",
-    "repayment_plan_quality": "DETAILED|GENERAL|VAGUE|NONE",
-    "stated_income_consistency": true/false (does stated income match evidence?),
-    "risk_flags": ["list of risk indicators found"],
-    "positive_signals": ["list of positive indicators found"],
-    "extraction_confidence": 0.0-1.0
-}"""
+Rules:
+1. loan_purpose_category: Categorize as PRODUCTION / CONSUMPTION / INVESTMENT / REFINANCING / UNCLEAR
+2. repayment_plan_quality: DETAILED (specific amounts+timeline) / GENERAL (plan but vague) / VAGUE (mentioned briefly) / NONE (not mentioned)
+3. stated_income_consistency: true if income matches employment evidence, false if contradictory
+4. risk_flags: List specific risk indicators found (address mismatch, unstable employment, high DTI, etc.)
+5. positive_signals: List specific positive indicators (stable salary, property ownership, low debt, etc.)
+6. extraction_confidence: Your confidence in this analysis (0.0-1.0)
 
-SEMANTIC_USER = """Analyze this Vietnamese loan application text and extract features:
+Respond with JSON only, no explanation."""
+
+SEMANTIC_USER = """Analyze this Vietnamese loan application and extract semantic features:
 
 {ocr_text}
 
-Focus on:
-1. What is the loan purpose? Categorize as PRODUCTION/CONSUMPTION/INVESTMENT/REFINANCING/UNCLEAR
-2. How detailed is the repayment plan? DETAILED/GENERAL/VAGUE/NONE
-3. Is the stated income consistent with employment docs? true/false
-4. List any risk flags (e.g., address mismatch, unstable employment, high DTI)
-5. List any positive signals (e.g., stable salary, owns property, low debt)
-
-Respond with JSON only."""
+Return JSON per the schema."""
 
 
 class SemanticExtractor:
-    """Variant A — Extract semantic features from loan application text.
+    """Extract semantic features from loan application text using LLM + Pydantic.
 
-    Uses LLM to analyze OCR text and extract:
-    - loan_purpose_category (categorical)
-    - repayment_plan_quality (ordinal)
+    Uses LLMService.generate_structured() for type-safe JSON output.
+
+    Output features:
+    - loan_purpose_category (categorical → encoded)
+    - repayment_plan_quality (ordinal → encoded)
     - stated_income_consistency (binary)
     - risk_flag_count + risk_flags_list
     - positive_signals
@@ -80,11 +100,14 @@ class SemanticExtractor:
 
     def extract_loan_features(self, ocr_text: str) -> dict[str, Any]:
         """Extract semantic features from loan application text."""
+        prompt = SEMANTIC_USER.format(ocr_text=ocr_text[:6000])
 
-
-        prompt = SEMANTIC_USER.format(ocr_text=ocr_text[:4000])
-        result = self.llm.generate_json(
-            SEMANTIC_SYSTEM, prompt, REQUIRED_EXTRACTION_KEYS
+        result = self.llm.generate_structured(
+            system_prompt=SEMANTIC_SYSTEM,
+            user_prompt=prompt,
+            schema_class=SemanticFeatures,
+            max_tokens=2048,
+            temperature=0.2,
         )
 
         # Encode categorical features
@@ -94,8 +117,6 @@ class SemanticExtractor:
         result["repayment_plan_quality_encoded"] = REPAYMENT_QUALITY_MAP.get(
             result.get("repayment_plan_quality", "NONE"), 0
         )
-        result["risk_flag_count"] = len(result.get("risk_flags", []) or [])
+        result["risk_flag_count"] = len(result.get("risk_flags") or [])
 
         return result
-
-
