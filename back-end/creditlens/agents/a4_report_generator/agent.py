@@ -24,86 +24,58 @@ from typing import Any
 from creditlens.services.llm_service import LLMService
 from creditlens.services.policy_rag_service import PolicyRAGService
 from creditlens.agents.a4_report_generator.consistency_validator import validate_narrative_consistency
+from creditlens.agents.a4_report_generator.five_c_scorer import (
+    compute_five_c_scores, five_c_to_dict, DimensionScore,
+)
+from creditlens.agents.a4_report_generator.decision_engine import (
+    compute_decision, CreditDecision,
+)
 from creditlens.config.feature_config import get_label_vi
 
 logger = logging.getLogger(__name__)
 
-# ── Report Generation Prompts (5C + 6 Sections) ──
+# ── Report Generation Prompts (NARRATIVE ONLY — no scoring, no decision) ──
 REPORT_SYSTEM = """Bạn là chuyên gia phân tích tín dụng tại ngân hàng Việt Nam.
-Tạo báo cáo đánh giá tín dụng 5C bằng tiếng Việt theo chuẩn TT39/2016.
+Viết phần diễn giải (narrative) cho báo cáo 5C bằng tiếng Việt theo chuẩn TT39/2016.
 
-5C: Character (Uy tín), Capacity (Năng lực trả nợ), Capital (Vốn tự có),
-    Conditions (Điều kiện), Collateral (Tài sản bảo đảm).
-
-QUAN TRỌNG:
-- Chỉ trích dẫn các yếu tố từ SHAP values được cung cấp
-- Không bịa đặt thông tin hoặc yếu tố không có trong dữ liệu
+QUAN TRỌNG — BẠN CHỈ VIẾT NARRATIVE:
+- KHÔNG chấm điểm (score đã được tính bởi hệ thống)
+- KHÔNG đưa ra quyết định APPROVE/REJECT (đã có rule-based engine)
+- Chỉ TRÍCH DẪN các yếu tố từ SHAP values được cung cấp
+- Không bịa đặt thông tin không có trong dữ liệu
 - Sử dụng số liệu cụ thể khi có thể
 - Viết bằng văn phong ngân hàng trang trọng
+- Trích dẫn điều khoản quy định cụ thể từ RAG context
 
 Trả lời CHỈ bằng JSON hợp lệ theo schema sau:
 {
     "customer_info": {
-        "summary": "Tóm tắt hồ sơ khách hàng (1-2 câu)"
+        "summary": "Tóm tắt hồ sơ khách hàng bằng tiếng Việt (1-2 câu, bao gồm nhu cầu vay)"
     },
-    "character_assessment": {
-        "score": 0-30,
-        "status": "DAT|XEM_XET|KHONG_DAT",
-        "shap_pct": "% SHAP contribution",
-        "indicators_met": ["..."],
-        "indicators_review": ["..."],
-        "narrative": "100-150 chữ"
-    },
-    "capacity_assessment": {
-        "score": 0-40,
-        "status": "DAT|XEM_XET|KHONG_DAT",
-        "shap_pct": "% SHAP contribution",
-        "indicators_met": ["..."],
-        "indicators_review": ["..."],
-        "narrative": "100-150 chữ"
-    },
-    "capital_assessment": {
-        "score": 0-20,
-        "status": "DAT|XEM_XET|KHONG_DAT",
-        "shap_pct": "% SHAP contribution",
-        "indicators_met": ["..."],
-        "indicators_review": ["..."],
-        "narrative": "100-150 chữ"
-    },
-    "conditions_assessment": {
-        "score": 0-10,
-        "status": "DAT|XEM_XET|KHONG_DAT",
-        "shap_pct": "% SHAP contribution",
-        "indicators_met": ["..."],
-        "indicators_review": ["..."],
-        "narrative": "100-150 chữ"
-    },
-    "collateral_assessment": {
-        "score": 0-20,
-        "status": "DAT|XEM_XET|KHONG_DAT",
-        "indicators_met": ["..."],
-        "indicators_review": ["..."],
-        "narrative": "50-100 chữ"
-    },
+    "character_narrative": "Diễn giải uy tín/tư cách tín dụng 100-150 chữ. Chỉ cite SHAP factors.",
+    "capacity_narrative": "Diễn giải năng lực trả nợ 100-150 chữ. Cite DTI, DSCR, SHAP.",
+    "capital_narrative": "Diễn giải vốn tự có 80-120 chữ. Cite tài sản, nợ CIC.",
+    "conditions_narrative": "Diễn giải điều kiện vay 80-120 chữ. Cite mục đích vay, học vấn.",
+    "collateral_narrative": "Diễn giải tài sản bảo đảm 60-100 chữ. Cite LTV, loại TSBĐ.",
     "financial_summary": {
-        "income_analysis": "Phân tích thu nhập và dòng tiền",
-        "debt_analysis": "Phân tích nợ và khả năng trả nợ",
-        "key_ratios": {"dti": "...", "dscr": "...", "ltv": "..."}
+        "income_analysis": "Phân tích thu nhập (1-2 câu)",
+        "debt_analysis": "Phân tích nợ (1-2 câu)"
     },
-    "recommendation": "APPROVE|REVIEW|REJECT",
     "suggested_terms": {
-        "max_amount_vnd": number,
-        "max_term_months": number,
+        "max_amount_vnd": "số tiền đề xuất (number)",
         "interest_rate_suggestion": "theo biểu phí hiện hành",
-        "conditions": ["Điều kiện tiên quyết"]
+        "conditions": ["Điều kiện tiên quyết — tối đa 5"]
     },
-    "caveats": ["..."]
+    "caveats": ["Cảnh báo dữ liệu — tối đa 5"]
 }"""
 
-REPORT_USER = """Tạo báo cáo 5C + 6 phần cho đơn vay với thông tin sau:
+REPORT_USER = """Viết NARRATIVE cho báo cáo 5C (KHÔNG chấm điểm, KHÔNG quyết định):
 
 === Hồ sơ khách hàng ===
 {customer_context}
+
+=== Điểm 5C (đã tính sẵn bởi rule engine — DÙNG ĐỂ THAM KHẢO, KHÔNG THAY ĐỔI) ===
+{five_c_scores_context}
 
 === SHAP Feature Attribution ===
 {shap_json}
@@ -120,6 +92,7 @@ REPORT_USER = """Tạo báo cáo 5C + 6 phần cho đơn vay với thông tin sa
 - Tổng số điểm tín dụng: {credit_score}
 - Risk band: {risk_band}
 - PD%: {pd_pct}
+- Quyết định hệ thống: {system_decision}
 
 === Thông tin tài chính ===
 {financial_info}
@@ -130,18 +103,11 @@ REPORT_USER = """Tạo báo cáo 5C + 6 phần cho đơn vay với thông tin sa
 === Chính sách & Quy định (RAG) ===
 {rag_context}
 
-Tạo đánh giá chi tiết cho từng C dựa trên:
-1. Dữ liệu hồ sơ khách hàng (phần Hồ sơ khách hàng)
-2. SHAP values — chỉ TRÍCH DẪN các yếu tố có trong SHAP
-3. TRÍCH DẪN điều khoản quy định cụ thể từ phần Chính sách & Quy định
-
-CHÚ Ý THANG ĐIỂM (KHÔNG ĐƯỢC VƯỢT):
-- Character: 0-30 điểm
-- Capacity: 0-40 điểm
-- Capital: 0-20 điểm
-- Conditions: 0-10 điểm
-- Collateral: 0-20 điểm
-Tổng tối đa: 120 điểm."""
+Yêu cầu:
+1. Viết narrative cho TỪNG C — giải thích TẠI SAO điểm đó hợp lý
+2. Chỉ TRÍCH DẪN yếu tố có trong SHAP values
+3. Trích dẫn điều khoản pháp lý cụ thể từ RAG context
+4. KHÔNG tự chấm điểm hay đề xuất quyết định"""
 
 
 class ReportGeneratorAgent:
@@ -164,17 +130,19 @@ class ReportGeneratorAgent:
     ) -> dict[str, Any]:
         """Generate credit report from A3 scoring output.
 
+        Architecture (refactored):
+          - 5C Scores: DETERMINISTIC rule-based (five_c_scorer.py)
+          - Recommendation: DETERMINISTIC rule-based (decision_engine.py)
+          - LLM: ONLY writes narrative text, no scoring, no decisions
+
         Args:
             a3_output: Output from A3 ScoringAgent.score()
             a2_output: Output from A2 FeatureEngineerAgent.process()
-            a1_output: Optional A1 output — used to get application_row
-                       (AMT_CREDIT, AMT_INCOME_TOTAL, AMT_ANNUITY) for
-                       real DTI/DSCR calculations and suggested terms.
+            a1_output: Optional A1 output for financial calculations
 
         Returns:
-            Dict with final_report, narrative, consistency_check (5C + 6 sections)
+            Dict with final_report, five_c_scores, consistency_check
         """
-        # Extract application_row from A1 for financial ratio calculations
         app_row = {}
         if a1_output is not None:
             app_row = a1_output.get("application_row", {})
@@ -189,10 +157,30 @@ class ReportGeneratorAgent:
         warnings = a2_output.get("warnings", [])
         llm_feats = a2_output.get("llm_feats", {})
 
-        # ── Compute real financial ratios from application_row  ────────
+        # ── Step 1: Compute financial ratios (deterministic) ──────────
         financial_ratios = self._compute_financial_ratios(app_row)
 
-        # ── RAG: Query policy context ─────────────────────────────────
+        # ── Step 2: Compute 5C scores (DETERMINISTIC — rule-based) ────
+        five_c_dim_scores = compute_five_c_scores(
+            app_row=app_row,
+            financial_ratios=financial_ratios,
+            shap_values=shap_values,
+            llm_feats=llm_feats,
+        )
+        five_c_scores = {dim: s.score for dim, s in five_c_dim_scores.items()}
+        five_c_detail = five_c_to_dict(five_c_dim_scores)
+        total_5c = sum(five_c_scores.values())
+
+        # ── Step 3: Compute decision (DETERMINISTIC — rule-based) ─────
+        decision = compute_decision(
+            credit_score=credit_score,
+            app_row=app_row,
+            financial_ratios=financial_ratios,
+            five_c_scores=five_c_detail,
+            llm_feats=llm_feats,
+        )
+
+        # ── Step 4: RAG — query policy context ────────────────────────
         rag_query = PolicyRAGService.build_policy_query(
             credit_score=credit_score,
             risk_band=risk_band,
@@ -214,7 +202,7 @@ class ReportGeneratorAgent:
         else:
             logger.info("  RAG policy context: not available (store not configured)")
 
-        # Generate narrative (5C)
+        # ── Step 5: LLM generates NARRATIVE ONLY ─────────────────────
         narrative = self._generate_narrative(
             shap_values=shap_values,
             warnings=warnings,
@@ -227,63 +215,117 @@ class ReportGeneratorAgent:
             financial_ratios=financial_ratios,
             app_row=app_row,
             rag_context=rag_context,
+            five_c_scores=five_c_detail,
+            system_decision=decision.recommendation,
         )
 
-        # Validate consistency (narrative must only cite SHAP factors)
-        consistency = validate_narrative_consistency(shap_values, narrative)
-        logger.info(f"  Consistency check: {'PASSED' if consistency['passed'] else 'FAILED'}")
+        # ── Step 6: Validate consistency ──────────────────────────────
+        # Adapt narrative dict for consistency validator
+        narrative_for_check = {}
+        for dim in ["character", "capacity", "capital", "conditions", "collateral"]:
+            narrative_for_check[f"{dim}_assessment"] = {
+                "narrative": narrative.get(f"{dim}_narrative", ""),
+            }
+        consistency = validate_narrative_consistency(shap_values, narrative_for_check)
+        logger.info(f"  Consistency check: {'PASSED' if consistency['passed'] else 'FAILED'} (coverage: {consistency.get('shap_coverage', 0)*100:.0f}%)")
 
-        # Build 5C scores (with clamping to valid ranges)
-        five_c_max = {
-            "character": 30, "capacity": 40, "capital": 20,
-            "conditions": 10, "collateral": 20,
-        }
-        five_c_scores = {}
-        for dim, max_score in five_c_max.items():
-            assessment = narrative.get(f"{dim}_assessment") or {}
-            raw_score = assessment.get("score", 0) if isinstance(assessment, dict) else 0
-            clamped = max(0, min(int(raw_score), max_score))
-            five_c_scores[dim] = clamped
-            # Write clamped score back to narrative for consistency
-            if isinstance(assessment, dict) and assessment.get("score") != clamped:
-                assessment["score"] = clamped
+        # ── Step 7: Build assessment dicts (merge rule scores + LLM narrative) ──
+        shap_alloc = shap_values.get("five_c_shap_allocation", {})
+        assessments = {}
+        for dim, detail in five_c_detail.items():
+            alloc_info = shap_alloc.get(dim, {})
+            assessments[f"{dim}_assessment"] = {
+                "score": detail["score"],
+                "max_score": detail["max_score"],
+                "status": detail["status"],
+                "shap_pct": f"{alloc_info.get('pct', 0)}%",
+                "indicators_met": detail["indicators_met"],
+                "indicators_review": detail["indicators_review"],
+                "breakdown": detail["breakdown"],
+                "narrative": narrative.get(f"{dim}_narrative", "Không có dữ liệu."),
+            }
 
-        total_5c = sum(five_c_scores.values())
         logger.info(f"  5C Total: {total_5c}/120")
         for dim, score in five_c_scores.items():
-            logger.info(f"    {dim}: {score}/{five_c_max[dim]}")
+            logger.info(f"    {dim}: {score}/{five_c_dim_scores[dim].max_score}")
+        logger.info(f"  Recommendation: {decision.recommendation} (rule-based)")
 
-        # Build final report (6 sections)
+        # ── Step 8: Build final report ────────────────────────────────
+        # Merge LLM suggested_terms with decision engine conditions
+        llm_terms = narrative.get("suggested_terms", {})
+        merged_conditions = list(dict.fromkeys(
+            decision.conditions + (llm_terms.get("conditions") or [])
+        ))
+        suggested_terms = {
+            "max_amount_vnd": financial_ratios.get("credit_total_vnd"),  # always use scaled VND
+            "interest_rate_suggestion": llm_terms.get("interest_rate_suggestion", "theo biểu phí hiện hành"),
+            "conditions": merged_conditions,
+        }
+
+        # Build structured customer info from application_row
+        gender_map = {"F": "Nữ", "M": "Nam"}
+        income_map = {
+            "Working": "Đang làm việc", "Pensioner": "Hưu trí",
+            "Commercial associate": "Kinh doanh", "State servant": "Công chức",
+            "Student": "Sinh viên", "Unemployed": "Thất nghiệp",
+        }
+        edu_map = {
+            "Higher education": "Đại học / Cao đẳng",
+            "Secondary / secondary special": "Trung cấp / THPT",
+            "Incomplete higher": "Chưa tốt nghiệp ĐH",
+            "Lower secondary": "THCS",
+            "Academic degree": "Sau đại học",
+        }
+        family_map = {
+            "Single / not married": "Độc thân", "Married": "Đã kết hôn",
+            "Civil marriage": "Sống chung", "Separated": "Ly thân",
+            "Widow": "Goá",
+        }
+        housing_map = {
+            "House / apartment": "Nhà riêng / Chung cư",
+            "Rented apartment": "Thuê nhà", "With parents": "Ở cùng cha mẹ",
+            "Municipal apartment": "Nhà tập thể",
+            "Office apartment": "Nhà công vụ", "Co-op apartment": "Nhà hợp tác",
+        }
+        age = round(abs(app_row.get("DAYS_BIRTH", 0)) / 365.25) if app_row.get("DAYS_BIRTH") else None
+
+        customer_info_struct = {
+            **(narrative.get("customer_info") or {}),
+            "gender": gender_map.get(app_row.get("CODE_GENDER", ""), ""),
+            "age": age,
+            "education": edu_map.get(app_row.get("NAME_EDUCATION_TYPE", ""), app_row.get("NAME_EDUCATION_TYPE", "")),
+            "family_status": family_map.get(app_row.get("NAME_FAMILY_STATUS", ""), app_row.get("NAME_FAMILY_STATUS", "")),
+            "income_type": income_map.get(app_row.get("NAME_INCOME_TYPE", ""), app_row.get("NAME_INCOME_TYPE", "")),
+            "housing": housing_map.get(app_row.get("NAME_HOUSING_TYPE", ""), app_row.get("NAME_HOUSING_TYPE", "")),
+            "own_realty": app_row.get("FLAG_OWN_REALTY", ""),
+            "own_car": app_row.get("FLAG_OWN_CAR", ""),
+            "loan_purpose": llm_feats.get("loan_purpose_category", ""),
+        }
+
         final_report = {
-            # Section I: Thông tin khách hàng
-            "customer_info": narrative.get("customer_info", {}),
-            # Section II: Tóm tắt đánh giá (Block A scorecard per document_new.md)
+            # Section I: Thông tin khách hàng (structured)
+            "customer_info": customer_info_struct,
+            # Section II: Executive Summary (all deterministic)
             "executive_summary": {
                 "credit_score": credit_score,
-                "risk_band": risk_band,
+                "risk_band": decision.risk_band,
                 "pd_pct": pd_pct,
-                "recommendation": narrative.get("recommendation", "REVIEW"),
+                "recommendation": decision.recommendation,
                 "five_c_total": total_5c,
                 "five_c_scores": five_c_scores,
-                "five_c_shap_allocation": shap_values.get("five_c_shap_allocation", {}),
-                # Fix 4: Block A scorecard — model info
+                "five_c_shap_allocation": shap_alloc,
+                "decision_reasons": decision.reasons,
+                "decision_overrides": decision.overrides_applied,
                 "model_info": {
                     "model_version": shap_values.get("model_version", "lgbm_v1_noxmoon"),
                     "auc": shap_values.get("auc", "0.803"),
                     "shap_verified": True,
                     "inference_timestamp": shap_values.get("inference_timestamp"),
                 },
-                # Financial ratios in summary
                 "financial_ratios": financial_ratios,
             },
-            # Section III: 5C Scorecard
-            "five_c_scorecard": {
-                "character_assessment": narrative.get("character_assessment", {}),
-                "capacity_assessment": narrative.get("capacity_assessment", {}),
-                "capital_assessment": narrative.get("capital_assessment", {}),
-                "conditions_assessment": narrative.get("conditions_assessment", {}),
-                "collateral_assessment": narrative.get("collateral_assessment", {}),
-            },
+            # Section III: 5C Scorecard (rule-based scores + LLM narrative)
+            "five_c_scorecard": assessments,
             # Section IV: Tình hình tài chính + Debt Analyst
             "financial_summary": narrative.get("financial_summary", {}),
             "debt_assessment": self._compute_debt_assessment(
@@ -291,14 +333,14 @@ class ReportGeneratorAgent:
                 llm_feats=llm_feats,
                 app_row=app_row,
             ),
-            # Section V: Tài sản bảo đảm (detail from collateral assessment)
-            "collateral_detail": narrative.get("collateral_assessment", {}),
+            # Section V: Tài sản bảo đảm
+            "collateral_detail": assessments.get("collateral_assessment", {}),
             # Section VI: Khuyến nghị & Caveats + Reward Modeler
-            "suggested_terms": narrative.get("suggested_terms", {}),
+            "suggested_terms": suggested_terms,
             "reward_assessment": self._compute_reward_assessment(
                 credit_score=credit_score,
                 pd_pct=pd_pct,
-                risk_band=risk_band,
+                risk_band=decision.risk_band,
                 financial_ratios=financial_ratios,
                 app_row=app_row,
                 llm_feats=llm_feats,
@@ -308,7 +350,7 @@ class ReportGeneratorAgent:
                 "positive_signals": llm_feats.get("positive_signals", []),
                 "risk_flags": llm_feats.get("risk_flags", []),
             },
-            "caveats": narrative.get("caveats", []) + warnings,
+            "caveats": (narrative.get("caveats") or []) + warnings,
             "audit_reference": {
                 "model_version": shap_values.get("model_version"),
                 "inference_timestamp": shap_values.get("inference_timestamp"),
@@ -327,19 +369,19 @@ class ReportGeneratorAgent:
             "agent": "A4",
             "action": "report_generation_5c",
             "output_summary": {
-                "recommendation": narrative.get("recommendation"),
+                "recommendation": decision.recommendation,
                 "five_c_total": total_5c,
+                "five_c_scores": five_c_scores,
+                "decision_reasons": decision.reasons,
                 "consistency_passed": consistency.get("passed"),
             },
             "model_version": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         }
 
-        logger.info(f"  Recommendation: {narrative.get('recommendation', 'REVIEW')}")
-
         return {
             "credit_score": credit_score,
             "pd_pct": pd_pct,
-            "risk_band": risk_band,
+            "risk_band": decision.risk_band,
             "five_c_scores": five_c_scores,
             "narrative": narrative,
             "consistency_check": consistency,
@@ -356,7 +398,13 @@ class ReportGeneratorAgent:
           AMT_ANNUITY      : ANNUAL annuity/installment (NOT monthly — divide by 12)
           AMT_CREDIT       : total loan amount
           AMT_GOODS_PRICE  : goods price (collateral proxy)
+
+        VND_SCALE: Home Credit uses anonymized currency units. We multiply by
+        100 to display realistic VND amounts in the report.
+        Ratios (DTI, DSCR, LTV) are NOT affected since both sides scale equally.
         """
+        VND_SCALE = 100  # Home Credit unit → approximate VND conversion
+
         income_annual = app_row.get("AMT_INCOME_TOTAL")
         annuity_annual = app_row.get("AMT_ANNUITY")   # annual — must divide by 12 for monthly
         credit_total = app_row.get("AMT_CREDIT")
@@ -365,12 +413,13 @@ class ReportGeneratorAgent:
         # Convert annuity to monthly for ratio calculations
         annuity_monthly = annuity_annual / 12 if annuity_annual else None
 
+        # VND display values (scaled for report display)
         ratios = {
-            "income_annual_vnd": income_annual,
-            "income_monthly_vnd": income_annual / 12 if income_annual else None,
-            "annuity_monthly_vnd": annuity_monthly,
-            "credit_total_vnd": credit_total,
-            "goods_price_vnd": goods_price,
+            "income_annual_vnd": income_annual * VND_SCALE if income_annual else None,
+            "income_monthly_vnd": (income_annual / 12) * VND_SCALE if income_annual else None,
+            "annuity_monthly_vnd": annuity_monthly * VND_SCALE if annuity_monthly else None,
+            "credit_total_vnd": credit_total * VND_SCALE if credit_total else None,
+            "goods_price_vnd": goods_price * VND_SCALE if goods_price else None,
         }
 
         # DTI = monthly debt payment / monthly income
@@ -612,14 +661,36 @@ class ReportGeneratorAgent:
         financial_ratios: dict | None = None,
         app_row: dict | None = None,
         rag_context: str = "",
+        five_c_scores: dict | None = None,
+        system_decision: str = "REVIEW",
     ) -> dict[str, Any]:
-        """Generate 5C narrative using LLM with RAG policy context."""
+        """Generate 5C NARRATIVE ONLY using LLM with RAG policy context.
 
-
+        LLM does NOT score or decide — only writes narrative text.
+        """
         five_c_alloc = shap_values.get("five_c_shap_allocation", {})
         customer_context = self._build_customer_context(app_row or {})
         financial_info = self._build_financial_context(llm_feats or {}, financial_ratios or {})
         collateral_info = self._build_collateral_context(llm_feats or {})
+
+        # Build 5C scores context for LLM reference
+        five_c_context = ""
+        if five_c_scores:
+            lines = []
+            for dim, detail in five_c_scores.items():
+                score = detail.get("score", 0)
+                max_s = detail.get("max_score", 0)
+                status = detail.get("status", "—")
+                met = detail.get("indicators_met", [])
+                rev = detail.get("indicators_review", [])
+                lines.append(f"  {dim}: {score}/{max_s} ({status})")
+                for m in met:
+                    lines.append(f"    ✓ {m}")
+                for r in rev:
+                    lines.append(f"    ⚠ {r}")
+            five_c_context = "\n".join(lines)
+        else:
+            five_c_context = "Chưa có điểm 5C"
 
         # Use RAG context if available, else provide fallback
         policy_context = rag_context if rag_context else (
@@ -630,6 +701,7 @@ class ReportGeneratorAgent:
         prompt = REPORT_USER.format(
             shap_json=json.dumps(shap_values, indent=2, default=str),
             five_c_allocation=json.dumps(five_c_alloc, indent=2, default=str),
+            five_c_scores_context=five_c_context,
             warnings_json=json.dumps(warnings, default=str),
             customer_context=customer_context,
             customer_type=customer_type,
@@ -637,6 +709,7 @@ class ReportGeneratorAgent:
             credit_score=credit_score,
             risk_band=risk_band,
             pd_pct=pd_pct,
+            system_decision=system_decision,
             financial_info=financial_info,
             collateral_info=collateral_info,
             rag_context=policy_context,
@@ -644,9 +717,9 @@ class ReportGeneratorAgent:
 
         return self.llm.generate_json(
             REPORT_SYSTEM, prompt,
-            {"character_assessment", "capacity_assessment",
-             "capital_assessment", "conditions_assessment",
-             "collateral_assessment", "recommendation"},
+            {"character_narrative", "capacity_narrative",
+             "capital_narrative", "conditions_narrative",
+             "collateral_narrative"},
             max_tokens=16384,
         )
 
@@ -919,12 +992,12 @@ class ReportGeneratorAgent:
                     "ltv": fr.get("ltv_pct", "N/A (chưa có thông tin TSBĐ chi tiết)"),
                 },
             },
-            # Section VI — Fix 3: terms from real AMT_CREDIT
+            # Section VI — Fix 3: terms from real AMT_CREDIT (scaled to VND)
             "recommendation": recommendation,
             "suggested_terms": {
-                "requested_amount_vnd": app.get("AMT_CREDIT"),
+                "requested_amount_vnd": (app.get("AMT_CREDIT") or 0) * 100,
                 "max_amount_vnd": (
-                    app.get("AMT_CREDIT")
+                    (app.get("AMT_CREDIT") or 0) * 100
                     or (300_000_000 if credit_score >= 650 else 100_000_000)
                 ),
                 "requested_term_months": (

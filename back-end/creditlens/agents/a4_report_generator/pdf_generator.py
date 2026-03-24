@@ -1,5 +1,5 @@
 """
-CreditLens A4 — Professional PDF Report Generator.
+CrediCouncil A4 — Professional PDF Report Generator.
 
 Generates a full-format Vietnamese credit assessment report (Tờ Trình Tín Dụng)
 with proper Unicode font support (Arial TTF on Windows).
@@ -68,6 +68,17 @@ _register_fonts()
 F_NORMAL = "Arial"
 F_BOLD   = "Arial-Bold"
 F_ITALIC = "Arial-Italic"
+
+# Override ReportLab defaults so ALL elements use Arial (Vietnamese-safe)
+from reportlab import rl_config
+rl_config.canvas_basefontname = "Arial"
+# Also patch the default Table/Paragraph font
+from reportlab.lib.styles import _baseFontNameB, _baseFontNameI, _baseFontNameBI
+import reportlab.lib.styles as _rl_styles
+_rl_styles._baseFontName = "Arial"
+_rl_styles._baseFontNameB = "Arial-Bold"
+_rl_styles._baseFontNameI = "Arial-Italic"
+_rl_styles._baseFontNameBI = "Arial-Bold"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -170,7 +181,7 @@ def _shap_chart(shap: dict, width_in=6.5, height_in=3.2) -> io.BytesIO:
     items.sort(key=lambda x: x[1])
     labels = [x[0][:45] for x in items]
     values = [x[1] for x in items]
-    bar_colors = ["#C62828" if v < 0 else "#1565C0" for v in values]
+    bar_colors = ["#1565C0" if v < 0 else "#C62828" for v in values]
 
     fig, ax = plt.subplots(figsize=(width_in, height_in))
     fig.patch.set_facecolor("#FAFBFC")
@@ -195,8 +206,8 @@ def _shap_chart(shap: dict, width_in=6.5, height_in=3.2) -> io.BytesIO:
     ax.grid(axis="x", linestyle="--", alpha=0.35, color="#B0BEC5")
     for sp in ["top","right"]: ax.spines[sp].set_visible(False)
 
-    pos_p = mpatches.Patch(color="#1565C0", label="Giảm rủi ro (tích cực)")
-    neg_p = mpatches.Patch(color="#C62828", label="Tăng rủi ro (tiêu cực)")
+    pos_p = mpatches.Patch(color="#C62828", label="Tăng rủi ro (tiêu cực)")
+    neg_p = mpatches.Patch(color="#1565C0", label="Giảm rủi ro (tích cực)")
     ax.legend(handles=[pos_p, neg_p], loc="lower right", fontsize=6.5,
               framealpha=0.85, edgecolor="#CFD8DC")
 
@@ -447,7 +458,7 @@ class CreditReportPDF:
         canvas.setFont(F_NORMAL, 6.5)
         canvas.setFillColor(C_GREY)
         canvas.drawString(MARGIN, 0.75 * cm,
-            "CreditLens AI  |  Tờ trình tín dụng  |  TT39/2016/TT-NHNN")
+            "CrediCouncil  |  Tờ trình tín dụng  |  TT39/2016/TT-NHNN")
         canvas.drawRightString(PAGE_W - MARGIN, 0.75 * cm, f"Trang {doc.page}")
         canvas.restoreState()
 
@@ -466,7 +477,7 @@ class CreditReportPDF:
 
         # ── Top banner ────────────────────────────────────────────────────────
         banner = Table([[
-            Paragraph(f"<b>CreditLens AI</b>",
+            Paragraph(f"<b>CrediCouncil</b>",
                        _s("b1", fn=F_BOLD, fs=15, tc=C_WHITE)),
             Paragraph(
                 "<b>TỜ TRÌNH TÍN DỤNG</b><br/>"
@@ -516,24 +527,92 @@ class CreditReportPDF:
     # ── CUSTOMER INFO ─────────────────────────────────────────────────────────
     def _customer(self):
         ci = self.report.get("customer_info", {})
+        es = self.report.get("executive_summary", {})
+        fr = es.get("financial_ratios", {})
         self.story.append(SectionTitle("I", "THÔNG TIN KHÁCH HÀNG", CONTENT_W))
         self.story.append(self._sp(2))
+
         summary = ci.get("summary") or f"Khách hàng: {self.name}"
-        label_w = 3.5 * cm
-        body_w  = CONTENT_W - label_w
-        t = Table([
-            [Paragraph("Tóm tắt hồ sơ", _s("ci_lbl", fn=F_BOLD, fs=8, tc=C_BLUE, leading=11)),
-             Paragraph(str(summary), _s("ci_val", fn=F_NORMAL, fs=8, tc=C_TEXT, leading=11))],
-        ], colWidths=[label_w, body_w])
-        t.setStyle(TableStyle([
+
+        # Extract structured fields from customer_info
+        gender = ci.get("gender", "")
+        age = ci.get("age", "")
+        education = ci.get("education", "")
+        family = ci.get("family_status", "")
+        income_type = ci.get("income_type", "")
+        housing = ci.get("housing", "")
+        own_realty = ci.get("own_realty", "")
+        own_car = ci.get("own_car", "")
+        loan_purpose = ci.get("loan_purpose", "")
+        loan_amount = fr.get("credit_total_vnd")
+        income_monthly = fr.get("income_monthly_vnd")
+
+        lbl_s = _s("ci_lbl", fn=F_BOLD, fs=8, tc=C_BLUE, leading=11)
+        val_s = _s("ci_val", fn=F_NORMAL, fs=8, tc=C_TEXT, leading=11)
+        label_w = 4.0 * cm
+        body_w  = CONTENT_W / 2 - label_w
+
+        def _row(label, value):
+            return [Paragraph(label, lbl_s), Paragraph(str(value or "—"), val_s)]
+
+        # Build two-column layout for compact display
+        left_rows = [
+            _row("Giới tính", gender),
+            _row("Tuổi", f"{age} tuổi" if age else "—"),
+            _row("Học vấn", education),
+            _row("Tình trạng HN", family),
+        ]
+        right_rows = [
+            _row("Thu nhập", income_type),
+            _row("Nhà ở", housing),
+            _row("BĐS", "Có" if own_realty == "Y" else "Không" if own_realty else "—"),
+            _row("Ô tô", "Có" if own_car == "Y" else "Không" if own_car else "—"),
+        ]
+
+        col_w = CONTENT_W / 2
+        left_t = Table(left_rows, colWidths=[label_w, col_w - label_w])
+        right_t = Table(right_rows, colWidths=[label_w, col_w - label_w])
+        for tbl in (left_t, right_t):
+            tbl.setStyle(TableStyle([
+                ("BACKGROUND",  (0,0), (0,-1), C_BLUE_L),
+                ("GRID",        (0,0), (-1,-1), 0.3, C_BORDER),
+                ("TOPPADDING",  (0,0), (-1,-1), 5),
+                ("BOTTOMPADDING",(0,0),(-1,-1), 5),
+                ("LEFTPADDING", (0,0), (-1,-1), 8),
+                ("VALIGN",      (0,0), (-1,-1), "MIDDLE"),
+            ]))
+
+        wrapper = Table([[left_t, right_t]], colWidths=[col_w, col_w])
+        wrapper.setStyle(TableStyle([
+            ("LEFTPADDING",  (0,0), (-1,-1), 0),
+            ("RIGHTPADDING", (0,0), (-1,-1), 0),
+            ("TOPPADDING",   (0,0), (-1,-1), 0),
+            ("BOTTOMPADDING",(0,0), (-1,-1), 0),
+        ]))
+        self.story.append(wrapper)
+        self.story.append(self._sp(2))
+
+        # Loan summary row (full width)
+        loan_rows = []
+        if loan_purpose:
+            loan_rows.append(_row("Mục đích vay", loan_purpose))
+        if loan_amount:
+            loan_rows.append(_row("Số tiền đề nghị", f"{loan_amount:,.0f} VND"))
+        if income_monthly:
+            loan_rows.append(_row("Thu nhập/tháng", f"{income_monthly:,.0f} VND"))
+        if not loan_rows:
+            loan_rows.append(_row("Tóm tắt", summary))
+
+        loan_t = Table(loan_rows, colWidths=[label_w, CONTENT_W - label_w])
+        loan_t.setStyle(TableStyle([
             ("BACKGROUND",  (0,0), (0,-1), C_BLUE_L),
             ("GRID",        (0,0), (-1,-1), 0.3, C_BORDER),
-            ("TOPPADDING",  (0,0), (-1,-1), 7),
-            ("BOTTOMPADDING",(0,0),(-1,-1), 7),
+            ("TOPPADDING",  (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",(0,0),(-1,-1), 5),
             ("LEFTPADDING", (0,0), (-1,-1), 8),
-            ("VALIGN",      (0,0), (-1,-1), "TOP"),
+            ("VALIGN",      (0,0), (-1,-1), "MIDDLE"),
         ]))
-        self.story.append(t)
+        self.story.append(loan_t)
         self.story.append(self._sp(4))
 
     # ── SHAP SECTION ──────────────────────────────────────────────────────────
@@ -553,24 +632,27 @@ class CreditReportPDF:
         self.story.append(self._sp(3))
 
         # SHAP bar rows
-        pos = (self.shap.get("top_positive_factors") or [])[:5]
-        neg = (self.shap.get("top_negative_factors") or [])[:5]
-        all_sv = pos + neg
+        # IMPORTANT: In SHAP semantics for PD model:
+        #   top_positive_factors = SHAP > 0 = INCREASES default risk = RỦI RO
+        #   top_negative_factors = SHAP < 0 = DECREASES default risk = TÍCH CỰC
+        risk_factors = (self.shap.get("top_positive_factors") or [])[:5]  # SHAP+ = tăng rủi ro
+        good_factors = (self.shap.get("top_negative_factors") or [])[:5]  # SHAP- = giảm rủi ro
+        all_sv = risk_factors + good_factors
         max_abs = max((abs(float(f.get("shap_value", f.get("shap", 0)) or 0))
                        for f in all_sv), default=0.001)
 
-        if pos:
+        if risk_factors:
             self.story.append(P("<b>Yếu tố tích cực (giảm rủi ro vỡ nợ):</b>", "h3"))
-            for f in pos:
+            for f in good_factors:
                 sv = float(f.get("shap_value", f.get("shap", 0)) or 0)
                 lbl = f.get("label_vi") or f.get("feature", "—")
                 self.story.append(SHAPBar(lbl, sv, max_abs, CONTENT_W, positive=True))
                 self.story.append(self._sp(1))
 
-        if neg:
+        if good_factors:
             self.story.append(self._sp(2))
             self.story.append(P("<b>Yếu tố rủi ro (tăng xác suất vỡ nợ):</b>", "h3"))
-            for f in neg:
+            for f in risk_factors:
                 sv = float(f.get("shap_value", f.get("shap", 0)) or 0)
                 lbl = f.get("label_vi") or f.get("feature", "—")
                 self.story.append(SHAPBar(lbl, sv, max_abs, CONTENT_W, positive=False))
@@ -884,6 +966,7 @@ class CreditReportPDF:
             ]
             rm_t = Table(rm_rows, colWidths=[8*cm, CONTENT_W - 8*cm])
             rm_t.setStyle(TableStyle([
+                ("FONTNAME",     (0,0), (-1,-1), F_NORMAL),
                 ("BACKGROUND",   (0,0), (0,-1), C_BLUE_L),
                 ("FONTNAME",     (0,0), (0,-1), F_BOLD),
                 ("FONTSIZE",     (0,0), (-1,-1), 8),
@@ -953,11 +1036,7 @@ class CreditReportPDF:
         self.story.append(tt)
         self.story.append(self._sp(3))
 
-        # LLM insights
-        for sig in (llm_i.get("positive_signals") or []):
-            self.story.append(P(f"OK  {sig}", "bodySmall"))
-        for flag in (llm_i.get("risk_flags") or []):
-            self.story.append(P(f"!!  {flag}", "caveat"))
+        # (OK/!! LLM insights removed — signals now captured in 5C scorecard)
         if caveats:
             self.story.append(self._sp(2))
             self.story.append(P("<b>Cảnh báo dữ liệu (Imputation Log):</b>", "h3"))
