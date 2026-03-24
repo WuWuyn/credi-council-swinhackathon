@@ -4,19 +4,249 @@
     "target": 0,
     "label": "pass_1"
   },
-  "394570": {
+  "143480": {
     "dir": "customer_002",
     "target": 0,
     "label": "pass_2"
   },
-  "272483": {
+  "443824": {
     "dir": "customer_003",
+    "target": 0,
+    "label": "pass_3"
+  },
+  "422560": {
+    "dir": "customer_004",
+    "target": 0,
+    "label": "pass_4"
+  },
+  "386490": {
+    "dir": "customer_005",
+    "target": 0,
+    "label": "pass_5"
+  },
+  "173402": {
+    "dir": "customer_006",
+    "target": 0,
+    "label": "pass_6"
+  },
+  "202834": {
+    "dir": "customer_007",
+    "target": 0,
+    "label": "pass_7"
+  },
+  "234382": {
+    "dir": "customer_008",
+    "target": 0,
+    "label": "pass_8"
+  },
+  "300463": {
+    "dir": "customer_009",
+    "target": 0,
+    "label": "pass_9"
+  },
+  "264640": {
+    "dir": "customer_010",
+    "target": 0,
+    "label": "pass_10"
+  },
+  "326319": {
+    "dir": "customer_011",
+    "target": 0,
+    "label": "pass_11"
+  },
+  "273523": {
+    "dir": "customer_012",
+    "target": 0,
+    "label": "pass_12"
+  },
+  "427402": {
+    "dir": "customer_013",
+    "target": 0,
+    "label": "pass_13"
+  },
+  "168007": {
+    "dir": "customer_014",
+    "target": 0,
+    "label": "pass_14"
+  },
+  "261024": {
+    "dir": "customer_015",
+    "target": 0,
+    "label": "pass_15"
+  },
+  "423002": {
+    "dir": "customer_016",
+    "target": 0,
+    "label": "pass_16"
+  },
+  "324522": {
+    "dir": "customer_017",
+    "target": 0,
+    "label": "pass_17"
+  },
+  "401648": {
+    "dir": "customer_018",
+    "target": 0,
+    "label": "pass_18"
+  },
+  "330254": {
+    "dir": "customer_019",
+    "target": 0,
+    "label": "pass_19"
+  },
+  "331145": {
+    "dir": "customer_020",
+    "target": 0,
+    "label": "pass_20"
+  },
+  "348185": {
+    "dir": "customer_021",
+    "target": 0,
+    "label": "pass_21"
+  },
+  "321880": {
+    "dir": "customer_022",
+    "target": 0,
+    "label": "pass_22"
+  },
+  "441030": {
+    "dir": "customer_023",
+    "target": 0,
+    "label": "pass_23"
+  },
+  "375821": {
+    "dir": "customer_024",
+    "target": 0,
+    "label": "pass_24"
+  },
+  "235139": {
+    "dir": "customer_025",
+    "target": 0,
+    "label": "pass_25"
+  },
+  "272483": {
+    "dir": "customer_026",
     "target": 1,
     "label": "fail_1"
   },
-  "169206": {
-    "dir": "customer_004",
+  "234129": {
+    "dir": "customer_027",
     "target": 1,
     "label": "fail_2"
+  },
+  "105155": {
+    "dir": "customer_028",
+    "target": 1,
+    "label": "fail_3"
+  },
+  "438396": {
+    "dir": "customer_029",
+    "target": 1,
+    "label": "fail_4"
+  },
+  "244080": {
+    "dir": "customer_030",
+    "target": 1,
+    "label": "fail_5"
+  },
+  "157887": {
+    "dir": "customer_031",
+    "target": 1,
+    "label": "fail_6"
+  },
+  "401018": {
+    "dir": "customer_032",
+    "target": 1,
+    "label": "fail_7"
+  },
+  "122569": {
+    "dir": "customer_033",
+    "target": 1,
+    "label": "fail_8"
+  },
+  "211129": {
+    "dir": "customer_034",
+    "target": 1,
+    "label": "fail_9"
+  },
+  "172257": {
+    "dir": "customer_035",
+    "target": 1,
+    "label": "fail_10"
+  },
+  "440604": {
+    "dir": "customer_036",
+    "target": 1,
+    "label": "fail_11"
+  },
+  "429027": {
+    "dir": "customer_037",
+    "target": 1,
+    "label": "fail_12"
+  },
+  "148193": {
+    "dir": "customer_038",
+    "target": 1,
+    "label": "fail_13"
+  },
+  "363033": {
+    "dir": "customer_039",
+    "target": 1,
+    "label": "fail_14"
+  },
+  "264093": {
+    "dir": "customer_040",
+    "target": 1,
+    "label": "fail_15"
+  },
+  "348505": {
+    "dir": "customer_041",
+    "target": 1,
+    "label": "fail_16"
+  },
+  "438956": {
+    "dir": "customer_042",
+    "target": 1,
+    "label": "fail_17"
+  },
+  "186107": {
+    "dir": "customer_043",
+    "target": 1,
+    "label": "fail_18"
+  },
+  "451583": {
+    "dir": "customer_044",
+    "target": 1,
+    "label": "fail_19"
+  },
+  "276917": {
+    "dir": "customer_045",
+    "target": 1,
+    "label": "fail_20"
+  },
+  "250686": {
+    "dir": "customer_046",
+    "target": 1,
+    "label": "fail_21"
+  },
+  "180019": {
+    "dir": "customer_047",
+    "target": 1,
+    "label": "fail_22"
+  },
+  "321473": {
+    "dir": "customer_048",
+    "target": 1,
+    "label": "fail_23"
+  },
+  "317024": {
+    "dir": "customer_049",
+    "target": 1,
+    "label": "fail_24"
+  },
+  "443022": {
+    "dir": "customer_050",
+    "target": 1,
+    "label": "fail_25"
   }
 }

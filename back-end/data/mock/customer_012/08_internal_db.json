@@ -1,0 +1,279 @@
+{
+  "SK_ID_CURR": 273523,
+  "previous_applications": [
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NAME_CONTRACT_TYPE": "Consumer loans",
+      "AMT_ANNUITY": 4977.99,
+      "AMT_APPLICATION": 40495.5,
+      "AMT_CREDIT": 44806.5,
+      "AMT_DOWN_PAYMENT": 4050.0,
+      "AMT_GOODS_PRICE": 40495.5,
+      "WEEKDAY_APPR_PROCESS_START": "TUESDAY",
+      "HOUR_APPR_PROCESS_START": 14,
+      "FLAG_LAST_APPL_PER_CONTRACT": "Y",
+      "NFLAG_LAST_APPL_IN_DAY": 1,
+      "RATE_DOWN_PAYMENT": 0.0902810922153281,
+      "RATE_INTEREST_PRIMARY": null,
+      "RATE_INTEREST_PRIVILEGED": null,
+      "NAME_CASH_LOAN_PURPOSE": "XAP",
+      "NAME_CONTRACT_STATUS": "Approved",
+      "DAYS_DECISION": -1905,
+      "NAME_PAYMENT_TYPE": "Cash through the bank",
+      "CODE_REJECT_REASON": "XAP",
+      "NAME_TYPE_SUITE": "Unaccompanied",
+      "NAME_CLIENT_TYPE": "Refreshed",
+      "NAME_GOODS_CATEGORY": "Consumer Electronics",
+      "NAME_PORTFOLIO": "POS",
+      "NAME_PRODUCT_TYPE": "XNA",
+      "CHANNEL_TYPE": "Country-wide",
+      "SELLERPLACE_AREA": 1200,
+      "NAME_SELLER_INDUSTRY": "Consumer electronics",
+      "CNT_PAYMENT": 11.0,
+      "NAME_YIELD_GROUP": "middle",
+      "PRODUCT_COMBINATION": "POS household with interest",
+      "DAYS_FIRST_DRAWING": 365243.0,
+      "DAYS_FIRST_DUE": -1874.0,
+      "DAYS_LAST_DUE_1ST_VERSION": -1574.0,
+      "DAYS_LAST_DUE": -1574.0,
+      "DAYS_TERMINATION": -1571.0,
+      "NFLAG_INSURED_ON_APPROVAL": 0.0
+    }
+  ],
+  "pos_cash_balance": [
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -54,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 2.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -60,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 8.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -55,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 3.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -63,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 11.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -59,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 7.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -61,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 9.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -53,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 1.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -56,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 4.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -62,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 10.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -57,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 5.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -52,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 0.0,
+      "NAME_CONTRACT_STATUS": "Completed",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "MONTHS_BALANCE": -58,
+      "CNT_INSTALMENT": 11.0,
+      "CNT_INSTALMENT_FUTURE": 6.0,
+      "NAME_CONTRACT_STATUS": "Active",
+      "SK_DPD": 0,
+      "SK_DPD_DEF": 0
+    }
+  ],
+  "installments_payments": [
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 9,
+      "DAYS_INSTALMENT": -1634.0,
+      "DAYS_ENTRY_PAYMENT": -1633.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 2,
+      "DAYS_INSTALMENT": -1844.0,
+      "DAYS_ENTRY_PAYMENT": -1846.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 3,
+      "DAYS_INSTALMENT": -1814.0,
+      "DAYS_ENTRY_PAYMENT": -1819.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 10,
+      "DAYS_INSTALMENT": -1604.0,
+      "DAYS_ENTRY_PAYMENT": -1605.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 6,
+      "DAYS_INSTALMENT": -1724.0,
+      "DAYS_ENTRY_PAYMENT": -1723.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 4,
+      "DAYS_INSTALMENT": -1784.0,
+      "DAYS_ENTRY_PAYMENT": -1784.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 8,
+      "DAYS_INSTALMENT": -1664.0,
+      "DAYS_ENTRY_PAYMENT": -1661.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 11,
+      "DAYS_INSTALMENT": -1574.0,
+      "DAYS_ENTRY_PAYMENT": -1575.0,
+      "AMT_INSTALMENT": 4919.04,
+      "AMT_PAYMENT": 4919.04
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 5,
+      "DAYS_INSTALMENT": -1754.0,
+      "DAYS_ENTRY_PAYMENT": -1758.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 7,
+      "DAYS_INSTALMENT": -1694.0,
+      "DAYS_ENTRY_PAYMENT": -1696.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    },
+    {
+      "SK_ID_PREV": 1227524,
+      "SK_ID_CURR": 273523,
+      "NUM_INSTALMENT_VERSION": 1.0,
+      "NUM_INSTALMENT_NUMBER": 1,
+      "DAYS_INSTALMENT": -1874.0,
+      "DAYS_ENTRY_PAYMENT": -1885.0,
+      "AMT_INSTALMENT": 4977.99,
+      "AMT_PAYMENT": 4977.99
+    }
+  ],
+  "credit_card_balance": []
+}

@@ -1,7 +1,7 @@
 """
-Extract 4 real customers from the Home Credit dataset for demo purposes.
+Extract 50 real customers from the Home Credit dataset for demo purposes.
 
-Selects 2 customers with TARGET=0 (repaid OK) and 2 with TARGET=1 (defaulted),
+Selects 25 customers with TARGET=0 (repaid OK) and 25 with TARGET=1 (defaulted),
 choosing those with rich data across all related tables.
 
 Outputs per-customer:
@@ -62,15 +62,15 @@ def load_tables():
     return app, bureau, bb, prev, pos, inst, cc
 
 
-def select_customers(app, bureau, prev, pos, inst, cc):
-    """Select 4 customers with extreme model scores for best demo impact.
+def select_customers(app, bureau, prev, pos, inst, cc, n_pass=25, n_fail=25):
+    """Select 50 customers with diverse model scores for demo.
 
     Strategy:
     1. Filter for customers with rich data across all tables
-    2. Run the trained model to get PD predictions
-    3. Pick 2 highest-scoring (lowest PD) from TARGET=0
-    4. Pick 2 lowest-scoring (highest PD) from TARGET=1
-    This maximizes score spread for a compelling demo.
+    2. Compute proxy PD score from EXT_SOURCE features
+    3. Pick n_pass from TARGET=0 (spread across PD range)
+    4. Pick n_fail from TARGET=1 (spread across PD range)
+    This gives a diverse, representative demo set.
     """
     import sys
     import pickle
@@ -124,18 +124,22 @@ def select_customers(app, bureau, prev, pos, inst, cc):
            + rich_app["EXT_SOURCE_1"] * 0.2)
     )
 
-    # Select: 2 lowest proxy_pd (most confident pass) from TARGET=0
-    pass_df = (
-        rich_app[rich_app["TARGET"] == 0]
-        .sort_values("proxy_pd", ascending=True)  # lowest PD = most stable
-        .head(2)
-    )
-    # Select: 2 highest proxy_pd (most confident fail) from TARGET=1
-    fail_df = (
-        rich_app[rich_app["TARGET"] == 1]
-        .sort_values("proxy_pd", ascending=False)  # highest PD = most risky
-        .head(2)
-    )
+    # Select n_pass from TARGET=0 (evenly spread across PD range)
+    pass_pool = rich_app[rich_app["TARGET"] == 0].sort_values("proxy_pd")
+    if len(pass_pool) >= n_pass:
+        # Sample evenly across the PD range for diversity
+        indices = np.linspace(0, len(pass_pool) - 1, n_pass, dtype=int)
+        pass_df = pass_pool.iloc[indices]
+    else:
+        pass_df = pass_pool.head(n_pass)
+
+    # Select n_fail from TARGET=1 (evenly spread across PD range)
+    fail_pool = rich_app[rich_app["TARGET"] == 1].sort_values("proxy_pd", ascending=False)
+    if len(fail_pool) >= n_fail:
+        indices = np.linspace(0, len(fail_pool) - 1, n_fail, dtype=int)
+        fail_df = fail_pool.iloc[indices]
+    else:
+        fail_df = fail_pool.head(n_fail)
 
     selected = pd.concat([pass_df, fail_df])
     print(f"\nSelected {len(selected)} customers:")
@@ -659,7 +663,7 @@ def main():
     with open(map_path, "w") as f:
         json.dump(customer_map, f, indent=2)
     print(f"\n\nCustomer map saved: {map_path}")
-    print("\nDone! All 4 customers extracted successfully.")
+    print(f"\nDone! All {len(customer_map)} customers extracted successfully.")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,103 @@
+{
+  "api_version": "CIC-VN-v2.1",
+  "query_timestamp": "2026-03-15T10:23:41+07:00",
+  "customer_id": "234382",
+  "ext_source_scores": {
+    "EXT_SOURCE_1": 0.8249650767719564,
+    "EXT_SOURCE_2": 0.4466195790923816,
+    "EXT_SOURCE_3": 0.7136313997323308
+  },
+  "credit_inquiry_counts": {
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_MON": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_QRT": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 0.0
+  },
+  "social_circle": {
+    "OBS_30_CNT_SOCIAL_CIRCLE": 0.0,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 0.0,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 0.0,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 0.0
+  },
+  "bureau_records": [
+    {
+      "SK_ID_BUREAU": 5629764,
+      "CREDIT_ACTIVE": "Active",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -881,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 954.0,
+      "DAYS_ENDDATE_FACT": null,
+      "AMT_CREDIT_MAX_OVERDUE": 0.0,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 247500.0,
+      "AMT_CREDIT_SUM_DEBT": 284147.775,
+      "AMT_CREDIT_SUM_LIMIT": 143352.225,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Credit card",
+      "DAYS_CREDIT_UPDATE": -612,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    },
+    {
+      "SK_ID_BUREAU": 5629765,
+      "CREDIT_ACTIVE": "Active",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -881,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 954.0,
+      "DAYS_ENDDATE_FACT": null,
+      "AMT_CREDIT_MAX_OVERDUE": 0.0,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 0.0,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": 0.0,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Credit card",
+      "DAYS_CREDIT_UPDATE": -881,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    },
+    {
+      "SK_ID_BUREAU": 5629766,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -1605,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 221.0,
+      "DAYS_ENDDATE_FACT": -1268.0,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 900000.0,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": 0.0,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -260,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    },
+    {
+      "SK_ID_BUREAU": 5629767,
+      "CREDIT_ACTIVE": "Active",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -1601,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 589.0,
+      "DAYS_ENDDATE_FACT": null,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 324000.0,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": 0.0,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Credit card",
+      "DAYS_CREDIT_UPDATE": -61,
+      "AMT_ANNUITY": null,
+      "monthly_status": []
+    }
+  ],
+  "thin_file_flag": false
+}

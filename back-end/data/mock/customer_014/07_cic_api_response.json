@@ -1,0 +1,363 @@
+{
+  "api_version": "CIC-VN-v2.1",
+  "query_timestamp": "2026-03-15T10:23:41+07:00",
+  "customer_id": "168007",
+  "ext_source_scores": {
+    "EXT_SOURCE_1": 0.6431268111786691,
+    "EXT_SOURCE_2": 0.4355738523547872,
+    "EXT_SOURCE_3": 0.5919766183185521
+  },
+  "credit_inquiry_counts": {
+    "AMT_REQ_CREDIT_BUREAU_HOUR": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_DAY": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_WEEK": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_MON": 1.0,
+    "AMT_REQ_CREDIT_BUREAU_QRT": 0.0,
+    "AMT_REQ_CREDIT_BUREAU_YEAR": 0.0
+  },
+  "social_circle": {
+    "OBS_30_CNT_SOCIAL_CIRCLE": 0.0,
+    "DEF_30_CNT_SOCIAL_CIRCLE": 0.0,
+    "OBS_60_CNT_SOCIAL_CIRCLE": 0.0,
+    "DEF_60_CNT_SOCIAL_CIRCLE": 0.0
+  },
+  "bureau_records": [
+    {
+      "SK_ID_BUREAU": 6742388,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -693,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 1133.0,
+      "DAYS_ENDDATE_FACT": -42.0,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 1188450.0,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": null,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -34,
+      "AMT_ANNUITY": 0.0,
+      "monthly_status": [
+        {
+          "MONTHS_BALANCE": 0,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -1,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -2,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -3,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -4,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -5,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -6,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -7,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -8,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -9,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -10,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -11,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -12,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -13,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -14,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -15,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -16,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -17,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -18,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -19,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -20,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -21,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -22,
+          "STATUS": "0"
+        }
+      ]
+    },
+    {
+      "SK_ID_BUREAU": 6742389,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -681,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 1146.0,
+      "DAYS_ENDDATE_FACT": -191.0,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 957600.0,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": null,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Consumer credit",
+      "DAYS_CREDIT_UPDATE": -124,
+      "AMT_ANNUITY": 0.0,
+      "monthly_status": [
+        {
+          "MONTHS_BALANCE": 0,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -1,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -2,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -3,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -4,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -5,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -6,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -7,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -8,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -9,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -10,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -11,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -12,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -13,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -14,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -15,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -16,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -17,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -18,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -19,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -20,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -21,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -22,
+          "STATUS": "0"
+        }
+      ]
+    },
+    {
+      "SK_ID_BUREAU": 6742390,
+      "CREDIT_ACTIVE": "Closed",
+      "CREDIT_CURRENCY": "currency 1",
+      "DAYS_CREDIT": -693,
+      "CREDIT_DAY_OVERDUE": 0,
+      "DAYS_CREDIT_ENDDATE": 12680.0,
+      "DAYS_ENDDATE_FACT": -345.0,
+      "AMT_CREDIT_MAX_OVERDUE": null,
+      "CNT_CREDIT_PROLONG": 0,
+      "AMT_CREDIT_SUM": 121500.0,
+      "AMT_CREDIT_SUM_DEBT": 0.0,
+      "AMT_CREDIT_SUM_LIMIT": null,
+      "AMT_CREDIT_SUM_OVERDUE": 0.0,
+      "CREDIT_TYPE": "Credit card",
+      "DAYS_CREDIT_UPDATE": -299,
+      "AMT_ANNUITY": 0.0,
+      "monthly_status": [
+        {
+          "MONTHS_BALANCE": 0,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -1,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -2,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -3,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -4,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -5,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -6,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -7,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -8,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -9,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -10,
+          "STATUS": "C"
+        },
+        {
+          "MONTHS_BALANCE": -11,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -12,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -13,
+          "STATUS": "X"
+        },
+        {
+          "MONTHS_BALANCE": -14,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -15,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -16,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -17,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -18,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -19,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -20,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -21,
+          "STATUS": "0"
+        },
+        {
+          "MONTHS_BALANCE": -22,
+          "STATUS": "0"
+        }
+      ]
+    }
+  ],
+  "thin_file_flag": false
+}
