@@ -34,6 +34,7 @@ env/
 *.swp
 *.swo
 *~
+.agents
 
 # ─── ML Artifacts ─────────────────────────────────────────────────────────────
 models/*.pkl
@@ -62,3 +63,12 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# ─── Frontend (React/Vite) ───────────────────────────────────────────────────
+front-end/node_modules/
+front-end/dist/
+front-end/dist-ssr/
+front-end/*.local
+front-end/npm-debug.log*
+front-end/yarn-debug.log*
+front-end/yarn-error.log*

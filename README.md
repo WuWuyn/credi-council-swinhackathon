@@ -101,7 +101,18 @@ uvicorn credicouncil.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Truy cập:
-- **Dashboard**: http://localhost:8000/app
+- **FastAPI Backend (Swagger UI)**: http://localhost:8000/docs
+
+### Bước 6: Chạy Frontend (React + Vite)
+
+Mở một Terminal mới:
+```bash
+cd front-end
+npm install
+npm run dev
+```
+
+Truy cập **Dashboard React**: http://localhost:5173
 
 ---
 
@@ -124,9 +135,9 @@ Truy cập:
        │              │
        ▼              ▼
 ┌─────────────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│  FastAPI Service         │     │  Frontend (HTML)  │     │  Gemini RAG      │
-│  /score/mock             │◀────│  Dashboard UI     │     │  FileSearchStore │
-│  /v1/report/{id}/pdf     │     │  PDF Viewer       │     │  (Policy docs)   │
+│  FastAPI Service        │     │  React Vite App  │     │  Gemini RAG      │
+│  /v1/score              │◀────│  Dashboard UI    │     │  FileSearchStore │
+│  /v1/report/{id}/json   │     │  PDF Viewer      │     │  (Policy docs)   │
 └─────────────────────────┘     └──────────────────┘     └──────────────────┘
 ```
 
@@ -177,6 +188,7 @@ swinburn_new/
 │   │   │       ├── pdf_generator.py  # PDF rendering (ReportLab)
 │   │   │       └── consistency_validator.py # SHAP-narrative consistency
 │   │   ├── api/
+│   │   │   ├── config.py             # Centralized API Settings (CORS, Base)
 │   │   │   └── main.py               # FastAPI app + endpoints
 │   │   ├── config/
 │   │   │   ├── feature_config.py     # Feature→5C mapping, risk bands
@@ -214,7 +226,12 @@ swinburn_new/
 │   │       └── test_ocr_coverage.py  # PyMuPDF+regex vs ground truth
 │   ├── test_pipeline.py              # Single customer pipeline test
 │   └── test_all_customers.py         # Multi-customer comparison test
-├── front-end/app/                    # Frontend dashboard (HTML/JS)
+├── front-end/                        # Frontend React + Vite SPA
+│   ├── src/
+│   │   ├── components/               # Header, Modals, Cards
+│   │   ├── config/api.js             # Centralized Frontend API Config
+│   │   ├── data/mockData.js          # Extracted Mock Objects
+│   │   └── pages/                    # Dashboard & Credit Report Pages
 ├── .env.example                      # Environment template
 └── requirements.txt
 ```
@@ -510,6 +527,12 @@ RAROC = (gross_income - expected_loss) / loan_amount
 | `MODEL_PATH` | `models/lgbm_ref_v1.pkl` | Đường dẫn model file |
 | `FILE_SEARCH_STORE_NAME` | — | Gemini FileSearchStore name (từ init script) |
 
+### Centralized API Architecture
+
+Hệ thống thiết kế API config tập trung cho phép deploy linh hoạt:
+- **Backend (`back-end/api/config.py`)**: Sử dụng phương pháp `BaseSettings` (Pydantic) tự động parse `.env` nạp biến môi trường cho Prefix URL (`/v1`) và CORS.
+- **Frontend (`front-end/src/config/api.js`)**: Chỉ gọi fetch ra `API_CONFIG`. Nạp tự động từ thư mục `.env` của React (dùng `import.meta.env.VITE_API_BASE_URL`).
+  
 ### LLM Service Architecture
 
 ```

@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary Colors */
+  --color-primary: #E31837;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #ffe0e2;
+  --color-on-primary-container: #410005;
+  --color-primary-fixed: #ffdad9;
+  --color-on-primary-fixed: #410005;
+  --color-on-primary-fixed-variant: #930010;
+
+  /* Surface Colors */
+  --color-surface: #fffbff;
+  --color-on-surface: #201a1a;
+  --color-surface-variant: #f5dddd;
+  --color-on-surface-variant: #534343;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #fff1f1;
+  --color-surface-container: #fceaea;
+  --color-surface-container-high: #f7e4e4;
+  --color-surface-container-highest: #f1dede;
+
+  /* Background */
+  --color-background: #F8FAFC;
+  --color-on-background: #201a1a;
+
+  /* Outline */
+  --color-outline: #857373;
+  --color-outline-variant: #d8c2c2;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* Secondary */
+  --color-secondary: #775656;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #ffdad9;
+  --color-on-secondary-container: #2d1515;
+
+  /* Tertiary */
+  --color-tertiary: #755a2c;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #ffdfa6;
+  --color-on-tertiary-container: #261900;
+
+  /* Fonts */
+  --font-headline: "Manrope", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Inter", sans-serif;
+
+  /* Border Radius */
+  --radius: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+/* Base Styles */
+body {
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+/* Radar Chart Clip Path */
+.radar-grid {
+  clip-path: polygon(50% 0%, 100% 38%, 81% 100%, 19% 100%, 0% 38%);
+}
+
+/* Pipeline Animations */
+.status-pulse {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Pipeline Card Hover */
+.pipeline-card {
+  transition: all 0.2s ease;
+}
+.pipeline-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Node Connector Arrow */
+.node-connector {
+  position: relative;
+}
+.node-connector::after {
+  content: 'chevron_right';
+  font-family: 'Material Symbols Outlined';
+  position: absolute;
+  right: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #E2E8F0;
+  font-size: 16px;
+}
+
+/* Editorial Shadow */
+.editorial-shadow {
+  box-shadow: 0 12px 40px -4px rgba(24, 28, 30, 0.06);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d8c2c2;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #857373;
+}
