@@ -1,0 +1,228 @@
+{
+  "customer_info": {
+    "summary": "Khách hàng cá nhân, không thuộc diện thin-file, với điểm tín dụng 349 và thuộc nhóm rủi ro CC (PD 72.28%)."
+  },
+  "executive_summary": {
+    "credit_score": 349,
+    "risk_band": "CC",
+    "pd_pct": 72.28,
+    "recommendation": "REVIEW",
+    "five_c_total": 52,
+    "five_c_scores": {
+      "character": 18,
+      "capacity": 25,
+      "capital": 5,
+      "conditions": 4,
+      "collateral": 0
+    },
+    "five_c_shap_allocation": {
+      "character": {
+        "shap_sum": 1.6371,
+        "pct": 26
+      },
+      "capacity": {
+        "shap_sum": 0.7855,
+        "pct": 12
+      },
+      "capital": {
+        "shap_sum": 0.1856,
+        "pct": 3
+      },
+      "conditions": {
+        "shap_sum": 3.6524,
+        "pct": 58
+      },
+      "collateral": {
+        "shap_sum": 0.074,
+        "pct": 1
+      }
+    },
+    "model_info": {
+      "model_version": "lgb1_ref_v1",
+      "auc": "0.803",
+      "shap_verified": true,
+      "inference_timestamp": "2026-03-23T09:46:37.592813+00:00"
+    },
+    "financial_ratios": {
+      "income_annual_vnd": 58500.0,
+      "income_monthly_vnd": 4875.0,
+      "annuity_monthly_vnd": 562.5,
+      "credit_total_vnd": 135000.0,
+      "goods_price_vnd": 135000.0,
+      "dti": 0.1154,
+      "dti_pct": "11.5%",
+      "dscr": 8.67,
+      "ltv": 1.0,
+      "ltv_pct": "100.0%"
+    }
+  },
+  "five_c_scorecard": {
+    "character_assessment": {
+      "score": 18,
+      "status": "XEM_XET",
+      "shap_pct": "26%",
+      "indicators_met": [
+        "Điểm tín dụng ngoại 3 (CIC) có giá trị 0.0251 (SHAP: 0.6370)",
+        "Điểm tín dụng ngoại 2 (CIC) có giá trị 0.0012 (SHAP: 0.5095)"
+      ],
+      "indicators_review": [
+        "Trung bình điểm tín dụng ngoại có giá trị 0.0643 (SHAP: 0.7707) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Trả góp mean_DPD_SCALE có giá trị 0.0 (SHAP: -0.0612) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      ],
+      "narrative": "Yếu tố uy tín của khách hàng được đánh giá dựa trên các điểm tín dụng ngoại (CIC) có giá trị lần lượt là 0.0251 và 0.0012, đóng góp tích cực vào việc đánh giá rủi ro. Tuy nhiên, trung bình điểm tín dụng ngoại (0.0643) lại có xu hướng làm tăng xác suất vỡ nợ. Yếu tố trả góp mean_DPD_SCALE (0.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ. Tổng thể, các chỉ số về uy tín cần được xem xét kỹ lưỡng."
+    },
+    "capacity_assessment": {
+      "score": 25,
+      "status": "XEM_XET",
+      "shap_pct": "12%",
+      "indicators_met": [
+        "Tỷ lệ tín dụng/giá trị hàng có giá trị 1.0 (SHAP: -0.0744) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      ],
+      "indicators_review": [
+        "Trả góp hiện tại / TB đơn đã duyệt có giá trị 6,750,000.0 (SHAP: 0.1771) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Tuổi khách hàng có giá trị -7777.0 (SHAP: -0.0873) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      ],
+      "narrative": "Năng lực trả nợ của khách hàng được đánh giá qua các chỉ số. Tỷ lệ tín dụng/giá trị hàng (1.0) có tác động tiêu cực đến xác suất vỡ nợ. Tuy nhiên, khoản trả góp hiện tại so với trung bình đơn đã duyệt (6,750,000.0) lại có xu hướng làm tăng xác suất vỡ nợ. Tuổi khách hàng (-7777.0) cũng là một yếu tố tiêu cực. Cần phân tích sâu hơn về dòng tiền và khả năng chi trả thực tế."
+    },
+    "capital_assessment": {
+      "score": 5,
+      "status": "KHONG_DAT",
+      "shap_pct": "3%",
+      "indicators_met": [],
+      "indicators_review": [
+        "Tổng dư nợ tín dụng có giá trị 135,000.0 (SHAP: -0.0889) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      ],
+      "narrative": "Vốn tự có của khách hàng được đánh giá ở mức thấp. Yếu tố tổng dư nợ tín dụng (135,000.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ, cho thấy khả năng tự chủ về tài chính còn hạn chế. Cần có thêm thông tin về tài sản và nguồn vốn khác để đánh giá đầy đủ."
+    },
+    "conditions_assessment": {
+      "score": 4,
+      "status": "KHONG_DAT",
+      "shap_pct": "58%",
+      "indicators_met": [
+        "Trung bình điểm tín dụng ngoại có giá trị 0.0643 (SHAP: 0.7707) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Đơn bị từ chối — DAYS_DECISION_MAX có giá trị 0.0 (SHAP: 0.1257) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Thời gian cấp CCCD có giá trị -196.0 (SHAP: 0.1212) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Khoản trả hàng năm có giá trị 20.0 (SHAP: 0.1117) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Tích điểm tín dụng ngoại có giá trị 0.0 (SHAP: 0.0740) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Trình độ học vấn có giá trị 0.0 (SHAP: 0.0603) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
+        "Có SĐT nơi làm việc có giá trị 1.0 (SHAP: 0.0598) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ."
+      ],
+      "indicators_review": [
+        "Amt diff credit goods có giá trị 0.0 (SHAP: -0.0617) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
+        "Occupation type mean encode có giá trị 0.0807 (SHAP: -0.0563) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
+        "Kurtosis tài liệu đã nộp có giá trị 0.0 (SHAP: -0.0543) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
+        "Organization type mean encode có giá trị 0.0807 (SHAP: -0.0472) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
+        "Tuổi bắt đầu làm việc có giá trị 6686.0 (SHAP: -0.0457) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
+        "Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION có giá trị -367.0 (SHAP: -0.0412) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      ],
+      "narrative": "Các yếu tố về điều kiện có ảnh hưởng lớn nhất đến đánh giá tín dụng. Nhiều chỉ số như trung bình điểm tín dụng ngoại (0.0643), đơn bị từ chối (0.0), thời gian cấp CCCD (-196.0), khoản trả hàng năm (20.0), tích điểm tín dụng ngoại (0.0), trình độ học vấn (0.0) và có SĐT nơi làm việc (1.0) đều có xu hướng làm tăng xác suất vỡ nợ. Ngược lại, các yếu tố như Amt diff credit goods (0.0), Occupation type mean encode (0.0807), Kurtosis tài liệu đã nộp (0.0), Organization type mean encode (0.0807), tuổi bắt đầu làm việc (6686.0) và Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION (-367.0) có tác động tiêu cực đến xác suất vỡ nợ. Cần xem xét kỹ lưỡng các yếu tố này."
+    },
+    "collateral_assessment": {
+      "score": 0,
+      "status": "KHONG_DAT",
+      "indicators_met": [],
+      "indicators_review": [
+        "Tỷ lệ tín dụng/giá trị hàng có giá trị 1.0 (SHAP: -0.0744) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      ],
+      "narrative": "Hiện tại chưa có thông tin chi tiết về tài sản bảo đảm. Yếu tố tỷ lệ tín dụng/giá trị hàng (1.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ, cho thấy mức độ phụ thuộc vào tín dụng cao. Việc thiếu tài sản bảo đảm là một điểm trừ lớn."
+    }
+  },
+  "financial_summary": {
+    "income_analysis": "Thu nhập tháng: 4,875 VND. Tỷ lệ DTI là 11.5%, cho thấy khả năng chi trả cho các khoản vay mới còn hạn chế.",
+    "debt_analysis": "Trả nợ tháng: 562 VND. Tỷ lệ DSCR là 8.67, cho thấy khả năng trả nợ hiện tại ở mức chấp nhận được, tuy nhiên cần xem xét tổng thể các khoản nợ.",
+    "key_ratios": {
+      "dti": "11.5%",
+      "dscr": "8.67",
+      "ltv": "100.0%"
+    }
+  },
+  "debt_assessment": {
+    "score": 81,
+    "max_score": 100,
+    "score_pct": "81%",
+    "overall_status": "ĐẠT",
+    "overall_color": "green",
+    "metrics": [
+      {
+        "name": "DTI (Nợ/Thu nhập)",
+        "value": "11.5%",
+        "threshold": "< 40%",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "DSCR (Dòng tiền/Nợ)",
+        "value": "8.67",
+        "threshold": "> 1.20",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "LTV (Vay/TSBĐ)",
+        "value": "100.0%",
+        "threshold": "< 70%",
+        "status": "Rủi ro",
+        "flag": "!!"
+      },
+      {
+        "name": "Mục đích vay",
+        "value": "Tiêu dùng",
+        "threshold": "PRODUCTION / INVESTMENT",
+        "status": "Rõ ràng",
+        "flag": "OK"
+      }
+    ],
+    "summary": "Phân tích nợ tổng hợp: 81/100 điểm (81%). Mục đích vay: Tiêu dùng. DTI 11.5% — trong ngưỡng an toàn. DSCR 8.67 — đạt ngưỡng."
+  },
+  "collateral_detail": {
+    "score": 0,
+    "status": "KHONG_DAT",
+    "indicators_met": [],
+    "indicators_review": [
+      "Tỷ lệ tín dụng/giá trị hàng có giá trị 1.0 (SHAP: -0.0744) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+    ],
+    "narrative": "Hiện tại chưa có thông tin chi tiết về tài sản bảo đảm. Yếu tố tỷ lệ tín dụng/giá trị hàng (1.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ, cho thấy mức độ phụ thuộc vào tín dụng cao. Việc thiếu tài sản bảo đảm là một điểm trừ lớn."
+  },
+  "suggested_terms": {
+    "max_amount_vnd": 0,
+    "max_term_months": 0,
+    "interest_rate_suggestion": "theo biểu phí hiện hành",
+    "conditions": [
+      "Yêu cầu bổ sung thông tin chi tiết về tài sản bảo đảm.",
+      "Xem xét kỹ lưỡng lịch sử tín dụng và các yếu tố điều kiện có ảnh hưởng lớn đến xác suất vỡ nợ.",
+      "Đánh giá lại khả năng trả nợ dựa trên dòng tiền thực tế và các khoản chi tiêu cố định."
+    ]
+  },
+  "reward_assessment": {
+    "interest_rate_pct": "22.0%",
+    "loan_amount_fmt": "135,000 VND",
+    "term_months": 20,
+    "gross_income_fmt": "49,500 VND",
+    "expected_loss_fmt": "43,910 VND",
+    "risk_adj_income_fmt": "5,590 VND",
+    "raroc_pct": "4.1%",
+    "verdict": "Chấp nhận được",
+    "verdict_flag": "OK",
+    "verdict_color": "orange",
+    "customer_segment": "Sub-prime",
+    "upsell_opportunities": [],
+    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 4.1% — Chấp nhận được. Phân khúc: Sub-prime. Thu nhập lãi ước tính: 49,500 VND, Tổn thất kỳ vọng: 43,910 VND."
+  },
+  "llm_insights": {
+    "loan_purpose": "CONSUMPTION",
+    "positive_signals": [],
+    "risk_flags": [
+      "Inconsistent income documentation",
+      "Unclear loan purpose",
+      "Vague repayment plan"
+    ]
+  },
+  "caveats": [
+    "Đánh giá dựa trên dữ liệu và mô hình SHAP được cung cấp.",
+    "Cần có thêm thông tin định tính và xác minh từ khách hàng để có quyết định cuối cùng."
+  ],
+  "audit_reference": {
+    "model_version": "lgb1_ref_v1",
+    "inference_timestamp": "2026-03-23T09:46:37.592813+00:00"
+  }
+}

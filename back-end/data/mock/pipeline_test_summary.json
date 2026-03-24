@@ -1,0 +1,194 @@
+[
+  {
+    "customer_dir": "data/mock/customer_001",
+    "customer_name": "Customer_418735",
+    "status": "OK",
+    "error": null,
+    "a1_fields": 121,
+    "a1_bureau": 5,
+    "a1_prev_apps": 2,
+    "a2_features": 753,
+    "a2_llm_purpose": "UNCLEAR",
+    "credit_score": 695,
+    "pd_pct": 3.09,
+    "risk_band": "AA",
+    "routing": "APPROVE_REVIEW",
+    "shap_top_positive": [
+      "Trả góp hiện tại / TB đơn đã duyệt",
+      "Đơn bị từ chối — DAYS_DECISION_MAX",
+      "Thu nhập so với TB khu vực"
+    ],
+    "shap_top_negative": [
+      "Trung bình điểm tín dụng ngoại",
+      "Tích điểm tín dụng ngoại",
+      "Điểm tín dụng ngoại 2 (CIC)"
+    ],
+    "five_c": {
+      "character": 18,
+      "capacity": 25,
+      "capital": 5,
+      "conditions": 7,
+      "collateral": 5
+    },
+    "five_c_total": 60,
+    "recommendation": "REVIEW",
+    "consistency_passed": true,
+    "report_sections": [
+      "customer_info",
+      "executive_summary",
+      "five_c_scorecard",
+      "financial_summary",
+      "collateral_detail",
+      "suggested_terms",
+      "llm_insights",
+      "caveats",
+      "audit_reference"
+    ],
+    "warnings_count": 25,
+    "report_path": "data/mock/customer_001\\credit_report.json"
+  },
+  {
+    "customer_dir": "data/mock/customer_002",
+    "customer_name": "Customer_394570",
+    "status": "OK",
+    "error": null,
+    "a1_fields": 121,
+    "a1_bureau": 3,
+    "a1_prev_apps": 4,
+    "a2_features": 753,
+    "a2_llm_purpose": "UNCLEAR",
+    "credit_score": 649,
+    "pd_pct": 6.85,
+    "risk_band": "AA",
+    "routing": "APPROVE_REVIEW",
+    "shap_top_positive": [
+      "Trả góp hiện tại / TB đơn đã duyệt",
+      "Tuổi khách hàng",
+      "POS/Cash sum_SK_DPD_SCALE"
+    ],
+    "shap_top_negative": [
+      "Trung bình điểm tín dụng ngoại",
+      "Điểm tín dụng ngoại 2 (CIC)",
+      "Tích điểm tín dụng ngoại"
+    ],
+    "five_c": {
+      "character": 15,
+      "capacity": 20,
+      "capital": 5,
+      "conditions": 3,
+      "collateral": 0
+    },
+    "five_c_total": 43,
+    "recommendation": "REJECT",
+    "consistency_passed": true,
+    "report_sections": [
+      "customer_info",
+      "executive_summary",
+      "five_c_scorecard",
+      "financial_summary",
+      "collateral_detail",
+      "suggested_terms",
+      "llm_insights",
+      "caveats",
+      "audit_reference"
+    ],
+    "warnings_count": 16,
+    "report_path": "data/mock/customer_002\\credit_report.json"
+  },
+  {
+    "customer_dir": "data/mock/customer_003",
+    "customer_name": "Customer_272483",
+    "status": "OK",
+    "error": null,
+    "a1_fields": 121,
+    "a1_bureau": 11,
+    "a1_prev_apps": 3,
+    "a2_features": 753,
+    "a2_llm_purpose": "UNCLEAR",
+    "credit_score": 322,
+    "pd_pct": 86.76,
+    "risk_band": "CC",
+    "routing": "REJECT",
+    "shap_top_positive": [
+      "Trung bình điểm tín dụng ngoại",
+      "Điểm tín dụng ngoại 2 (CIC)",
+      "Điểm tín dụng ngoại 3 (CIC)"
+    ],
+    "shap_top_negative": [
+      "Trình độ học vấn",
+      "Organization type mean encode",
+      "Bureau amt debt total ratio"
+    ],
+    "five_c": {
+      "character": 15,
+      "capacity": 25,
+      "capital": 5,
+      "conditions": 5,
+      "collateral": 5
+    },
+    "five_c_total": 55,
+    "recommendation": "REVIEW",
+    "consistency_passed": false,
+    "report_sections": [
+      "customer_info",
+      "executive_summary",
+      "five_c_scorecard",
+      "financial_summary",
+      "collateral_detail",
+      "suggested_terms",
+      "llm_insights",
+      "caveats",
+      "audit_reference"
+    ],
+    "warnings_count": 27,
+    "report_path": "data/mock/customer_003\\credit_report.json"
+  },
+  {
+    "customer_dir": "data/mock/customer_004",
+    "customer_name": "Customer_169206",
+    "status": "OK",
+    "error": null,
+    "a1_fields": 121,
+    "a1_bureau": 7,
+    "a1_prev_apps": 1,
+    "a2_features": 753,
+    "a2_llm_purpose": "UNCLEAR",
+    "credit_score": 351,
+    "pd_pct": 71.4,
+    "risk_band": "CC",
+    "routing": "REJECT",
+    "shap_top_positive": [
+      "Trung bình điểm tín dụng ngoại",
+      "Điểm tín dụng ngoại 3 (CIC)",
+      "Điểm tín dụng ngoại 2 (CIC)"
+    ],
+    "shap_top_negative": [
+      "Tổng dư nợ tín dụng",
+      "Tuổi khách hàng",
+      "Tỷ lệ tín dụng/giá trị hàng"
+    ],
+    "five_c": {
+      "character": 18,
+      "capacity": 24,
+      "capital": 10,
+      "conditions": 6,
+      "collateral": 10
+    },
+    "five_c_total": 68,
+    "recommendation": "REVIEW",
+    "consistency_passed": true,
+    "report_sections": [
+      "customer_info",
+      "executive_summary",
+      "five_c_scorecard",
+      "financial_summary",
+      "collateral_detail",
+      "suggested_terms",
+      "llm_insights",
+      "caveats",
+      "audit_reference"
+    ],
+    "warnings_count": 18,
+    "report_path": "data/mock/customer_004\\credit_report.json"
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "evaluation_timestamp": "2026-03-20T19:40:30.406246+00:00",
+  "model_path": "models\\lgbm_ref_v1.pkl",
+  "n_features": 755,
+  "n_train_samples": 246008,
+  "n_test_samples": 61503,
+  "elapsed_seconds": 154.9,
+  "core_metrics": {
+    "auc_roc": 0.7986,
+    "gini": 0.5972,
+    "ks_statistic": 0.4558,
+    "ks_threshold": 0.2331,
+    "pr_auc": 0.3043,
+    "best_f1": 0.3578,
+    "best_threshold": 0.3686,
+    "n_total": 61503,
+    "n_default": 4965,
+    "default_rate_pct": 8.07
+  },
+  "classification_at_best_threshold": {
+    "threshold": 0.3686,
+    "precision": 0.2868,
+    "recall": 0.4755,
+    "f1": 0.3578,
+    "accuracy": 0.8622,
+    "true_positives": 2361,
+    "false_positives": 5872,
+    "true_negatives": 50666,
+    "false_negatives": 2604,
+    "approval_rate_pct": 86.61,
+    "rejection_rate_pct": 13.39
+  },
+  "thinfile_subauc": {
+    "thin_file_auc": 0.6149,
+    "thin_file_n": 3187,
+    "thin_file_default_rate_pct": 38.97,
+    "normal_file_auc": 0.7621,
+    "normal_file_n": 58316
+  },
+  "shap_metrics": {}
+}

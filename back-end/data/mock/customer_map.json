@@ -1,0 +1,22 @@
+{
+  "418735": {
+    "dir": "customer_001",
+    "target": 0,
+    "label": "pass_1"
+  },
+  "394570": {
+    "dir": "customer_002",
+    "target": 0,
+    "label": "pass_2"
+  },
+  "272483": {
+    "dir": "customer_003",
+    "target": 1,
+    "label": "fail_1"
+  },
+  "169206": {
+    "dir": "customer_004",
+    "target": 1,
+    "label": "fail_2"
+  }
+}

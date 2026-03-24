@@ -1,0 +1,1467 @@
+{
+  "_description": "Maps all 755 ML model features to their real-world data sources, engineering methods, and categories. This is the AUTHORITATIVE reference for what the LightGBM model expects.",
+  "_model_info": {
+    "total_features": 753,
+    "model_file": "models/credit_model.pkl",
+    "fe_stats_file": "models/fe_stats.pkl",
+    "training_source": "Home Credit Default Risk (307,511 records, 8 tables)",
+    "sentinel_value": -999,
+    "sentinel_meaning": "Feature data not available for this customer"
+  },
+  "_data_sources": {
+    "CCCD_PDF": "Scan CCCD/CMND — Căn cước công dân",
+    "LABOR_CONTRACT_PDF": "Hợp đồng lao động — employment contract",
+    "HOUSEHOLD_PDF": "Sổ hộ khẩu — household registration book",
+    "HOUSING_SURVEY_PDF": "Giấy tờ nhà / thẩm định BĐS — housing/collateral appraisal",
+    "LOAN_APPLICATION_FORM": "Đơn vay — loan application form",
+    "CIC_API": "CIC (Credit Information Center) API — bureau records + bureau_balance",
+    "INTERNAL_DB_PREV_APP": "Hệ thống nội bộ — lịch sử đơn vay trước",
+    "INTERNAL_DB_POS_CASH": "Hệ thống nội bộ — POS/cash loan monthly status",
+    "INTERNAL_DB_INSTALLMENTS": "Hệ thống nội bộ — installment payment records",
+    "INTERNAL_DB_CREDIT_CARD": "Hệ thống nội bộ — credit card monthly balance",
+    "FEATURE_ENGINEERED": "Computed from raw columns via feature engineering",
+    "MEAN_ENCODED": "KFold mean encoding of categorical column against TARGET",
+    "GROUP_MEDIAN": "Relative to group median from training data (via fe_stats.pkl)"
+  },
+  "_engineering_methods": {
+    "raw": "Direct from data source, no transformation",
+    "one_hot": "pd.get_dummies() one-hot encoding of categorical column",
+    "factorize": "pd.factorize() ordinal encoding of categorical column",
+    "aggregation": "groupby(SK_ID_CURR).agg() — min/max/avg/sum/count",
+    "ratio": "Ratio of two or more columns",
+    "cross_table": "Ratio of current application vs previous application aggregated values",
+    "recent_record": "Values from the most recent record per customer (idxmax on DAYS_*)",
+    "mean_encode": "KFold TARGET-mean encoding from training data",
+    "group_relative": "Value relative to group median from training data",
+    "time_window": "Aggregation over specific time windows (4/12/36 months)",
+    "scale_sum": "Scaled sum: value * (months_active / total_months)",
+    "derived": "Computed from other features via formula"
+  },
+  "feature_groups": {
+    "application_raw": {
+      "_count": 103,
+      "_raw_data_source": "application_train.csv (122 columns) + feature engineering",
+      "_description": "Trực tiếp từ hồ sơ vay hoặc tính toán đơn giản từ các trường raw. Bao gồm: thông tin cá nhân (CCCD), việc làm (HĐLĐ), gia đình (sổ hộ khẩu), nhà ở (thẩm định BĐS), khoản vay (đơn vay), CIC scores, và group-relative features.",
+      "features": {
+        "ADULT_RATIO": {
+          "source": "HOUSEHOLD_PDF",
+          "desc": "Tỷ lệ người lớn / tổng thành viên",
+          "method": "derived"
+        },
+        "AMT_ANNUITY": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Khoản trả hàng kỳ",
+          "method": "raw"
+        },
+        "AMT_CREDIT": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Số tiền tín dụng",
+          "method": "raw"
+        },
+        "AMT_INCOME_TOTAL": {
+          "source": "LABOR_CONTRACT_PDF",
+          "desc": "Thu nhập hàng năm",
+          "method": "raw"
+        },
+        "AMT_REQ_CREDIT_BUREAU_DAY": {
+          "source": "CIC_API",
+          "desc": "Số lần truy vấn CIC trong 1 day",
+          "method": "raw"
+        },
+        "AMT_REQ_CREDIT_BUREAU_HOUR": {
+          "source": "CIC_API",
+          "desc": "Số lần truy vấn CIC trong 1 hour",
+          "method": "raw"
+        },
+        "AMT_REQ_CREDIT_BUREAU_MON": {
+          "source": "CIC_API",
+          "desc": "Số lần truy vấn CIC trong 1 mon",
+          "method": "raw"
+        },
+        "AMT_REQ_CREDIT_BUREAU_MON_CHANGE": {
+          "source": "CIC_API",
+          "desc": "Thay đổi số lần truy vấn CIC (mon)",
+          "method": "derived"
+        },
+        "AMT_REQ_CREDIT_BUREAU_QRT": {
+          "source": "CIC_API",
+          "desc": "Số lần truy vấn CIC trong 1 qrt",
+          "method": "raw"
+        },
+        "AMT_REQ_CREDIT_BUREAU_QRT_CHANGE": {
+          "source": "CIC_API",
+          "desc": "Thay đổi số lần truy vấn CIC (qrt)",
+          "method": "derived"
+        },
+        "AMT_REQ_CREDIT_BUREAU_WEEK": {
+          "source": "CIC_API",
+          "desc": "Số lần truy vấn CIC trong 1 week",
+          "method": "raw"
+        },
+        "AMT_REQ_CREDIT_BUREAU_YEAR": {
+          "source": "CIC_API",
+          "desc": "Số lần truy vấn CIC trong 1 year",
+          "method": "raw"
+        },
+        "APARTMENTS_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Chất lượng căn hộ (mode)",
+          "method": "raw"
+        },
+        "BASEMENTAREA_MEDI": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Diện tích tầng hầm (median)",
+          "method": "raw"
+        },
+        "CNT_ADULT": {
+          "source": "HOUSEHOLD_PDF",
+          "desc": "Số người lớn trong gia đình",
+          "method": "derived"
+        },
+        "CNT_CHILDREN": {
+          "source": "HOUSEHOLD_PDF",
+          "desc": "Số con",
+          "method": "raw"
+        },
+        "CNT_FAM_MEMBERS": {
+          "source": "HOUSEHOLD_PDF",
+          "desc": "Số thành viên gia đình",
+          "method": "raw"
+        },
+        "CODE_GENDER": {
+          "source": "CCCD_PDF",
+          "desc": "Giới tính (factorized)",
+          "method": "factorize"
+        },
+        "COMMONAREA_MEDI": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Diện tích chung (median)",
+          "method": "raw"
+        },
+        "DAYS_BIRTH": {
+          "source": "CCCD_PDF",
+          "desc": "Ngày sinh (ngày âm từ ngày nộp đơn)",
+          "method": "raw"
+        },
+        "DAYS_EMPLOYED": {
+          "source": "LABOR_CONTRACT_PDF",
+          "desc": "Số ngày làm việc (ngày âm)",
+          "method": "raw"
+        },
+        "DAYS_ID_PUBLISH": {
+          "source": "CCCD_PDF",
+          "desc": "Ngày cấp CCCD (ngày âm)",
+          "method": "raw"
+        },
+        "DAYS_LAST_PHONE_CHANGE": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Ngày đổi SĐT gần nhất (ngày âm)",
+          "method": "raw"
+        },
+        "DAYS_REGISTRATION": {
+          "source": "CCCD_PDF",
+          "desc": "Ngày đăng ký cư trú (ngày âm)",
+          "method": "raw"
+        },
+        "DEF_30_CNT_SOCIAL_CIRCLE": {
+          "source": "CIC_API",
+          "desc": "Số người quen bị default 30 ngày",
+          "method": "raw"
+        },
+        "DEF_60_CNT_SOCIAL_CIRCLE": {
+          "source": "CIC_API",
+          "desc": "Số người quen bị default 60 ngày",
+          "method": "raw"
+        },
+        "DOCUMENT_CNT": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Tổng số tài liệu đã nộp",
+          "method": "derived"
+        },
+        "EMERGENCYSTATE_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Tình trạng khẩn cấp nhà ở",
+          "method": "factorize"
+        },
+        "EXT_SOURCE_1": {
+          "source": "CIC_API",
+          "desc": "External score 1 (normalized)",
+          "method": "raw"
+        },
+        "EXT_SOURCE_2": {
+          "source": "CIC_API",
+          "desc": "External score 2 (normalized)",
+          "method": "raw"
+        },
+        "EXT_SOURCE_3": {
+          "source": "CIC_API",
+          "desc": "External score 3 (normalized)",
+          "method": "raw"
+        },
+        "FLAG_CONT_MOBILE": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "SĐT di động liên lạc được",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_11": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 11",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_13": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 13",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_14": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 14",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_15": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 15",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_16": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 16",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_17": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 17",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_18": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 18",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_19": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 19",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_20": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 20",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_21": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 21",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_3": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 3",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_4": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 4",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_5": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 5",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_6": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 6",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_7": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 7",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_8": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 8",
+          "method": "raw"
+        },
+        "FLAG_DOCUMENT_9": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Đã nộp tài liệu loại 9",
+          "method": "raw"
+        },
+        "FLAG_EMAIL": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Có email",
+          "method": "raw"
+        },
+        "FLAG_EMP_PHONE": {
+          "source": "LABOR_CONTRACT_PDF",
+          "desc": "Có SĐT cơ quan",
+          "method": "raw"
+        },
+        "FLAG_OWN_CAR": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Có xe ô tô",
+          "method": "raw"
+        },
+        "FLAG_OWN_REALTY": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Có bất động sản",
+          "method": "raw"
+        },
+        "FLAG_PHONE": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Có SĐT bàn",
+          "method": "raw"
+        },
+        "FLAG_WORK_PHONE": {
+          "source": "LABOR_CONTRACT_PDF",
+          "desc": "Có SĐT nơi làm việc",
+          "method": "raw"
+        },
+        "FLOORSMAX_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Số tầng tối đa (mode)",
+          "method": "raw"
+        },
+        "FLOORSMIN_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Số tầng tối thiểu (mode)",
+          "method": "raw"
+        },
+        "FONDKAPREMONT_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Loại quỹ sửa chữa nhà",
+          "method": "factorize"
+        },
+        "HOUSETYPE_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Loại nhà (block/terraced)",
+          "method": "factorize"
+        },
+        "LANDAREA_MEDI": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Diện tích đất (median)",
+          "method": "raw"
+        },
+        "LIVE_CITY_NOT_WORK_CITY": {
+          "source": "CCCD_PDF",
+          "desc": "Sống khác TP làm việc",
+          "method": "derived"
+        },
+        "LIVE_REGION_NOT_WORK_REGION": {
+          "source": "CCCD_PDF",
+          "desc": "Sống khác vùng làm việc",
+          "method": "derived"
+        },
+        "LIVINGAPARTMENTS_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Số căn hộ có người ở (mode)",
+          "method": "raw"
+        },
+        "LIVINGAREA_MEDI": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Diện tích sử dụng (median)",
+          "method": "raw"
+        },
+        "NAME_CONTRACT_TYPE": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Loại hợp đồng vay (factorized)",
+          "method": "factorize"
+        },
+        "NAME_EDUCATION_TYPE": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Trình độ học vấn (factorized)",
+          "method": "factorize"
+        },
+        "NONLIVINGAREA_MEDI": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Diện tích không ở (median)",
+          "method": "raw"
+        },
+        "OBS_60_CNT_SOCIAL_CIRCLE": {
+          "source": "CIC_API",
+          "desc": "Số người quen bị obs 60 ngày",
+          "method": "raw"
+        },
+        "OWN_CAR_AGE": {
+          "source": "LOAN_APPLICATION_FORM",
+          "desc": "Tuổi xe ô tô (năm)",
+          "method": "raw"
+        },
+        "REGION_POPULATION_RELATIVE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Mật độ dân số khu vực (normalized)",
+          "method": "raw"
+        },
+        "REGION_RATING_CLIENT_W_CITY": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Xếp hạng khu vực (có tính TP)",
+          "method": "raw"
+        },
+        "REG_CITY_NOT_LIVE_CITY": {
+          "source": "CCCD_PDF",
+          "desc": "Đăng ký khác TP sống",
+          "method": "derived"
+        },
+        "REG_CITY_NOT_WORK_CITY": {
+          "source": "CCCD_PDF",
+          "desc": "Đăng ký khác TP làm việc",
+          "method": "derived"
+        },
+        "REG_REGION_NOT_LIVE_REGION": {
+          "source": "CCCD_PDF",
+          "desc": "Đăng ký khác vùng sống",
+          "method": "derived"
+        },
+        "REG_REGION_NOT_WORK_REGION": {
+          "source": "CCCD_PDF",
+          "desc": "Đăng ký khác vùng làm việc",
+          "method": "derived"
+        },
+        "TOTALAREA_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Tổng diện tích nhà (mode)",
+          "method": "raw"
+        },
+        "Total_AMT_ANNUITY": {
+          "source": "CIC_API",
+          "desc": "Tổng khoản trả hàng kỳ tín dụng",
+          "method": "aggregation"
+        },
+        "Total_AMT_LEFT": {
+          "source": "CIC_API",
+          "desc": "Tổng dư nợ còn lại",
+          "method": "aggregation"
+        },
+        "Total_AMT_LEFT_INCOME_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "Total_AMT_LEFT / AMT_INCOME_TOTAL",
+          "method": "ratio"
+        },
+        "Total_ANNUITY_INCOME_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "Total_AMT_ANNUITY / AMT_INCOME_TOTAL",
+          "method": "ratio"
+        },
+        "Total_CREDIT": {
+          "source": "CIC_API",
+          "desc": "Tổng dư nợ tín dụng",
+          "method": "aggregation"
+        },
+        "Total_CREDIT_INCOME_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "Total_CREDIT / AMT_INCOME_TOTAL",
+          "method": "ratio"
+        },
+        "Total_acc": {
+          "source": "CIC_API",
+          "desc": "Tổng số tài khoản tín dụng",
+          "method": "aggregation"
+        },
+        "Total_active_acc": {
+          "source": "CIC_API",
+          "desc": "Số tài khoản đang hoạt động",
+          "method": "aggregation"
+        },
+        "YEARS_BEGINEXPLUATATION_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Năm bắt đầu sử dụng (mode)",
+          "method": "raw"
+        },
+        "YEARS_BUILD_MODE": {
+          "source": "HOUSING_SURVEY_PDF",
+          "desc": "Năm xây dựng (mode)",
+          "method": "raw"
+        },
+        "cnt_children_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to children count median",
+          "method": "group_relative"
+        },
+        "family_status_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to family status median",
+          "method": "group_relative"
+        },
+        "gender_family_status_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to gender×family_status median",
+          "method": "group_relative"
+        },
+        "gender_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to gender median",
+          "method": "group_relative"
+        },
+        "own_car_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to car ownership median",
+          "method": "group_relative"
+        },
+        "own_realty_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to realty median",
+          "method": "group_relative"
+        },
+        "region_mean_income": {
+          "source": "MEAN_ENCODED",
+          "desc": "Mean AMT_INCOME_TOTAL by REGION",
+          "method": "mean_encode"
+        },
+        "region_mean_income_rel": {
+          "source": "GROUP_MEDIAN",
+          "desc": "AMT_INCOME relative to region median",
+          "method": "group_relative"
+        },
+        "GENDER_FAMILY_STATUS_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of GENDER_FAMILY_STATUS",
+          "method": "mean_encode"
+        },
+        "NAME_FAMILY_STATUS_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of NAME_FAMILY_STATUS",
+          "method": "mean_encode"
+        },
+        "NAME_HOUSING_TYPE_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of NAME_HOUSING_TYPE",
+          "method": "mean_encode"
+        },
+        "NAME_INCOME_TYPE_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of NAME_INCOME_TYPE",
+          "method": "mean_encode"
+        },
+        "NAME_TYPE_SUITE_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of NAME_TYPE_SUITE",
+          "method": "mean_encode"
+        },
+        "OCCUPATION_TYPE_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of OCCUPATION_TYPE",
+          "method": "mean_encode"
+        },
+        "ORGANIZATION_TYPE_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of ORGANIZATION_TYPE",
+          "method": "mean_encode"
+        },
+        "REGION_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of REGION",
+          "method": "mean_encode"
+        },
+        "WALLSMATERIAL_MODE_mean_encode": {
+          "source": "MEAN_ENCODED",
+          "desc": "KFold TARGET-mean encoding of WALLSMATERIAL_MODE",
+          "method": "mean_encode"
+        }
+      }
+    },
+    "application_engineered": {
+      "_count": 20,
+      "_raw_data_source": "FEATURE_ENGINEERED",
+      "_description": "Tính toán từ các trường raw trong application: ratios, cross-source scores, derived metrics.",
+      "features": {
+        "AGE_EMPLOYED": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "abs(DAYS_BIRTH) - abs(DAYS_EMPLOYED)",
+          "method": "ratio"
+        },
+        "AGE_PAYOFF": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "abs(DAYS_BIRTH) + (AMT_CREDIT / AMT_ANNUITY * 30)",
+          "method": "ratio"
+        },
+        "AMT_ANNUITY_INCOME_RATE": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_ANNUITY / AMT_INCOME_TOTAL",
+          "method": "ratio"
+        },
+        "AMT_CREDIT_GOODS_PERC": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_CREDIT / AMT_GOODS_PRICE",
+          "method": "ratio"
+        },
+        "AMT_DIFF_CREDIT_GOODS": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_CREDIT - AMT_GOODS_PRICE",
+          "method": "ratio"
+        },
+        "AMT_INCOME_OVER_CHILD": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_INCOME_TOTAL / (1 + CNT_CHILDREN)",
+          "method": "ratio"
+        },
+        "AMT_PAY_YEAR": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_ANNUITY * 12",
+          "method": "ratio"
+        },
+        "NEW_CAR_TO_BIRTH_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "OWN_CAR_AGE / (DAYS_BIRTH / 365)",
+          "method": "ratio"
+        },
+        "NEW_CAR_TO_EMPLOY_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "OWN_CAR_AGE / (DAYS_EMPLOYED / 365)",
+          "method": "ratio"
+        },
+        "NEW_CREDIT_TO_INCOME_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_CREDIT / AMT_INCOME_TOTAL",
+          "method": "ratio"
+        },
+        "NEW_DOC_IND_KURT": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "Kurtosis of FLAG_DOCUMENT_* indicators",
+          "method": "ratio"
+        },
+        "NEW_EMPLOY_TO_BIRTH_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "DAYS_EMPLOYED / DAYS_BIRTH",
+          "method": "ratio"
+        },
+        "NEW_EXT_SOURCES_MEAN": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "mean(EXT_SOURCE_1, EXT_SOURCE_2, EXT_SOURCE_3)",
+          "method": "ratio"
+        },
+        "NEW_INC_BY_ORG": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "Mean income by ORGANIZATION_TYPE",
+          "method": "ratio"
+        },
+        "NEW_INC_PER_CHLD": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "AMT_INCOME_TOTAL / (1 + CNT_CHILDREN)",
+          "method": "ratio"
+        },
+        "NEW_LIVE_IND_SUM": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "Sum of LIVE/REG region mismatch flags",
+          "method": "ratio"
+        },
+        "NEW_PHONE_TO_BIRTH_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "DAYS_LAST_PHONE_CHANGE / DAYS_BIRTH",
+          "method": "ratio"
+        },
+        "NEW_PHONE_TO_EMPLOYED_RATIO": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "DAYS_LAST_PHONE_CHANGE / DAYS_EMPLOYED",
+          "method": "ratio"
+        },
+        "NEW_SCORES_STD": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "std(EXT_SOURCE_1, EXT_SOURCE_2, EXT_SOURCE_3)",
+          "method": "ratio"
+        },
+        "NEW_SOURCES_PROD": {
+          "source": "FEATURE_ENGINEERED",
+          "desc": "EXT_SOURCE_1 * EXT_SOURCE_2 * EXT_SOURCE_3",
+          "method": "ratio"
+        }
+      }
+    },
+    "bureau_aggregated": {
+      "_count": 39,
+      "_raw_data_source": "CIC_API → bureau.csv + bureau_balance.csv",
+      "_description": "Thống kê tổng hợp từ tất cả bureau records: min/max/avg/sum/count cho các trường số. Bao gồm: dư nợ, ngày quá hạn, tỷ lệ nợ, MONTH_LAST_DPD từ bureau_balance.",
+      "_engineering_method": "groupby(SK_ID_CURR).agg(min/max/avg/sum)",
+      "features": [
+        "bureau_AMT_DEBT_TOTAL_RATIO",
+        "bureau_AMT_LIMIT_TOTAL_RATIO",
+        "bureau_AMT_MAX_OVERDUE_TOTAL_RATIO",
+        "bureau_AMT_SUM_OVERDUE_TOTAL_RATIO",
+        "bureau_avg_CREDIT_DAY_OVERDUE",
+        "bureau_avg_DAYS_CREDIT",
+        "bureau_avg_DAYS_CREDIT_ENDDATE",
+        "bureau_avg_DAYS_CREDIT_UPDATE",
+        "bureau_avg_DAYS_ENDDATE_FACT",
+        "bureau_avg_DAYS_END_DIFF",
+        "bureau_count",
+        "bureau_max_DAYS_CREDIT",
+        "bureau_max_DAYS_CREDIT_ENDDATE",
+        "bureau_max_MONTH_LAST_C",
+        "bureau_max_MONTH_LAST_DPD",
+        "bureau_min_DAYS_CREDIT",
+        "bureau_min_DAYS_CREDIT_ENDDATE",
+        "bureau_min_MONTH_LAST_C",
+        "bureau_min_MONTH_LAST_DPD",
+        "bureau_sum_AMT_ANNUITY",
+        "bureau_sum_AMT_CREDIT_MAX_OVERDUE",
+        "bureau_sum_AMT_CREDIT_SUM",
+        "bureau_sum_AMT_CREDIT_SUM_DEBT",
+        "bureau_sum_AMT_CREDIT_SUM_LIMIT",
+        "bureau_sum_AMT_CREDIT_SUM_OVERDUE",
+        "bureau_sum_AMT_DEBT_RATIO",
+        "bureau_sum_AMT_LIMIT_RATIO",
+        "bureau_sum_AMT_MAX_OVERDUE_RATIO",
+        "bureau_sum_AMT_SUM_OVERDUE_RATIO",
+        "bureau_sum_CNT_CREDIT_PROLONG",
+        "bureau_sum_CREDIT_DAY_OVERDUE",
+        "bureau_sum_DAYS_CREDIT",
+        "bureau_sum_DAYS_CREDIT_ENDDATE",
+        "bureau_sum_DAYS_CREDIT_UPDATE",
+        "bureau_sum_DAYS_ENDDATE_FACT",
+        "bureau_sum_DAYS_END_DIFF",
+        "bureau_sum_MONTH_LAST_C",
+        "bureau_sum_MONTH_LAST_DPD",
+        "bureau_used_other_currency"
+      ]
+    },
+    "bureau_active": {
+      "_count": 44,
+      "_raw_data_source": "CIC_API → bureau.csv (CREDIT_ACTIVE='Active')",
+      "_description": "Thống kê chỉ từ các khoản vay ĐANG HOẠT ĐỘNG tại bureau. Tương tự bureau_aggregated nhưng lọc Active only. Thêm: AMT_CREDIT_LEFT, DAYS_LEFT_RATIO.",
+      "_engineering_method": "filter(CREDIT_ACTIVE=Active) → groupby.agg()",
+      "features": [
+        "bureau_active_AMT_DEBT_TOTAL_RATIO",
+        "bureau_active_AMT_LIMIT_TOTAL_RATIO",
+        "bureau_active_AMT_MAX_OVERDUE_TOTAL_RATIO",
+        "bureau_active_AMT_SUM_OVERDUE_TOTAL_RATIO",
+        "bureau_active_avg_AMT_ANNUITY",
+        "bureau_active_avg_AMT_CREDIT_LEFT",
+        "bureau_active_avg_AMT_CREDIT_LEFT_OVER_ANNUITY",
+        "bureau_active_avg_AMT_CREDIT_MAX_OVERDUE",
+        "bureau_active_avg_AMT_CREDIT_SUM",
+        "bureau_active_avg_AMT_CREDIT_SUM_DEBT",
+        "bureau_active_avg_AMT_CREDIT_SUM_LIMIT",
+        "bureau_active_avg_AMT_CREDIT_SUM_OVERDUE",
+        "bureau_active_avg_AMT_DEBT_RATIO",
+        "bureau_active_avg_AMT_LIMIT_RATIO",
+        "bureau_active_avg_AMT_MAX_OVERDUE_RATIO",
+        "bureau_active_avg_AMT_SUM_OVERDUE_RATIO",
+        "bureau_active_avg_CNT_CREDIT_PROLONG",
+        "bureau_active_avg_CREDIT_DAY_OVERDUE",
+        "bureau_active_avg_DAYS_CREDIT",
+        "bureau_active_avg_DAYS_CREDIT_ENDDATE",
+        "bureau_active_avg_DAYS_CREDIT_UPDATE",
+        "bureau_active_avg_DAYS_ENDDATE_FACT",
+        "bureau_active_avg_DAYS_END_DIFF",
+        "bureau_active_avg_DAYS_LEFT_RATIO",
+        "bureau_active_count",
+        "bureau_active_sum_AMT_ANNUITY",
+        "bureau_active_sum_AMT_CREDIT_LEFT",
+        "bureau_active_sum_AMT_CREDIT_LEFT_OVER_ANNUITY",
+        "bureau_active_sum_AMT_CREDIT_MAX_OVERDUE",
+        "bureau_active_sum_AMT_CREDIT_SUM",
+        "bureau_active_sum_AMT_CREDIT_SUM_DEBT",
+        "bureau_active_sum_AMT_CREDIT_SUM_LIMIT",
+        "bureau_active_sum_AMT_CREDIT_SUM_OVERDUE",
+        "bureau_active_sum_AMT_DEBT_RATIO",
+        "bureau_active_sum_AMT_LIMIT_RATIO",
+        "bureau_active_sum_AMT_MAX_OVERDUE_RATIO",
+        "bureau_active_sum_AMT_SUM_OVERDUE_RATIO",
+        "bureau_active_sum_CNT_CREDIT_PROLONG",
+        "bureau_active_sum_CREDIT_DAY_OVERDUE",
+        "bureau_active_sum_DAYS_CREDIT",
+        "bureau_active_sum_DAYS_CREDIT_ENDDATE",
+        "bureau_active_sum_DAYS_CREDIT_UPDATE",
+        "bureau_active_sum_DAYS_ENDDATE_FACT",
+        "bureau_active_sum_DAYS_END_DIFF"
+      ]
+    },
+    "bureau_recent": {
+      "_count": 20,
+      "_raw_data_source": "CIC_API → bureau.csv (most recent by DAYS_CREDIT)",
+      "_description": "Giá trị từ bản ghi bureau GẦN NHẤT (idxmax DAYS_CREDIT). Phản ánh tình trạng tín dụng hiện tại nhất.",
+      "_engineering_method": "recent_record (idxmax DAYS_CREDIT)",
+      "features": [
+        "bureau_recent_AMT_ANNUITY",
+        "bureau_recent_AMT_CREDIT_MAX_OVERDUE",
+        "bureau_recent_AMT_CREDIT_SUM",
+        "bureau_recent_AMT_CREDIT_SUM_DEBT",
+        "bureau_recent_AMT_CREDIT_SUM_LIMIT",
+        "bureau_recent_AMT_CREDIT_SUM_OVERDUE",
+        "bureau_recent_AMT_DEBT_RATIO",
+        "bureau_recent_AMT_LIMIT_RATIO",
+        "bureau_recent_AMT_MAX_OVERDUE_RATIO",
+        "bureau_recent_AMT_SUM_OVERDUE_RATIO",
+        "bureau_recent_CNT_CREDIT_PROLONG",
+        "bureau_recent_CREDIT_ACTIVE",
+        "bureau_recent_CREDIT_CURRENCY",
+        "bureau_recent_CREDIT_DAY_OVERDUE",
+        "bureau_recent_CREDIT_TYPE",
+        "bureau_recent_DAYS_CREDIT",
+        "bureau_recent_DAYS_CREDIT_ENDDATE",
+        "bureau_recent_DAYS_CREDIT_UPDATE",
+        "bureau_recent_DAYS_ENDDATE_FACT",
+        "bureau_recent_DAYS_END_DIFF"
+      ]
+    },
+    "bureau_onehot": {
+      "_count": 18,
+      "_raw_data_source": "CIC_API → bureau.csv + bureau_balance.csv",
+      "_description": "One-hot sum của categorical columns bureau: CREDIT_ACTIVE (Active/Closed/Bad_debt/Sold), CREDIT_CURRENCY, CREDIT_TYPE, STATUS counts (TCNT=all time, 12CNT=last 12 months).",
+      "_engineering_method": "one_hot → groupby.sum()",
+      "features": [
+        "bureau_sum_CREDIT_ACTIVE_Bad_debt",
+        "bureau_sum_CREDIT_ACTIVE_Closed",
+        "bureau_sum_CREDIT_ACTIVE_Sold",
+        "bureau_sum_CREDIT_ACTIVE_mode",
+        "bureau_sum_CREDIT_CURRENCY_currency_1",
+        "bureau_sum_CREDIT_CURRENCY_currency_2",
+        "bureau_sum_CREDIT_CURRENCY_currency_3",
+        "bureau_sum_CREDIT_CURRENCY_currency_4",
+        "bureau_sum_CREDIT_CURRENCY_mode",
+        "bureau_sum_CREDIT_TYPE_mode",
+        "bureau_sum_STATUS_12CNT_C",
+        "bureau_sum_STATUS_12CNT_DPD_MEAN",
+        "bureau_sum_STATUS_12CNT_DPD_SUM",
+        "bureau_sum_STATUS_12CNT_X",
+        "bureau_sum_STATUS_TCNT_C",
+        "bureau_sum_STATUS_TCNT_DPD_MEAN",
+        "bureau_sum_STATUS_TCNT_DPD_SUM",
+        "bureau_sum_STATUS_TCNT_X"
+      ]
+    },
+    "prev_app_aggregated": {
+      "_count": 57,
+      "_raw_data_source": "INTERNAL_DB_PREV_APP → previous_application.csv",
+      "_description": "Thống kê tổng hợp từ TẤT CẢ đơn vay trước: avg/max AMT values, DAYS values, count, default ratio. Bao gồm active prev_app sum features.",
+      "_engineering_method": "groupby(SK_ID_CURR).agg(avg/max/min/sum/count)",
+      "features": [
+        "prev_DEFALUTED_RATIO",
+        "prev_active_count",
+        "prev_active_sum_AMT_ANNUITY",
+        "prev_active_sum_AMT_APPLICATION",
+        "prev_active_sum_AMT_CREDIT",
+        "prev_active_sum_AMT_CREDIT_GOODS_PERC",
+        "prev_active_sum_AMT_DIFF_CREAPP",
+        "prev_active_sum_AMT_DIFF_CREDIT_GOODS",
+        "prev_active_sum_AMT_DOWN_PAYMENT",
+        "prev_active_sum_AMT_LEFT",
+        "prev_active_sum_AMT_LEFT2",
+        "prev_active_sum_AMT_LEFT3",
+        "prev_active_sum_AMT_OWE",
+        "prev_active_sum_AMT_PAID",
+        "prev_active_sum_AMT_PAY_YEAR",
+        "prev_active_sum_AMT_PAY_YEAR_LEFT",
+        "prev_avg_AMT_ANNUITY",
+        "prev_avg_AMT_APPLICATION",
+        "prev_avg_AMT_CREDIT",
+        "prev_avg_AMT_CREDIT_GOODS_PERC",
+        "prev_avg_AMT_DIFF_CREAPP",
+        "prev_avg_AMT_DIFF_CREDIT_GOODS",
+        "prev_avg_AMT_DOWN_PAYMENT",
+        "prev_avg_AMT_PAY_YEAR",
+        "prev_avg_DAYS_DECISION",
+        "prev_avg_DAYS_END_DIFF",
+        "prev_avg_DAYS_FIRST_DRAWING",
+        "prev_avg_DAYS_FIRST_DUE",
+        "prev_avg_DAYS_LAST_DUE",
+        "prev_avg_DAYS_LAST_DUE_1ST_VERSION",
+        "prev_avg_DAYS_TERMINATION",
+        "prev_avg_DAYS_TOTAL",
+        "prev_avg_DAYS_TOTAL2",
+        "prev_avg_RATE_DOWN_PAYMENT",
+        "prev_avg_RATE_INTEREST_PRIMARY",
+        "prev_avg_RATE_INTEREST_PRIVILEGED",
+        "prev_closest_annuity_defaulted",
+        "prev_closest_credit_defaulted",
+        "prev_count",
+        "prev_max_AMT_ANNUITY",
+        "prev_max_AMT_APPLICATION",
+        "prev_max_AMT_CREDIT",
+        "prev_max_AMT_CREDIT_GOODS_PERC",
+        "prev_max_AMT_DIFF_CREAPP",
+        "prev_max_AMT_DIFF_CREDIT_GOODS",
+        "prev_max_AMT_DOWN_PAYMENT",
+        "prev_max_AMT_PAY_YEAR",
+        "prev_max_DAYS_DECISION",
+        "prev_max_DAYS_END_DIFF",
+        "prev_max_DAYS_FIRST_DRAWING",
+        "prev_max_DAYS_FIRST_DUE",
+        "prev_max_DAYS_LAST_DUE",
+        "prev_max_DAYS_LAST_DUE_1ST_VERSION",
+        "prev_max_DAYS_TERMINATION",
+        "prev_max_DAYS_TOTAL",
+        "prev_max_DAYS_TOTAL2",
+        "prev_min_DAYS_DECISION"
+      ]
+    },
+    "prev_app_approved": {
+      "_count": 26,
+      "_raw_data_source": "INTERNAL_DB_PREV_APP → previous_application.csv (NAME_CONTRACT_STATUS='Approved')",
+      "_description": "Thống kê chỉ từ đơn vay ĐÃ DUYỆT. MEAN và MAX cho AMT/DAYS columns. COUNT cho số đơn approved.",
+      "_engineering_method": "filter(status=Approved) → groupby.agg(mean/max/min/sum/count)",
+      "features": [
+        "prev_approved_AMT_ANNUITY_MAX",
+        "prev_approved_AMT_ANNUITY_MEAN",
+        "prev_approved_AMT_APPLICATION_MAX",
+        "prev_approved_AMT_APPLICATION_MEAN",
+        "prev_approved_AMT_CREDIT_GOODS_PERC_MAX",
+        "prev_approved_AMT_CREDIT_GOODS_PERC_MEAN",
+        "prev_approved_AMT_CREDIT_MEAN",
+        "prev_approved_AMT_CREDIT_SUM",
+        "prev_approved_AMT_DIFF_CREAPP_MAX",
+        "prev_approved_AMT_DIFF_CREAPP_MEAN",
+        "prev_approved_AMT_DIFF_CREDIT_GOODS_MAX",
+        "prev_approved_AMT_DIFF_CREDIT_GOODS_MEAN",
+        "prev_approved_AMT_DOWN_PAYMENT_MAX",
+        "prev_approved_AMT_DOWN_PAYMENT_MEAN",
+        "prev_approved_AMT_PAY_YEAR_MAX",
+        "prev_approved_AMT_PAY_YEAR_MEAN",
+        "prev_approved_APP_CREDIT_PERC_MAX",
+        "prev_approved_APP_CREDIT_PERC_MEAN",
+        "prev_approved_CNT_PAYMENT_MEAN",
+        "prev_approved_CNT_PAYMENT_SUM",
+        "prev_approved_DAYS_DECISION_MAX",
+        "prev_approved_DAYS_DECISION_MEAN",
+        "prev_approved_DAYS_DECISION_MIN",
+        "prev_approved_RATE_DOWN_PAYMENT_MAX",
+        "prev_approved_RATE_DOWN_PAYMENT_MEAN",
+        "prev_approved_SK_ID_PREV_COUNT"
+      ]
+    },
+    "prev_app_refused": {
+      "_count": 26,
+      "_raw_data_source": "INTERNAL_DB_PREV_APP → previous_application.csv (NAME_CONTRACT_STATUS='Refused')",
+      "_description": "Thống kê chỉ từ đơn vay BỊ TỪ CHỐI. MEAN và MAX cho AMT/DAYS columns. COUNT cho số đơn refused.",
+      "_engineering_method": "filter(status=Refused) → groupby.agg(mean/max/min/sum/count)",
+      "features": [
+        "prev_refused_AMT_ANNUITY_MAX",
+        "prev_refused_AMT_ANNUITY_MEAN",
+        "prev_refused_AMT_APPLICATION_MAX",
+        "prev_refused_AMT_APPLICATION_MEAN",
+        "prev_refused_AMT_CREDIT_GOODS_PERC_MAX",
+        "prev_refused_AMT_CREDIT_GOODS_PERC_MEAN",
+        "prev_refused_AMT_CREDIT_MEAN",
+        "prev_refused_AMT_CREDIT_SUM",
+        "prev_refused_AMT_DIFF_CREAPP_MAX",
+        "prev_refused_AMT_DIFF_CREAPP_MEAN",
+        "prev_refused_AMT_DIFF_CREDIT_GOODS_MAX",
+        "prev_refused_AMT_DIFF_CREDIT_GOODS_MEAN",
+        "prev_refused_AMT_DOWN_PAYMENT_MAX",
+        "prev_refused_AMT_DOWN_PAYMENT_MEAN",
+        "prev_refused_AMT_PAY_YEAR_MAX",
+        "prev_refused_AMT_PAY_YEAR_MEAN",
+        "prev_refused_APP_CREDIT_PERC_MAX",
+        "prev_refused_APP_CREDIT_PERC_MEAN",
+        "prev_refused_CNT_PAYMENT_MEAN",
+        "prev_refused_CNT_PAYMENT_SUM",
+        "prev_refused_DAYS_DECISION_MAX",
+        "prev_refused_DAYS_DECISION_MEAN",
+        "prev_refused_DAYS_DECISION_MIN",
+        "prev_refused_RATE_DOWN_PAYMENT_MAX",
+        "prev_refused_RATE_DOWN_PAYMENT_MEAN",
+        "prev_refused_SK_ID_PREV_COUNT"
+      ]
+    },
+    "prev_app_recent": {
+      "_count": 40,
+      "_raw_data_source": "INTERNAL_DB_PREV_APP → previous_application.csv (most recent by DAYS_DECISION)",
+      "_description": "Giá trị từ đơn vay GẦN NHẤT (idxmax DAYS_DECISION). Categoricals được factorize. Thêm: DEFAULTED flag, DAYS_TOTAL, CNT_PAYMENT_DIFF.",
+      "_engineering_method": "recent_record (idxmax DAYS_DECISION) + factorize categoricals",
+      "features": [
+        "prev_recent_AMT_ANNUITY",
+        "prev_recent_AMT_APPLICATION",
+        "prev_recent_AMT_CREDIT",
+        "prev_recent_AMT_CREDIT_GOODS_PERC",
+        "prev_recent_AMT_DIFF_CREAPP",
+        "prev_recent_AMT_DIFF_CREDIT_GOODS",
+        "prev_recent_AMT_DOWN_PAYMENT",
+        "prev_recent_AMT_PAY_YEAR",
+        "prev_recent_APP_CREDIT_PERC",
+        "prev_recent_CHANNEL_TYPE",
+        "prev_recent_CNT_PAYMENT",
+        "prev_recent_CNT_PAYMENT_DIFF",
+        "prev_recent_CODE_REJECT_REASON",
+        "prev_recent_DAYS_DECISION",
+        "prev_recent_DAYS_END_DIFF",
+        "prev_recent_DAYS_FIRST_DRAWING",
+        "prev_recent_DAYS_FIRST_DUE",
+        "prev_recent_DAYS_LAST_DUE",
+        "prev_recent_DAYS_LAST_DUE_1ST_VERSION",
+        "prev_recent_DAYS_TERMINATION",
+        "prev_recent_DAYS_TOTAL",
+        "prev_recent_DAYS_TOTAL2",
+        "prev_recent_DEFAULTED",
+        "prev_recent_NAME_CASH_LOAN_PURPOSE",
+        "prev_recent_NAME_CLIENT_TYPE",
+        "prev_recent_NAME_CONTRACT_STATUS",
+        "prev_recent_NAME_CONTRACT_TYPE",
+        "prev_recent_NAME_GOODS_CATEGORY",
+        "prev_recent_NAME_PAYMENT_TYPE",
+        "prev_recent_NAME_PORTFOLIO",
+        "prev_recent_NAME_PRODUCT_TYPE",
+        "prev_recent_NAME_SELLER_INDUSTRY",
+        "prev_recent_NAME_TYPE_SUITE",
+        "prev_recent_NAME_YIELD_GROUP",
+        "prev_recent_NFLAG_INSURED_ON_APPROVAL",
+        "prev_recent_PRODUCT_COMBINATION",
+        "prev_recent_RATE_DOWN_PAYMENT",
+        "prev_recent_RATE_INTEREST_PRIMARY",
+        "prev_recent_RATE_INTEREST_PRIVILEGED",
+        "prev_recent_SELLERPLACE_AREA"
+      ]
+    },
+    "prev_app_onehot": {
+      "_count": 80,
+      "_raw_data_source": "INTERNAL_DB_PREV_APP → previous_application.csv",
+      "_description": "One-hot sum + mode of categorical columns: NAME_CONTRACT_STATUS, NAME_CONTRACT_TYPE, CHANNEL_TYPE, CODE_REJECT_REASON, NAME_CLIENT_TYPE, NAME_PAYMENT_TYPE, NAME_PORTFOLIO, NAME_PRODUCT_TYPE, NAME_YIELD_GROUP, NAME_TYPE_SUITE, etc.",
+      "_engineering_method": "one_hot → groupby.sum() + mode",
+      "features": [
+        "prev_sum_AMT_ANNUITY",
+        "prev_sum_AMT_APPLICATION",
+        "prev_sum_AMT_CREDIT",
+        "prev_sum_AMT_DIFF_CREAPP",
+        "prev_sum_AMT_DIFF_CREDIT_GOODS",
+        "prev_sum_AMT_DOWN_PAYMENT",
+        "prev_sum_AMT_PAY_YEAR",
+        "prev_sum_CHANNEL_TYPE_AP___Cash_loan",
+        "prev_sum_CHANNEL_TYPE_Car_dealer",
+        "prev_sum_CHANNEL_TYPE_Channel_of_corporate_sales",
+        "prev_sum_CHANNEL_TYPE_Contact_center",
+        "prev_sum_CHANNEL_TYPE_Country_wide",
+        "prev_sum_CHANNEL_TYPE_Credit_and_cash_offices",
+        "prev_sum_CHANNEL_TYPE_Regional___Local",
+        "prev_sum_CHANNEL_TYPE_Stone",
+        "prev_sum_CHANNEL_TYPE_mode",
+        "prev_sum_CNT_PAYMENT",
+        "prev_sum_CNT_PAYMENT_DIFF",
+        "prev_sum_CODE_REJECT_REASON_HC",
+        "prev_sum_CODE_REJECT_REASON_LIMIT",
+        "prev_sum_CODE_REJECT_REASON_SCO",
+        "prev_sum_CODE_REJECT_REASON_SCOFR",
+        "prev_sum_CODE_REJECT_REASON_SYSTEM",
+        "prev_sum_CODE_REJECT_REASON_VERIF",
+        "prev_sum_CODE_REJECT_REASON_XAP",
+        "prev_sum_CODE_REJECT_REASON_XNA",
+        "prev_sum_CODE_REJECT_REASON_mode",
+        "prev_sum_DAYS_DECISION",
+        "prev_sum_DAYS_END_DIFF",
+        "prev_sum_DEFAULTED",
+        "prev_sum_NAME_CASH_LOAN_PURPOSE_mode",
+        "prev_sum_NAME_CLIENT_TYPE_New",
+        "prev_sum_NAME_CLIENT_TYPE_Refreshed",
+        "prev_sum_NAME_CLIENT_TYPE_Repeater",
+        "prev_sum_NAME_CLIENT_TYPE_XNA",
+        "prev_sum_NAME_CLIENT_TYPE_mode",
+        "prev_sum_NAME_CONTRACT_STATUS_Approved",
+        "prev_sum_NAME_CONTRACT_STATUS_Canceled",
+        "prev_sum_NAME_CONTRACT_STATUS_Refused",
+        "prev_sum_NAME_CONTRACT_STATUS_Unused_offer",
+        "prev_sum_NAME_CONTRACT_STATUS_mode",
+        "prev_sum_NAME_CONTRACT_TYPE_Cash_loans",
+        "prev_sum_NAME_CONTRACT_TYPE_Consumer_loans",
+        "prev_sum_NAME_CONTRACT_TYPE_Revolving_loans",
+        "prev_sum_NAME_CONTRACT_TYPE_XNA",
+        "prev_sum_NAME_CONTRACT_TYPE_mode",
+        "prev_sum_NAME_GOODS_CATEGORY_mode",
+        "prev_sum_NAME_PAYMENT_TYPE_Cash_through_the_bank",
+        "prev_sum_NAME_PAYMENT_TYPE_Cashless_from_the_account_of_the_employer",
+        "prev_sum_NAME_PAYMENT_TYPE_Non_cash_from_your_account",
+        "prev_sum_NAME_PAYMENT_TYPE_XNA",
+        "prev_sum_NAME_PAYMENT_TYPE_mode",
+        "prev_sum_NAME_PORTFOLIO_Cards",
+        "prev_sum_NAME_PORTFOLIO_Cars",
+        "prev_sum_NAME_PORTFOLIO_Cash",
+        "prev_sum_NAME_PORTFOLIO_POS",
+        "prev_sum_NAME_PORTFOLIO_XNA",
+        "prev_sum_NAME_PORTFOLIO_mode",
+        "prev_sum_NAME_PRODUCT_TYPE_XNA",
+        "prev_sum_NAME_PRODUCT_TYPE_mode",
+        "prev_sum_NAME_PRODUCT_TYPE_walk_in",
+        "prev_sum_NAME_PRODUCT_TYPE_x_sell",
+        "prev_sum_NAME_SELLER_INDUSTRY_mode",
+        "prev_sum_NAME_TYPE_SUITE_Children",
+        "prev_sum_NAME_TYPE_SUITE_Family",
+        "prev_sum_NAME_TYPE_SUITE_Group_of_people",
+        "prev_sum_NAME_TYPE_SUITE_Other_A",
+        "prev_sum_NAME_TYPE_SUITE_Other_B",
+        "prev_sum_NAME_TYPE_SUITE_Spouse__partner",
+        "prev_sum_NAME_TYPE_SUITE_Unaccompanied",
+        "prev_sum_NAME_TYPE_SUITE_mode",
+        "prev_sum_NAME_YIELD_GROUP_XNA",
+        "prev_sum_NAME_YIELD_GROUP_high",
+        "prev_sum_NAME_YIELD_GROUP_low_action",
+        "prev_sum_NAME_YIELD_GROUP_low_normal",
+        "prev_sum_NAME_YIELD_GROUP_middle",
+        "prev_sum_NAME_YIELD_GROUP_mode",
+        "prev_sum_NFLAG_INSURED_ON_APPROVAL",
+        "prev_sum_PRODUCT_COMBINATION_mode",
+        "prev_sum_SELLERPLACE_AREA"
+      ]
+    },
+    "credit_card": {
+      "_count": 216,
+      "_raw_data_source": "INTERNAL_DB_CREDIT_CARD → credit_card_balance.csv",
+      "_description": "Thống kê thẻ tín dụng: mean (all/4m/12m/36m), max, var, scale_sum, scale_mean_scale_sum. Bao gồm: AMT_BALANCE, credit utilization, drawings, payments, DPD, contract status counts.",
+      "_engineering_method": "time_window aggregation (mean/max/var over 4/12/36 months) + scale_sum",
+      "_time_windows": {
+        "cc_mean_*": "Mean over ALL months",
+        "cc_mean4_*": "Mean over last 4 months",
+        "cc_mean12_*": "Mean over last 12 months",
+        "cc_mean36_*": "Mean over last 36 months",
+        "cc_max_*": "Max over ALL months",
+        "cc_var_*": "Variance over ALL months",
+        "cc_scale_sum_*": "value * (months_active / total_months) summed",
+        "cc_scale_mean_scale_sum_*": "Mean of scale_sum across cards"
+      },
+      "features": [
+        "cc_Active",
+        "cc_Approved",
+        "cc_CNT_INSTALMENT_MATURE_CUM",
+        "cc_Completed",
+        "cc_Demand",
+        "cc_MONTHS_BALANCE",
+        "cc_MONTH_LAST_DPD",
+        "cc_MONTH_LAST_DPD7",
+        "cc_NAME_CONTRACT_STATUS",
+        "cc_Refused",
+        "cc_SK_DPD",
+        "cc_SK_DPD_DEF",
+        "cc_Sent_proposal",
+        "cc_Signed",
+        "cc_max_AMT_BALANCE",
+        "cc_max_AMT_BALANCE_CREDIT_RATIO",
+        "cc_max_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_max_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_max_AMT_CREDIT_USE_RATIO",
+        "cc_max_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_max_AMT_DRAWINGS_CURRENT",
+        "cc_max_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_max_AMT_DRAWINGS_POS_RATIO",
+        "cc_max_AMT_DRAWING_ATM_RATIO",
+        "cc_max_AMT_DRAWING_BALANCE_RATIO",
+        "cc_max_AMT_INST_MIN_REGULARITY",
+        "cc_max_AMT_PAYMENT_CURRENT",
+        "cc_max_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_max_AMT_PAY_INST_DIFF",
+        "cc_max_AMT_PAY_USE_RATIO",
+        "cc_max_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_max_AMT_TOTAL_RECEIVABLE",
+        "cc_max_CNT_ACCOUNT_W_MONTH",
+        "cc_max_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_max_CNT_DRAWINGS_CURRENT",
+        "cc_max_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_max_CNT_DRAWINGS_POS_CURRENT",
+        "cc_max_SK_DPD",
+        "cc_max_SK_DPD_DEF",
+        "cc_mean12_AMT_BALANCE",
+        "cc_mean12_AMT_BALANCE_CREDIT_RATIO",
+        "cc_mean12_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_mean12_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_mean12_AMT_CREDIT_USE_RATIO",
+        "cc_mean12_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_mean12_AMT_DRAWINGS_CURRENT",
+        "cc_mean12_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_mean12_AMT_DRAWINGS_POS_RATIO",
+        "cc_mean12_AMT_DRAWING_ATM_RATIO",
+        "cc_mean12_AMT_DRAWING_BALANCE_RATIO",
+        "cc_mean12_AMT_INST_MIN_REGULARITY",
+        "cc_mean12_AMT_PAYMENT_CURRENT",
+        "cc_mean12_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_mean12_AMT_PAY_INST_DIFF",
+        "cc_mean12_AMT_PAY_USE_RATIO",
+        "cc_mean12_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_mean12_AMT_TOTAL_RECEIVABLE",
+        "cc_mean12_CNT_ACCOUNT_W_MONTH",
+        "cc_mean12_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_mean12_CNT_DRAWINGS_CURRENT",
+        "cc_mean12_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_mean12_CNT_DRAWINGS_POS_CURRENT",
+        "cc_mean12_SK_DPD",
+        "cc_mean12_SK_DPD_DEF",
+        "cc_mean36_AMT_BALANCE",
+        "cc_mean36_AMT_BALANCE_CREDIT_RATIO",
+        "cc_mean36_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_mean36_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_mean36_AMT_CREDIT_USE_RATIO",
+        "cc_mean36_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_mean36_AMT_DRAWINGS_CURRENT",
+        "cc_mean36_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_mean36_AMT_DRAWINGS_POS_RATIO",
+        "cc_mean36_AMT_DRAWING_ATM_RATIO",
+        "cc_mean36_AMT_DRAWING_BALANCE_RATIO",
+        "cc_mean36_AMT_INST_MIN_REGULARITY",
+        "cc_mean36_AMT_PAYMENT_CURRENT",
+        "cc_mean36_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_mean36_AMT_PAY_INST_DIFF",
+        "cc_mean36_AMT_PAY_USE_RATIO",
+        "cc_mean36_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_mean36_AMT_TOTAL_RECEIVABLE",
+        "cc_mean36_CNT_ACCOUNT_W_MONTH",
+        "cc_mean36_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_mean36_CNT_DRAWINGS_CURRENT",
+        "cc_mean36_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_mean36_CNT_DRAWINGS_POS_CURRENT",
+        "cc_mean36_SK_DPD",
+        "cc_mean36_SK_DPD_DEF",
+        "cc_mean4_AMT_BALANCE",
+        "cc_mean4_AMT_BALANCE_CREDIT_RATIO",
+        "cc_mean4_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_mean4_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_mean4_AMT_CREDIT_USE_RATIO",
+        "cc_mean4_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_mean4_AMT_DRAWINGS_CURRENT",
+        "cc_mean4_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_mean4_AMT_DRAWINGS_POS_RATIO",
+        "cc_mean4_AMT_DRAWING_ATM_RATIO",
+        "cc_mean4_AMT_DRAWING_BALANCE_RATIO",
+        "cc_mean4_AMT_INST_MIN_REGULARITY",
+        "cc_mean4_AMT_PAYMENT_CURRENT",
+        "cc_mean4_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_mean4_AMT_PAY_INST_DIFF",
+        "cc_mean4_AMT_PAY_USE_RATIO",
+        "cc_mean4_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_mean4_AMT_TOTAL_RECEIVABLE",
+        "cc_mean4_CNT_ACCOUNT_W_MONTH",
+        "cc_mean4_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_mean4_CNT_DRAWINGS_CURRENT",
+        "cc_mean4_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_mean4_CNT_DRAWINGS_POS_CURRENT",
+        "cc_mean4_SK_DPD",
+        "cc_mean4_SK_DPD_DEF",
+        "cc_mean_AMT_BALANCE",
+        "cc_mean_AMT_BALANCE_CREDIT_RATIO",
+        "cc_mean_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_mean_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_mean_AMT_CREDIT_USE_RATIO",
+        "cc_mean_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_mean_AMT_DRAWINGS_CURRENT",
+        "cc_mean_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_mean_AMT_DRAWINGS_POS_RATIO",
+        "cc_mean_AMT_DRAWING_ATM_RATIO",
+        "cc_mean_AMT_DRAWING_BALANCE_RATIO",
+        "cc_mean_AMT_INST_MIN_REGULARITY",
+        "cc_mean_AMT_PAYMENT_CURRENT",
+        "cc_mean_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_mean_AMT_PAY_INST_DIFF",
+        "cc_mean_AMT_PAY_USE_RATIO",
+        "cc_mean_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_mean_AMT_TOTAL_RECEIVABLE",
+        "cc_mean_CNT_ACCOUNT_W_MONTH",
+        "cc_mean_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_mean_CNT_DRAWINGS_CURRENT",
+        "cc_mean_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_mean_CNT_DRAWINGS_POS_CURRENT",
+        "cc_mean_SK_DPD",
+        "cc_mean_SK_DPD_DEF",
+        "cc_min_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_min_AMT_TOTAL_RECEIVABLE",
+        "cc_scale_mean_scale_sum_AMT_BALANCE",
+        "cc_scale_mean_scale_sum_AMT_BALANCE_CREDIT_RATIO",
+        "cc_scale_mean_scale_sum_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_scale_mean_scale_sum_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_scale_mean_scale_sum_AMT_CREDIT_USE_RATIO",
+        "cc_scale_mean_scale_sum_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_scale_mean_scale_sum_AMT_DRAWINGS_CURRENT",
+        "cc_scale_mean_scale_sum_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_scale_mean_scale_sum_AMT_DRAWINGS_POS_RATIO",
+        "cc_scale_mean_scale_sum_AMT_DRAWING_ATM_RATIO",
+        "cc_scale_mean_scale_sum_AMT_DRAWING_BALANCE_RATIO",
+        "cc_scale_mean_scale_sum_AMT_INST_MIN_REGULARITY",
+        "cc_scale_mean_scale_sum_AMT_PAYMENT_CURRENT",
+        "cc_scale_mean_scale_sum_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_scale_mean_scale_sum_AMT_PAY_INST_DIFF",
+        "cc_scale_mean_scale_sum_AMT_PAY_USE_RATIO",
+        "cc_scale_mean_scale_sum_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_scale_mean_scale_sum_AMT_TOTAL_RECEIVABLE",
+        "cc_scale_mean_scale_sum_CNT_ACCOUNT_W_MONTH",
+        "cc_scale_mean_scale_sum_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_scale_mean_scale_sum_CNT_DRAWINGS_CURRENT",
+        "cc_scale_mean_scale_sum_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_scale_mean_scale_sum_CNT_DRAWINGS_POS_CURRENT",
+        "cc_scale_mean_scale_sum_SK_DPD",
+        "cc_scale_mean_scale_sum_SK_DPD_DEF",
+        "cc_scale_sum_AMT_BALANCE",
+        "cc_scale_sum_AMT_BALANCE_CREDIT_RATIO",
+        "cc_scale_sum_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_scale_sum_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_scale_sum_AMT_CREDIT_USE_RATIO",
+        "cc_scale_sum_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_scale_sum_AMT_DRAWINGS_CURRENT",
+        "cc_scale_sum_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_scale_sum_AMT_DRAWINGS_POS_RATIO",
+        "cc_scale_sum_AMT_DRAWING_ATM_RATIO",
+        "cc_scale_sum_AMT_DRAWING_BALANCE_RATIO",
+        "cc_scale_sum_AMT_INST_MIN_REGULARITY",
+        "cc_scale_sum_AMT_PAYMENT_CURRENT",
+        "cc_scale_sum_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_scale_sum_AMT_PAY_INST_DIFF",
+        "cc_scale_sum_AMT_PAY_USE_RATIO",
+        "cc_scale_sum_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_scale_sum_AMT_TOTAL_RECEIVABLE",
+        "cc_scale_sum_CNT_ACCOUNT_W_MONTH",
+        "cc_scale_sum_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_scale_sum_CNT_DRAWINGS_CURRENT",
+        "cc_scale_sum_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_scale_sum_CNT_DRAWINGS_POS_CURRENT",
+        "cc_scale_sum_SK_DPD",
+        "cc_scale_sum_SK_DPD_DEF",
+        "cc_var_AMT_BALANCE",
+        "cc_var_AMT_BALANCE_CREDIT_RATIO",
+        "cc_var_AMT_BALANCE_RECIVABLE_RATIO",
+        "cc_var_AMT_CREDIT_LIMIT_ACTUAL",
+        "cc_var_AMT_CREDIT_USE_RATIO",
+        "cc_var_AMT_DRAWINGS_ATM_CURRENT",
+        "cc_var_AMT_DRAWINGS_CURRENT",
+        "cc_var_AMT_DRAWINGS_OTHER_RATIO",
+        "cc_var_AMT_DRAWINGS_POS_RATIO",
+        "cc_var_AMT_DRAWING_ATM_RATIO",
+        "cc_var_AMT_DRAWING_BALANCE_RATIO",
+        "cc_var_AMT_INST_MIN_REGULARITY",
+        "cc_var_AMT_PAYMENT_CURRENT",
+        "cc_var_AMT_PAYMENT_TOTAL_CURRENT",
+        "cc_var_AMT_PAY_INST_DIFF",
+        "cc_var_AMT_PAY_USE_RATIO",
+        "cc_var_AMT_RECEIVABLE_PRINCIPAL_DIFF",
+        "cc_var_AMT_TOTAL_RECEIVABLE",
+        "cc_var_CNT_ACCOUNT_W_MONTH",
+        "cc_var_CNT_DRAWINGS_ATM_CURRENT",
+        "cc_var_CNT_DRAWINGS_CURRENT",
+        "cc_var_CNT_DRAWINGS_OTHER_CURRENT",
+        "cc_var_CNT_DRAWINGS_POS_CURRENT",
+        "cc_var_SK_DPD",
+        "cc_var_SK_DPD_DEF"
+      ]
+    },
+    "pos_cash": {
+      "_count": 27,
+      "_raw_data_source": "INTERNAL_DB_POS_CASH → POS_CASH_balance.csv",
+      "_description": "POS/cash loan: DPD stats (mean/max/scale), contract status counts, recent record values, MONTH_LAST_DPD.",
+      "_engineering_method": "aggregation + recent_record + scale_sum",
+      "features": [
+        "pos_MONTH_CNT",
+        "pos_MONTH_LAST_DPD",
+        "pos_MONTH_MAX",
+        "pos_NAME_CONTRACT_STATUS_CNT_Active",
+        "pos_NAME_CONTRACT_STATUS_CNT_Amortized_debt",
+        "pos_NAME_CONTRACT_STATUS_CNT_Approved",
+        "pos_NAME_CONTRACT_STATUS_CNT_Canceled",
+        "pos_NAME_CONTRACT_STATUS_CNT_Completed",
+        "pos_NAME_CONTRACT_STATUS_CNT_Demand",
+        "pos_NAME_CONTRACT_STATUS_CNT_Returned_to_the_store",
+        "pos_NAME_CONTRACT_STATUS_CNT_Signed",
+        "pos_NAME_CONTRACT_STATUS_CNT_XNA",
+        "pos_count",
+        "pos_max_SK_DPD",
+        "pos_max_SK_DPD_DEF",
+        "pos_mean_SK_DPD",
+        "pos_mean_SK_DPD_DEF",
+        "pos_mean_SK_DPD_DEF_SCALE",
+        "pos_mean_SK_DPD_SCALE",
+        "pos_recent_CNT_INSTALMENT",
+        "pos_recent_CNT_INSTALMENT_FUTURE",
+        "pos_recent_MONTHS_BALANCE",
+        "pos_recent_NAME_CONTRACT_STATUS",
+        "pos_recent_SK_DPD",
+        "pos_recent_SK_DPD_DEF",
+        "pos_sum_SK_DPD_DEF_SCALE",
+        "pos_sum_SK_DPD_SCALE"
+      ]
+    },
+    "installments": {
+      "_count": 27,
+      "_raw_data_source": "INTERNAL_DB_INSTALLMENTS → installments_payments.csv",
+      "_description": "Installment payments: DPD/DBD (days before/past due), AMT_PAYMENT_DIFF (paid - due), AMT_PAYMENT_PERC (paid/due), late/underpaid tracking, variance metrics.",
+      "_engineering_method": "aggregation (mean/max/var) + scale_sum + late_tracking",
+      "features": [
+        "inst_AMT_PAYMENT_TOTAL_RATIO",
+        "inst_DAYS_LAST_LATE",
+        "inst_DAYS_LAST_UNDERPAID",
+        "inst_N_NUM_INSTALMENT_VERSION",
+        "inst_count",
+        "inst_length",
+        "inst_max_AMT_PAYMENT_DIFF",
+        "inst_max_AMT_PAYMENT_PERC",
+        "inst_max_DBD",
+        "inst_max_DPD",
+        "inst_mean_AMT_PAYMENT",
+        "inst_mean_AMT_PAYMENT_DIFF",
+        "inst_mean_AMT_PAYMENT_DIFF_SCALE",
+        "inst_mean_AMT_PAYMENT_PERC",
+        "inst_mean_AMT_PAYMENT_SCALE",
+        "inst_mean_DBD",
+        "inst_mean_DBD_SCALE",
+        "inst_mean_DPD",
+        "inst_mean_DPD_SCALE",
+        "inst_sum_AMT_PAYMENT_DIFF_SCALE",
+        "inst_sum_AMT_PAYMENT_SCALE",
+        "inst_sum_DBD_SCALE",
+        "inst_sum_DPD_SCALE",
+        "inst_var_AMT_PAYMENT_DIFF",
+        "inst_var_AMT_PAYMENT_PERC",
+        "inst_var_DBD",
+        "inst_var_DPD"
+      ]
+    },
+    "cross_table": {
+      "_count": 10,
+      "_raw_data_source": "FEATURE_ENGINEERED",
+      "_description": "Tỷ lệ giữa khoản vay HIỆN TẠI vs trung bình các đơn vay trước (approved/refused). Ví dụ: AMT_CREDIT hiện tại / prev_approved_AMT_CREDIT_MEAN.",
+      "_engineering_method": "cross_table ratio: current_app_value / prev_app_aggregated_mean",
+      "features": [
+        "AMT_ANNUITY_to_prev_approved",
+        "AMT_ANNUITY_to_prev_refused",
+        "AMT_CREDIT_GOODS_PERC_to_prev_approved",
+        "AMT_CREDIT_GOODS_PERC_to_prev_refused",
+        "AMT_CREDIT_to_prev_approved",
+        "AMT_CREDIT_to_prev_refused",
+        "AMT_DIFF_CREDIT_GOODS_to_prev_approved",
+        "AMT_DIFF_CREDIT_GOODS_to_prev_refused",
+        "AMT_PAY_YEAR_to_prev_approved",
+        "AMT_PAY_YEAR_to_prev_refused"
+      ]
+    }
+  },
+  "_summary": {
+    "total_model_features": 753,
+    "breakdown": {
+      "application_raw": 103,
+      "application_engineered": 20,
+      "bureau_aggregated": 39,
+      "bureau_active": 44,
+      "bureau_recent": 20,
+      "bureau_onehot": 18,
+      "prev_app_aggregated": 57,
+      "prev_app_approved": 26,
+      "prev_app_refused": 26,
+      "prev_app_recent": 40,
+      "prev_app_onehot": 80,
+      "credit_card": 216,
+      "pos_cash": 27,
+      "installments": 27,
+      "cross_table": 10
+    },
+    "raw_input_tables": {
+      "application_train": {
+        "columns": 122,
+        "source": "CCCD + HĐLĐ + Sổ hộ khẩu + Thẩm định BĐS + Đơn vay + CIC"
+      },
+      "bureau": {
+        "columns": 17,
+        "source": "CIC_API"
+      },
+      "bureau_balance": {
+        "columns": 3,
+        "source": "CIC_API"
+      },
+      "previous_application": {
+        "columns": 37,
+        "source": "INTERNAL_DB_PREV_APP"
+      },
+      "POS_CASH_balance": {
+        "columns": 8,
+        "source": "INTERNAL_DB_POS_CASH"
+      },
+      "installments_payments": {
+        "columns": 8,
+        "source": "INTERNAL_DB_INSTALLMENTS"
+      },
+      "credit_card_balance": {
+        "columns": 23,
+        "source": "INTERNAL_DB_CREDIT_CARD"
+      },
+      "TOTAL_RAW": 218
+    },
+    "pipeline": "218 raw columns → feature_engineering.py → 753 ML features → LightGBM"
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "credit_score": 349,
+  "pd_prob": 0.7228052113512047,
+  "risk_band": "CC",
+  "top_positive_factors": [
+    {
+      "feature": "NEW_EXT_SOURCES_MEAN",
+      "shap_value": 0.7707,
+      "value": 0.0643,
+      "label_vi": "Trung bình điểm tín dụng ngoại",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_3",
+      "shap_value": 0.637,
+      "value": 0.0251,
+      "label_vi": "Điểm tín dụng ngoại 3 (CIC)",
+      "dimension_5c": "character",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_2",
+      "shap_value": 0.5095,
+      "value": 0.0012,
+      "label_vi": "Điểm tín dụng ngoại 2 (CIC)",
+      "dimension_5c": "character",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_to_prev_approved",
+      "shap_value": 0.1771,
+      "value": 6750000.0,
+      "label_vi": "Trả góp hiện tại / TB đơn đã duyệt",
+      "dimension_5c": "capacity",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_refused_DAYS_DECISION_MAX",
+      "shap_value": 0.1257,
+      "value": 0.0,
+      "label_vi": "Đơn bị từ chối — DAYS_DECISION_MAX",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "DAYS_ID_PUBLISH",
+      "shap_value": 0.1212,
+      "value": -196.0,
+      "label_vi": "Thời gian cấp CCCD",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_PAY_YEAR",
+      "shap_value": 0.1117,
+      "value": 20.0,
+      "label_vi": "Khoản trả hàng năm",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "NEW_SOURCES_PROD",
+      "shap_value": 0.074,
+      "value": 0.0,
+      "label_vi": "Tích điểm tín dụng ngoại",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "NAME_EDUCATION_TYPE",
+      "shap_value": 0.0603,
+      "value": 0.0,
+      "label_vi": "Trình độ học vấn",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "FLAG_WORK_PHONE",
+      "shap_value": 0.0598,
+      "value": 1.0,
+      "label_vi": "Có SĐT nơi làm việc",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    }
+  ],
+  "top_negative_factors": [
+    {
+      "feature": "Total_CREDIT",
+      "shap_value": -0.0889,
+      "value": 135000.0,
+      "label_vi": "Tổng dư nợ tín dụng",
+      "dimension_5c": "capital",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "DAYS_BIRTH",
+      "shap_value": -0.0873,
+      "value": -7777.0,
+      "label_vi": "Tuổi khách hàng",
+      "dimension_5c": "capacity",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_CREDIT_GOODS_PERC",
+      "shap_value": -0.0744,
+      "value": 1.0,
+      "label_vi": "Tỷ lệ tín dụng/giá trị hàng",
+      "dimension_5c": "capacity",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_DIFF_CREDIT_GOODS",
+      "shap_value": -0.0617,
+      "value": 0.0,
+      "label_vi": "Amt diff credit goods",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "inst_mean_DPD_SCALE",
+      "shap_value": -0.0612,
+      "value": 0.0,
+      "label_vi": "Trả góp mean_DPD_SCALE",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "OCCUPATION_TYPE_mean_encode",
+      "shap_value": -0.0563,
+      "value": 0.0807,
+      "label_vi": "Occupation type mean encode",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "NEW_DOC_IND_KURT",
+      "shap_value": -0.0543,
+      "value": 0.0,
+      "label_vi": "Kurtosis tài liệu đã nộp",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "ORGANIZATION_TYPE_mean_encode",
+      "shap_value": -0.0472,
+      "value": 0.0807,
+      "label_vi": "Organization type mean encode",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AGE_EMPLOYED",
+      "shap_value": -0.0457,
+      "value": 6686.0,
+      "label_vi": "Tuổi khi bắt đầu làm việc",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "prev_max_DAYS_LAST_DUE_1ST_VERSION",
+      "shap_value": -0.0412,
+      "value": -367.0,
+      "label_vi": "Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    }
+  ],
+  "five_c_shap_allocation": {
+    "character": {
+      "shap_sum": 1.6371,
+      "pct": 26
+    },
+    "capacity": {
+      "shap_sum": 0.7855,
+      "pct": 12
+    },
+    "capital": {
+      "shap_sum": 0.1856,
+      "pct": 3
+    },
+    "conditions": {
+      "shap_sum": 3.6524,
+      "pct": 58
+    },
+    "collateral": {
+      "shap_sum": 0.074,
+      "pct": 1
+    }
+  },
+  "model_version": "lgb1_ref_v1",
+  "inference_timestamp": "2026-03-23T09:46:37.592813+00:00"
+}

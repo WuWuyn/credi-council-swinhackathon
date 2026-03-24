@@ -1,0 +1,225 @@
+{
+  "customer_info": {
+    "summary": "Khách hàng cá nhân, không phải thin-file, với điểm tín dụng 321 và thuộc nhóm rủi ro CC, xác suất vỡ nợ 87.14%."
+  },
+  "executive_summary": {
+    "credit_score": 321,
+    "risk_band": "CC",
+    "pd_pct": 87.14,
+    "recommendation": "REVIEW",
+    "five_c_total": 57,
+    "five_c_scores": {
+      "character": 18,
+      "capacity": 25,
+      "capital": 5,
+      "conditions": 4,
+      "collateral": 5
+    },
+    "five_c_shap_allocation": {
+      "character": {
+        "shap_sum": 1.6177,
+        "pct": 27
+      },
+      "capacity": {
+        "shap_sum": 0.573,
+        "pct": 10
+      },
+      "capital": {
+        "shap_sum": 0.1303,
+        "pct": 2
+      },
+      "conditions": {
+        "shap_sum": 3.6316,
+        "pct": 61
+      },
+      "collateral": {
+        "shap_sum": 0.0479,
+        "pct": 1
+      }
+    },
+    "model_info": {
+      "model_version": "lgb1_ref_v1",
+      "auc": "0.803",
+      "shap_verified": true,
+      "inference_timestamp": "2026-03-23T09:46:09.656039+00:00"
+    },
+    "financial_ratios": {
+      "income_annual_vnd": 112500.0,
+      "income_monthly_vnd": 9375.0,
+      "annuity_monthly_vnd": 1808.25,
+      "credit_total_vnd": 273024.0,
+      "goods_price_vnd": 216000.0,
+      "dti": 0.1929,
+      "dti_pct": "19.3%",
+      "dscr": 5.18,
+      "ltv": 1.264,
+      "ltv_pct": "126.4%"
+    }
+  },
+  "five_c_scorecard": {
+    "character_assessment": {
+      "score": 18,
+      "status": "XEM_XET",
+      "shap_pct": "27%",
+      "indicators_met": [
+        "Điểm tín dụng ngoại 2 (CIC) ở mức 0.001",
+        "Điểm tín dụng ngoại 3 (CIC) ở mức 0.0499",
+        "Trung bình trả góp mean_DPD_SCALE ở mức 0.3536"
+      ],
+      "indicators_review": [
+        "Tỷ lệ nợ trên tổng tài sản của các khoản vay CIC (bureau_AMT_DEBT_TOTAL_RATIO) ở mức -999.0",
+        "Tỷ lệ nợ trên tổng tài sản các khoản vay CIC đang hoạt động (bureau_active_avg_AMT_DEBT_RATIO) ở mức 0.0",
+        "Tổng dư nợ các khoản vay CIC đang hoạt động (bureau_active_sum_AMT_CREDIT_LEFT) ở mức 0.0"
+      ],
+      "narrative": "Yếu tố Uy tín (Character) đóng góp 27% vào mô hình, với các chỉ số tích cực như điểm tín dụng ngoại 2 (0.001) và 3 (0.0499) cùng với trung bình trả góp mean_DPD_SCALE (0.3536) cho thấy lịch sử tín dụng có những điểm sáng. Tuy nhiên, các chỉ số tiêu cực liên quan đến tỷ lệ nợ trên tổng tài sản của các khoản vay CIC (bureau_AMT_DEBT_TOTAL_RATIO ở mức -999.0), tỷ lệ nợ trên tổng tài sản các khoản vay CIC đang hoạt động (0.0) và tổng dư nợ các khoản vay CIC đang hoạt động (0.0) cần được xem xét kỹ lưỡng để đánh giá toàn diện khả năng trả nợ."
+    },
+    "capacity_assessment": {
+      "score": 25,
+      "status": "XEM_XET",
+      "shap_pct": "10%",
+      "indicators_met": [
+        "Tỷ lệ khoản trả góp hiện tại / trung bình khoản đã duyệt ở mức 3.9382",
+        "Tỷ lệ tín dụng/giá trị hàng hóa ở mức 1.264"
+      ],
+      "indicators_review": [
+        "Tỷ lệ thời gian công tác/tuổi ở mức 0.2165"
+      ],
+      "narrative": "Khả năng trả nợ (Capacity) chiếm 10% trong đánh giá, với các chỉ số tích cực như tỷ lệ trả góp hiện tại trên trung bình khoản đã duyệt (3.9382) và tỷ lệ tín dụng trên giá trị hàng hóa (1.264) cho thấy sự phù hợp trong khả năng chi trả các nghĩa vụ hiện tại. Tuy nhiên, tỷ lệ thời gian công tác trên tuổi (0.2165) là một yếu tố cần xem xét thêm để đánh giá sự ổn định về thu nhập và kinh nghiệm làm việc của khách hàng."
+    },
+    "capital_assessment": {
+      "score": 5,
+      "status": "KHONG_DAT",
+      "shap_pct": "2%",
+      "indicators_met": [],
+      "indicators_review": [
+        "Tỷ lệ nợ trên tổng tài sản của các khoản vay CIC (bureau_AMT_DEBT_TOTAL_RATIO) ở mức -999.0"
+      ],
+      "narrative": "Vốn tự có (Capital) chỉ đóng góp 2% vào mô hình, và không có chỉ số tích cực nào được ghi nhận. Chỉ số tiêu cực liên quan đến tỷ lệ nợ trên tổng tài sản của các khoản vay CIC (bureau_AMT_DEBT_TOTAL_RATIO ở mức -999.0) cho thấy khách hàng có thể đang gánh chịu một lượng nợ đáng kể so với tài sản, ảnh hưởng tiêu cực đến khả năng tự chủ về tài chính."
+    },
+    "conditions_assessment": {
+      "score": 4,
+      "status": "XEM_XET",
+      "shap_pct": "61%",
+      "indicators_met": [
+        "Trung bình điểm tín dụng ngoại ở mức 0.0512",
+        "Khoản trả hàng năm ở mức 12.5823",
+        "Đơn bị từ chối — DAYS_DECISION_MAX ở mức -203.0",
+        "Tích điểm tín dụng ngoại ở mức 0.0",
+        "Xếp hạng khu vực ở mức 3.0"
+      ],
+      "indicators_review": [
+        "Trình độ học vấn ở mức 1.0",
+        "Organization type mean encode ở mức 0.0807",
+        "POS/Cash MONTH_MAX ở mức -96.0",
+        "Số con ở mức 2.0",
+        "Occupation type mean encode ở mức 0.0807",
+        "Amt diff credit goods ở mức 57024.0"
+      ],
+      "narrative": "Các yếu tố về Điều kiện (Conditions) chiếm tỷ trọng lớn nhất (61%) trong đánh giá. Các chỉ số tích cực như trung bình điểm tín dụng ngoại (0.0512), khoản trả hàng năm (12.5823), đơn bị từ chối gần đây (-203.0), tích điểm tín dụng ngoại (0.0) và xếp hạng khu vực (3.0) cho thấy một số khía cạnh thuận lợi. Tuy nhiên, các yếu tố cần xem xét bao gồm trình độ học vấn (1.0), loại hình tổ chức (0.0807), thời gian tối đa của các khoản vay POS/Cash (-96.0), số con (2.0), loại hình nghề nghiệp (0.0807) và chênh lệch tín dụng hàng hóa (57024.0) có thể ảnh hưởng đến khả năng và sự ổn định của khách hàng."
+    },
+    "collateral_assessment": {
+      "score": 5,
+      "status": "XEM_XET",
+      "shap_pct": "1%",
+      "indicators_met": [],
+      "indicators_review": [],
+      "narrative": "Tài sản bảo đảm (Collateral) có đóng góp rất nhỏ (1%) vào mô hình. Hiện tại, chưa có thông tin chi tiết về tài sản bảo đảm được cung cấp, do đó cần bổ sung thông tin để đánh giá đầy đủ."
+    }
+  },
+  "financial_summary": {
+    "income_analysis": "Thu nhập tháng: 9,375 VND. Tỷ lệ DTI 19.3% cho thấy một phần thu nhập được sử dụng để trả nợ.",
+    "debt_analysis": "Trả nợ tháng: 1,808 VND. Tỷ lệ DSCR 5.18 cho thấy khả năng trả nợ tốt so với thu nhập.",
+    "key_ratios": {
+      "dti": "19.3%",
+      "dscr": "5.18",
+      "ltv": "126.4%"
+    }
+  },
+  "debt_assessment": {
+    "score": 81,
+    "max_score": 100,
+    "score_pct": "81%",
+    "overall_status": "ĐẠT",
+    "overall_color": "green",
+    "metrics": [
+      {
+        "name": "DTI (Nợ/Thu nhập)",
+        "value": "19.3%",
+        "threshold": "< 40%",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "DSCR (Dòng tiền/Nợ)",
+        "value": "5.18",
+        "threshold": "> 1.20",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "LTV (Vay/TSBĐ)",
+        "value": "126.4%",
+        "threshold": "< 70%",
+        "status": "Rủi ro",
+        "flag": "!!"
+      },
+      {
+        "name": "Mục đích vay",
+        "value": "Tiêu dùng",
+        "threshold": "PRODUCTION / INVESTMENT",
+        "status": "Rõ ràng",
+        "flag": "OK"
+      }
+    ],
+    "summary": "Phân tích nợ tổng hợp: 81/100 điểm (81%). Mục đích vay: Tiêu dùng. DTI 19.3% — trong ngưỡng an toàn. DSCR 5.18 — đạt ngưỡng."
+  },
+  "collateral_detail": {
+    "score": 5,
+    "status": "XEM_XET",
+    "shap_pct": "1%",
+    "indicators_met": [],
+    "indicators_review": [],
+    "narrative": "Tài sản bảo đảm (Collateral) có đóng góp rất nhỏ (1%) vào mô hình. Hiện tại, chưa có thông tin chi tiết về tài sản bảo đảm được cung cấp, do đó cần bổ sung thông tin để đánh giá đầy đủ."
+  },
+  "suggested_terms": {
+    "max_amount_vnd": 0,
+    "max_term_months": 0,
+    "interest_rate_suggestion": "theo biểu phí hiện hành",
+    "conditions": [
+      "Bổ sung thông tin chi tiết về tài sản bảo đảm.",
+      "Yêu cầu giải trình và cung cấp thêm bằng chứng về các yếu tố tiêu cực trong đánh giá Character và Conditions.",
+      "Xem xét kỹ lưỡng tỷ lệ LTV 126.4%."
+    ]
+  },
+  "reward_assessment": {
+    "interest_rate_pct": "22.0%",
+    "loan_amount_fmt": "273,024 VND",
+    "term_months": 13,
+    "gross_income_fmt": "65,071 VND",
+    "expected_loss_fmt": "107,061 VND",
+    "risk_adj_income_fmt": "-41,990 VND",
+    "raroc_pct": "-15.4%",
+    "verdict": "Không khả thi",
+    "verdict_flag": "!!",
+    "verdict_color": "red",
+    "customer_segment": "Sub-prime",
+    "upsell_opportunities": [],
+    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): -15.4% — Không khả thi. Phân khúc: Sub-prime. Thu nhập lãi ước tính: 65,071 VND, Tổn thất kỳ vọng: 107,061 VND."
+  },
+  "llm_insights": {
+    "loan_purpose": "CONSUMPTION",
+    "positive_signals": [],
+    "risk_flags": [
+      "Inconsistent income documentation",
+      "Missing repayment plan details"
+    ]
+  },
+  "caveats": [
+    "Đánh giá dựa trên dữ liệu và mô hình SHAP được cung cấp.",
+    "Cần xác minh thêm thông tin thực tế của khách hàng."
+  ],
+  "audit_reference": {
+    "model_version": "lgb1_ref_v1",
+    "inference_timestamp": "2026-03-23T09:46:09.656039+00:00"
+  }
+}
