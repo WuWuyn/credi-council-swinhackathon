@@ -1036,13 +1036,7 @@ class CreditReportPDF:
         self.story.append(tt)
         self.story.append(self._sp(3))
 
-        # (OK/!! LLM insights removed — signals now captured in 5C scorecard)
-        if caveats:
-            self.story.append(self._sp(2))
-            self.story.append(P("<b>Cảnh báo dữ liệu (Imputation Log):</b>", "h3"))
-            for c in caveats:
-                self.story.append(P(f"• {c}", "caveat"))
-        self.story.append(self._sp(3))
+        # (Cảnh báo dữ liệu removed — content merged into Điều kiện tiên quyết)
 
         # Audit line
         self.story.append(HRFlowable(width=CONTENT_W, thickness=0.4, color=C_BORDER))
