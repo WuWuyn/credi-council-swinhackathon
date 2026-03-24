@@ -1,5 +1,5 @@
 """
-CreditLens API — Score Endpoint.
+CREDICOUNCIL API — Score Endpoint.
 
 POST /v1/score — Submit loan application for credit scoring.
 """
@@ -44,13 +44,13 @@ async def score_application(
 
     Process flow:
         1. Receive uploaded files
-        2. Run full CreditLens pipeline (A1 → Gate → A2 → A3 → A4)
+        2. Run full CREDICOUNCIL pipeline (A1 → Gate → A2 → A3 → A4)
         3. Return credit report
 
     Returns:
         ScoreResponse with credit score, risk band, 4C assessment, and full report.
     """
-    from creditlens.orchestrator.graph import run_pipeline
+    from credicouncil.orchestrator.graph import run_pipeline
 
     # Save bank statement to temp file if provided
     bank_statement_path = None

@@ -1,5 +1,5 @@
 """
-CreditLens Evaluation — Plots Module.
+CREDICOUNCIL Evaluation — Plots Module.
 
 Tạo các visualization cho evaluation report:
     - ROC Curve
@@ -57,7 +57,7 @@ def plot_roc_curve(
     ax.set_ylim([0.0, 1.05])
     ax.set_xlabel("False Positive Rate", fontsize=12)
     ax.set_ylabel("True Positive Rate", fontsize=12)
-    ax.set_title("ROC Curve — CreditLens A3", fontsize=14, fontweight="bold")
+    ax.set_title("ROC Curve — CREDICOUNCIL A3", fontsize=14, fontweight="bold")
     ax.legend(loc="lower right", fontsize=11)
     ax.grid(alpha=0.3)
 
@@ -86,7 +86,7 @@ def plot_pr_curve(
     ax.set_ylim([0.0, 1.05])
     ax.set_xlabel("Recall", fontsize=12)
     ax.set_ylabel("Precision", fontsize=12)
-    ax.set_title("Precision-Recall Curve — CreditLens A3", fontsize=14, fontweight="bold")
+    ax.set_title("Precision-Recall Curve — CREDICOUNCIL A3", fontsize=14, fontweight="bold")
     ax.legend(loc="upper right", fontsize=11)
     ax.grid(alpha=0.3)
 
@@ -144,7 +144,7 @@ def plot_score_distribution(
     )
     ax2.set_title("Distribution by Risk Band", fontsize=13, fontweight="bold")
 
-    plt.suptitle("CreditLens A3 — Score Distribution Analysis", fontsize=15, fontweight="bold", y=1.02)
+    plt.suptitle("credicouncil A3 — Score Distribution Analysis", fontsize=15, fontweight="bold", y=1.02)
     plt.tight_layout()
     fig.savefig(output_dir / "score_distribution.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -166,7 +166,7 @@ def plot_calibration(
 
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.plot(prob_pred, prob_true, "s-", color="#2563EB", lw=2, markersize=8,
-            label="CreditLens A3")
+            label="credicouncil A3")
     ax.plot([0, 1], [0, 1], color="#9CA3AF", lw=1.5, linestyle="--",
             label="Perfect calibration")
 

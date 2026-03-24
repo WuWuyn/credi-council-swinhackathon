@@ -3,7 +3,7 @@ Unit tests for score mapper.
 """
 
 import pytest
-from creditlens.agents.a3_scoring.score_mapper import (
+from credicouncil.agents.a3_scoring.score_mapper import (
     pd_to_credit_score,
     credit_score_to_risk_band,
     map_prediction,

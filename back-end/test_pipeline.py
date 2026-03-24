@@ -1,5 +1,5 @@
 """
-CreditLens -- End-to-End Pipeline Test.
+CREDICOUNCIL -- End-to-End Pipeline Test.
 
 Runs the full pipeline: A1 -> A2 -> A3 -> A4
 on mock customer data to verify all agents work together.
@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 def run_pipeline():
     """Run the full credit scoring pipeline."""
     print("\n" + "=" * 70)
-    print("  CREDITLENS — END-TO-END PIPELINE TEST")
+    print("  CREDICOUNCIL — END-TO-END PIPELINE TEST")
     print("=" * 70)
 
     print("  Mode: REAL (Gemini API)")
 
     # ── A1: Data Ingestion ──
     print("\n[1/4] A1: Data Ingestion...")
-    from creditlens.agents.a1_ingestion.agent import IngestionAgent
+    from credicouncil.agents.a1_ingestion.agent import IngestionAgent
     a1 = IngestionAgent()
     a1_output = a1.ingest(customer_dir="data/mock/customer_001")
 
@@ -47,7 +47,7 @@ def run_pipeline():
 
     # ── A2: Feature Engineering ──
     print("\n[2/4] A2: LLM Feature Engineering...")
-    from creditlens.agents.a2_feature_engineer.agent import FeatureEngineerAgent
+    from credicouncil.agents.a2_feature_engineer.agent import FeatureEngineerAgent
     a2 = FeatureEngineerAgent()
     a2_output = a2.process(a1_output)
 
@@ -63,7 +63,7 @@ def run_pipeline():
 
     # ── A3: ML Scoring ──
     print("\n[3/4] A3: ML Scoring Engine...")
-    from creditlens.agents.a3_scoring.agent import ScoringAgent
+    from credicouncil.agents.a3_scoring.agent import ScoringAgent
     a3 = ScoringAgent(model_path="models/lgbm_ref_v1.pkl")
     a3_output = a3.score(a2_output)
 
@@ -92,7 +92,7 @@ def run_pipeline():
 
     # ── A4: Report Generator ──
     print("\n[4/4] A4: Report Generator (5C + 6 sections)...")
-    from creditlens.agents.a4_report_generator.agent import ReportGeneratorAgent
+    from credicouncil.agents.a4_report_generator.agent import ReportGeneratorAgent
     a4 = ReportGeneratorAgent()
     a4_output = a4.generate(a3_output, a2_output, a1_output)
 
@@ -127,7 +127,7 @@ def run_pipeline():
 
     # Generate PDF report
     try:
-        from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+        from credicouncil.agents.a4_report_generator.pdf_generator import generate_credit_pdf
         shap_data = a3_output.get("shap_values", {})
         pdf_bytes = generate_credit_pdf(
             report_data=report,

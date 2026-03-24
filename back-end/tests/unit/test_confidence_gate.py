@@ -3,8 +3,8 @@ Unit tests for confidence gate logic.
 """
 
 import pytest
-from creditlens.orchestrator.confidence_gate import confidence_gate
-from creditlens.state.credit_state import RoutingDecision
+from credicouncil.orchestrator.confidence_gate import confidence_gate
+from credicouncil.state.credit_state import RoutingDecision
 
 
 def test_confidence_gate_halt_on_critical_missing():

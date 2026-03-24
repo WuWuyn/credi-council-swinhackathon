@@ -1,1 +1,1 @@
-"""evaluation package — CreditLens A3 ML Core Evaluation."""
+"""evaluation package — CREDICOUNCIL A3 ML Core Evaluation."""

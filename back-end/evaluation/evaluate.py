@@ -1,5 +1,5 @@
 """
-CreditLens Evaluation — Main Runner.
+CREDICOUNCIL Evaluation — Main Runner.
 
 Đánh giá ML Core (A3 — LightGBM) trên tập Home Credit dataset.
 Sử dụng pipeline mới mirroring lgb1.ipynb (reference code).
@@ -43,12 +43,12 @@ import numpy as np
 import pandas as pd
 
 from training.feature_engineering import build_all_features
-from creditlens.agents.a3_scoring.model import CreditLensModel
+from credicouncil.agents.a3_scoring.model import CrediCouncilModel
 from sklearn.model_selection import train_test_split
 
 # 4C mapping for SHAP analysis (optional)
 try:
-    from creditlens.config.feature_config import FEATURE_TO_4C_MAPPING
+    from credicouncil.config.feature_config import FEATURE_TO_4C_MAPPING
 except ImportError:
     FEATURE_TO_4C_MAPPING = {}
 
@@ -103,7 +103,7 @@ def run_evaluation(
     start_time = time.time()
 
     logger.info("=" * 65)
-    logger.info("  CreditLens A3 — Evaluation Pipeline (lgb1.ipynb reference)")
+    logger.info("  CREDICOUNCIL A3 — Evaluation Pipeline (lgb1.ipynb reference)")
     logger.info(f"  Dataset : {data_dir}")
     logger.info(f"  Model   : {model_path or '(train new)'}")
     logger.info(f"  Output  : {output_dir}")
@@ -130,7 +130,7 @@ def run_evaluation(
     logger.info(f"      Train: {len(y_train):,} ({y_train.mean():.1%}) | Test: {len(y_test):,} ({y_test.mean():.1%})")
 
     # ── Step 3: Train hoặc Load model ────────────────────────────────
-    model = CreditLensModel()
+    model = CrediCouncilModel()
 
     if train_first or model_path is None:
         logger.info("\n[3/6] Training new LightGBM model (lgb1-reference pipeline)...")
@@ -165,7 +165,7 @@ def run_evaluation(
         available_features = [f for f in model.feature_names if f in X_test_enc.columns and f not in excluded]
         X_test_pred = X_test_enc[available_features]
     else:
-        # Old CreditLens model format — no mean encoding
+        # Old CREDICOUNCIL model format — no mean encoding
         if model.feature_names:
             available = [f for f in model.feature_names if f in X_test.columns]
             X_test_pred = X_test[available]
@@ -298,7 +298,7 @@ def run_evaluation(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CreditLens A3 — ML Core Evaluation",
+        description="credicouncil A3 — ML Core Evaluation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

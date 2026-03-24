@@ -4,9 +4,9 @@
 
 Framework 5C là phương pháp đánh giá tín dụng chuẩn trong ngành ngân hàng Việt Nam, được quy định tại Thông tư 39/2016/TT-NHNN Điều 17 (thẩm định khoản vay). 5C bao gồm: Character, Capacity, Capital, Conditions, Collateral.
 
-CreditLens sử dụng 5C framework kết hợp SHAP attribution — mỗi tiêu chí có điểm số, SHAP contribution %, và narrative được grounded trên dữ liệu.
+CrediCouncil sử dụng 5C framework kết hợp SHAP attribution — mỗi tiêu chí có điểm số, SHAP contribution %, và narrative được grounded trên dữ liệu.
 
-## 2. Thang điểm 5C — CreditLens
+## 2. Thang điểm 5C — CrediCouncil
 
 | Tiêu chí | Điểm tối đa | Trọng số | Mô tả |
 |---|---|---|---|

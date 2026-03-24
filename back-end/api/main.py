@@ -1,7 +1,7 @@
 """
-CreditLens FastAPI Application — Main Entry Point.
+CREDICOUNCIL FastAPI Application — Main Entry Point.
 
-REST API for the CreditLens credit scoring pipeline.
+REST API for the CREDICOUNCIL credit scoring pipeline.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="CreditLens AI API",
+    title="credicouncil AI API",
     description="Credit Scoring & Creditworthiness Assessment for Underbanked & Micro SMEs",
     version="0.1.0",
 )
@@ -35,7 +35,7 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "creditlens-api", "version": "0.1.0"}
+    return {"status": "healthy", "service": "credicouncil-api", "version": "0.1.0"}
 
 
 # Import routes

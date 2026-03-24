@@ -3,7 +3,7 @@ Unit tests for consistency validator.
 """
 
 import pytest
-from creditlens.agents.a4_report_generator.consistency_validator import validate_narrative_consistency
+from credicouncil.agents.a4_report_generator.consistency_validator import validate_narrative_consistency
 
 
 class TestConsistencyValidator:

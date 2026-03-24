@@ -285,7 +285,7 @@ function showApiError(container) {
       ${ICONS.warning}
       <h4>Backend chưa khởi động</h4>
       <p>Hãy chạy lệnh sau để start server:</p>
-      <code>conda activate swinburn_hackathon<br>uvicorn creditlens.api.main:app --host 0.0.0.0 --port 8000 --reload</code>
+      <code>conda activate swinburn_hackathon<br>uvicorn credicouncil.api.main:app --host 0.0.0.0 --port 8000 --reload</code>
       <p style="margin-top:8px;font-size:11px;color:#9e9e9e">API endpoint: <strong>http://localhost:8000</strong></p>
     </div>
   `;
@@ -563,7 +563,7 @@ function _ensurePDFModal() {
           ">Tờ Trình Tín Dụng</div>
           <div id="pdfViewerSub" style="
             font-size:11px; color:#90A4AE; margin-top:1px;
-          ">CreditLens AI · Đang tải...</div>
+          ">CrediCouncil AI · Đang tải...</div>
         </div>
         <!-- Loading spinner -->
         <div id="pdfSpinner" style="

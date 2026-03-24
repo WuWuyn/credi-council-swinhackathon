@@ -1,5 +1,5 @@
 """
-CreditLens Evaluation — Metrics Module.
+CREDICOUNCIL Evaluation — Metrics Module.
 
 Tính toán các metric chuẩn để đánh giá ML core (A3):
     - AUC-ROC, Gini, KS Statistic

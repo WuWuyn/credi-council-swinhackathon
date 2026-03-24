@@ -15,7 +15,7 @@ test-integration:
 	pytest tests/integration/ -v --tb=short
 
 test-cov:
-	pytest tests/ -v --cov=creditlens --cov-report=html
+	pytest tests/ -v --cov=credicouncil --cov-report=html
 
 # ── ML Pipeline ──
 train:
@@ -40,7 +40,7 @@ dashboard:
 
 # ── Code Quality ──
 lint:
-	ruff check creditlens/ api/ training/ tests/
+	ruff check credicouncil/ api/ training/ tests/
 
 format:
-	black creditlens/ api/ training/ tests/
+	black credicouncil/ api/ training/ tests/

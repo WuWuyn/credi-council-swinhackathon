@@ -3,7 +3,7 @@ Training Pipeline — Mirror of lgb1.ipynb (Home Credit Kaggle Reference).
 
 Differences from reference:
   - Reference: train on 100% data, predict on test set (no TARGET) for submission
-  - CreditLens: Stratified 80/20 split → keep 20% test set for evaluation
+  - CREDICOUNCIL: Stratified 80/20 split → keep 20% test set for evaluation
 
 Key faithfulness to reference:
   - bagging_classifier: within each outer fold, majority class is split into 3 sub-folds

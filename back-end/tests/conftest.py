@@ -1,5 +1,5 @@
 """
-CreditLens Tests — Pytest Configuration.
+CREDICOUNCIL Tests — Pytest Configuration.
 """
 
 import sys

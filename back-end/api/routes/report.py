@@ -1,5 +1,5 @@
 """
-CreditLens API — PDF Report Endpoint.
+CREDICOUNCIL API — PDF Report Endpoint.
 
 GET  /report/{customer_id}/pdf     → Stream PDF for browser preview
 GET  /report/{customer_id}/pdf?download=1 → Force download with filename
@@ -62,7 +62,7 @@ async def get_report_pdf(
     - **customer_id**: e.g. "001", "1", "customer_001"
     - **download**: if true, browser downloads the file; otherwise inline preview
     """
-    from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+    from credicouncil.agents.a4_report_generator.pdf_generator import generate_credit_pdf
 
     report_data, shap_data = _load_customer_data(customer_id)
 
@@ -110,7 +110,7 @@ async def generate_pdf_from_json(
     download: bool = Query(False),
 ):
     """Generate PDF directly from report JSON (no customer folder needed)."""
-    from creditlens.agents.a4_report_generator.pdf_generator import generate_credit_pdf
+    from credicouncil.agents.a4_report_generator.pdf_generator import generate_credit_pdf
 
     try:
         pdf_bytes = generate_credit_pdf(

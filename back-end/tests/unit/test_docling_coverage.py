@@ -9,11 +9,11 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 os.environ["USE_DOCLING"] = "true"
 
 # Clear settings cache so new env is picked up
-from creditlens.config.settings import get_settings
+from credicouncil.config.settings import get_settings
 get_settings.cache_clear()
 
 from pathlib import Path
-from creditlens.agents.a1_ingestion.agent import IngestionAgent
+from credicouncil.agents.a1_ingestion.agent import IngestionAgent
 
 CUSTOMER_DIR = Path("data/mock/customer_001")
 GROUND_TRUTH = CUSTOMER_DIR / "application_row.json"

@@ -48,7 +48,7 @@ CAR = Vốn tự có / Tài sản có rủi ro ≥ 8%
 ### 3.2 Phương pháp tính RWA
 
 - **Standardized Approach (SA)**: Trọng số cố định — bắt buộc tất cả TCTD
-- **IRB Approach**: TCTD tự ước tính PD từ mô hình nội bộ — cần NHNN phê duyệt. CreditLens ML scoring output PD có thể dùng cho IRB.
+- **IRB Approach**: TCTD tự ước tính PD từ mô hình nội bộ — cần NHNN phê duyệt. CrediCouncil ML scoring output PD có thể dùng cho IRB.
 
 ### 3.3 Timeline
 
@@ -62,7 +62,7 @@ CAR = Vốn tự có / Tài sản có rủi ro ≥ 8%
 
 ### 4.1 Thành phần rủi ro
 
-| Thành phần | Ký hiệu | Mô tả | CreditLens |
+| Thành phần | Ký hiệu | Mô tả | CrediCouncil |
 |---|---|---|---|
 | Probability of Default | PD | Xác suất vỡ nợ | pd_pct output |
 | Loss Given Default | LGD | Tỷ lệ tổn thất | 45% chuẩn ngành |
@@ -99,7 +99,7 @@ TCTD thực hiện stress testing hàng năm:
 | Adverse | +2% | 6% | Tăng 50% |
 | Severe | -2% | 10% | Tăng 200% |
 
-## 6. Ứng dụng trong CreditLens A4
+## 6. Ứng dụng trong CrediCouncil A4
 
 | Section | Trích dẫn | Nội dung |
 |---|---|---|

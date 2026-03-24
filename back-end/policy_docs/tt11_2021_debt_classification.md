@@ -70,11 +70,11 @@ TCTD được phép áp dụng phương pháp định tính khi:
 | CCC, CC | Nhóm 4 | Rủi ro cao |
 | C, D | Nhóm 5 | Rủi ro rất cao, mất khả năng trả nợ |
 
-### 4.3 Ứng dụng trong CreditLens
+### 4.3 Ứng dụng trong CrediCouncil
 
-CreditLens sử dụng phương pháp định tính kết hợp ML scoring:
+CrediCouncil sử dụng phương pháp định tính kết hợp ML scoring:
 
-| CreditLens Risk Band | Nhóm nợ mapping | Hành động |
+| CrediCouncil Risk Band | Nhóm nợ mapping | Hành động |
 |---|---|---|
 | AAA (720–850) | Nhóm 1 | AUTO APPROVE |
 | AA (640–719) | Nhóm 1–2 | APPROVE + REVIEW |
@@ -161,7 +161,7 @@ TCTD sử dụng dự phòng rủi ro đã trích lập khi:
 
 Sau tối thiểu **5 năm** từ khi xử lý rủi ro và đã thực hiện mọi biện pháp thu hồi, TCTD có thể quyết định **xuất toán** nợ đã xử lý khỏi ngoại bảng.
 
-## 8. Ứng dụng trong CreditLens — Mapping sang Báo cáo A4
+## 8. Ứng dụng trong CrediCouncil — Mapping sang Báo cáo A4
 
 ### 8.1 Sử dụng trong section 5C Assessment
 

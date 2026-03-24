@@ -1,5 +1,5 @@
 """
-CreditLens — Initialize Policy FileSearchStore.
+CREDICOUNCIL — Initialize Policy FileSearchStore.
 
 Run this script once to create and populate the Gemini FileSearchStore
 with Vietnamese banking policy documents for RAG.
@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    from creditlens.services.policy_rag_service import PolicyRAGService
+    from credicouncil.services.policy_rag_service import PolicyRAGService
 
     print("\n" + "=" * 60)
-    print("  CREDITLENS — Policy RAG Store Initialization")
+    print("  CREDICOUNCIL — Policy RAG Store Initialization")
     print("=" * 60)
 
     rag = PolicyRAGService()
@@ -69,7 +69,7 @@ def main():
             # Ask whether to reuse or create new
             existing_policy = [
                 s for s in stores
-                if "creditlens" in s.get("display_name", "").lower()
+                if "credicouncil" in s.get("display_name", "").lower()
                 or "policy" in s.get("display_name", "").lower()
             ]
             if existing_policy:
@@ -90,7 +90,7 @@ def main():
     try:
         store_name = rag.initialize_store(
             policy_dir=policy_dir,
-            store_display_name="creditlens-policy-store",
+            store_display_name="credicouncil-policy-store",
         )
     except Exception as e:
         print(f"  ❌ Failed to create store: {e}")

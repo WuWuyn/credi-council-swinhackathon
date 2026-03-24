@@ -1,5 +1,5 @@
 """
-CreditLens Evaluation — SHAP Analysis Module.
+CREDICOUNCIL Evaluation — SHAP Analysis Module.
 
 Phân tích SHAP values trên tập test để đánh giá explainability:
     - Feature importance tổng thể (mean |SHAP|)
@@ -145,7 +145,7 @@ def compute_5c_shap_allocation(
     Returns:
         DataFrame với tổng SHAP và % cho mỗi dimension.
     """
-    from creditlens.config.feature_config import get_5c_dimension
+    from credicouncil.config.feature_config import get_5c_dimension
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_test)

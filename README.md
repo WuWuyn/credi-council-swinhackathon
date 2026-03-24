@@ -1,4 +1,4 @@
-# CreditLens AI — Hệ thống Đánh giá Tín dụng AI
+# Credicouncil AI — Hệ thống Đánh giá Tín dụng AI
 
 > **AI-powered credit scoring pipeline** xây dựng trên kiến trúc MASCA (Multi-Agent System for Credit Assessment), sử dụng LightGBM + SHAP + Gemini LLM để tạo báo cáo tín dụng 5C theo chuẩn ngân hàng Việt Nam.
 
@@ -86,7 +86,7 @@ Script sẽ upload các tài liệu chính sách ngân hàng (TT39, QĐ493, QĐ1
 ```bash
 conda activate swinburn_hackathon
 cd back-end
-uvicorn creditlens.api.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn credicouncil.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Truy cập:
@@ -188,7 +188,7 @@ curl http://localhost:8000/v1/report/001/pdf -o report_001.pdf
 ```
 swinburn_new/
 ├── back-end/                          # ⭐ Main application
-│   ├── creditlens/                    # Core application package
+│   ├── credicouncil/                    # Core application package
 │   │   ├── agents/                   # 4 pipeline agents
 │   │   │   ├── a1_ingestion/         # Data ingestion
 │   │   │   │   ├── agent.py          # IngestionAgent — main orchestrator
@@ -259,7 +259,7 @@ swinburn_new/
 
 ### 5.1 A1 — Data Ingestion Agent
 
-**File**: `creditlens/agents/a1_ingestion/agent.py`
+**File**: `credicouncil/agents/a1_ingestion/agent.py`
 **Class**: `IngestionAgent`
 
 #### Nhiệm vụ
@@ -347,7 +347,7 @@ Thư mục khách hàng chứa:
 
 ### 5.2 A2 — Feature Engineer Agent
 
-**File**: `creditlens/agents/a2_feature_engineer/agent.py`
+**File**: `credicouncil/agents/a2_feature_engineer/agent.py`
 **Class**: `FeatureEngineerAgent`
 
 #### Nhiệm vụ
@@ -417,7 +417,7 @@ class SemanticFeatures(BaseModel):
 
 ### 5.3 A3 — ML Scoring Agent
 
-**File**: `creditlens/agents/a3_scoring/agent.py`
+**File**: `credicouncil/agents/a3_scoring/agent.py`
 **Class**: `ScoringAgent`
 
 #### Nhiệm vụ
@@ -458,7 +458,7 @@ Chấm điểm tín dụng bằng LightGBM, tạo SHAP explanation, áp dụng d
 
 ### 5.4 A4 — Report Generator Agent ⭐
 
-**File**: `creditlens/agents/a4_report_generator/agent.py`
+**File**: `credicouncil/agents/a4_report_generator/agent.py`
 **Class**: `ReportGeneratorAgent`
 
 #### Nhiệm vụ
@@ -555,7 +555,7 @@ LLMService (shared Gemini client, auto-loads .env)
         └── SemanticExtractor (SemanticFeatures schema)
 ```
 
-### Feature Config (`creditlens/config/feature_config.py`)
+### Feature Config (`credicouncil/config/feature_config.py`)
 
 - **122 features** với label tiếng Việt (`get_label_vi()`)
 - **5C dimension mapping** cho mỗi feature (`get_5c_dimension()`)

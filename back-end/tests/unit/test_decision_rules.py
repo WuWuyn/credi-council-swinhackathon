@@ -3,7 +3,7 @@ Unit tests for decision rules (hard overrides).
 """
 
 import pytest
-from creditlens.agents.a3_scoring.decision_rules import apply_hard_overrides
+from credicouncil.agents.a3_scoring.decision_rules import apply_hard_overrides
 
 
 class TestHardOverrides:

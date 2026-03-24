@@ -106,11 +106,11 @@ Theo quy định, TCTD không được từ chối tự động khách hàng thi
 - TCTD phải thực hiện phân loại nợ và trích lập dự phòng **hàng tháng** (7 ngày đầu mỗi tháng), gửi kết quả về CIC.
 - CIC có **3 ngày** để tổng hợp và phản hồi danh sách nhóm nợ cho các TCTD.
 
-## 7. Ứng dụng trong CreditLens
+## 7. Ứng dụng trong CrediCouncil
 
 ### 7.1 Mapping CIC vào hệ thống scoring
 
-| CIC Data Point | CreditLens Feature | Module |
+| CIC Data Point | CrediCouncil Feature | Module |
 |---|---|---|
 | Điểm CIC 300–850 | `cic_score_proxy` (EXT_SOURCE) | A1 |
 | Nhóm nợ 1–5 | `debt_group` | A1 |

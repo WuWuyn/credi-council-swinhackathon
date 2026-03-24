@@ -50,7 +50,7 @@ Khách hàng phải đáp ứng **đầy đủ** các điều kiện sau:
 | 3 | Phương án sử dụng vốn khả thi | Có phương án kinh doanh hoặc dự án đầu tư khả thi, hiệu quả |
 | 4 | Khả năng tài chính | Có khả năng tài chính để trả nợ |
 
-### 4.2 Đánh giá khả năng tài chính (liên quan đến CreditLens)
+### 4.2 Đánh giá khả năng tài chính (liên quan đến CrediCouncil)
 
 TCTD phải đánh giá khả năng tài chính của khách hàng dựa trên:
 
@@ -108,8 +108,8 @@ TCTD **không được cho vay** trong các trường hợp sau:
 - **Lãi chậm trả**: Tối đa 10%/năm tính trên số dư lãi chậm trả.
 - **Lãi phạt trả trước hạn**: Tối đa 150% lãi suất cho vay trong hợp đồng.
 
-### 7.3 Ứng dụng trong CreditLens
-Hệ thống CreditLens sử dụng risk band để đề xuất mức lãi suất tham khảo:
+### 7.3 Ứng dụng trong CrediCouncil
+Hệ thống CrediCouncil sử dụng risk band để đề xuất mức lãi suất tham khảo:
 
 | Risk Band | Credit Score | Lãi suất tham khảo |
 |---|---|---|
@@ -167,11 +167,11 @@ Theo Điều 17, TCTD phải thẩm định khoản vay trước khi quyết đ�
 - Phân tích **dòng tiền** (cash flow analysis) để đánh giá khả năng trả nợ
 - Định giá **TSBĐ** (nếu có)
 
-## 11. Quy định liên quan đến CreditLens
+## 11. Quy định liên quan đến CrediCouncil
 
 ### 11.1 Tóm tắt các điều khoản được trích dẫn trong báo cáo
 
-| Điều khoản | Nội dung | Ứng dụng trong CreditLens |
+| Điều khoản | Nội dung | Ứng dụng trong CrediCouncil |
 |---|---|---|
 | Điều 4 | Nguyên tắc cho vay | Cơ sở cho đề xuất phê duyệt/từ chối |
 | Điều 7 | Điều kiện vay vốn | Checklist đánh giá khách hàng |
