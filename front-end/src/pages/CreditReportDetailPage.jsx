@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../components/Header'
-import { reportFallbackData } from '../data/mockData'
-import { API_CONFIG } from '../config/api'
+import { fetchReportJSON, getPdfPreviewUrl, downloadPdf } from '../services/apiService'
 
 export default function CreditReportDetailPage() {
   const navigate = useNavigate()
@@ -16,13 +15,14 @@ export default function CreditReportDetailPage() {
   useEffect(() => {
     async function fetchReport() {
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORT_JSON(id)}`)
-        if (!res.ok) throw new Error(`HTTP error ${res.status}`)
-        const json = await res.json()
-        setData(json)
+        const result = await fetchReportJSON(id)
+        setData(result.data)
+        if (result.source === 'fallback') {
+          console.info('[Report] Using fallback data for customer', id)
+        }
       } catch (err) {
-        console.warn('Backend not running or failed. Falling back to offline mock data!', err)
-        setData(reportFallbackData)
+        console.error('Failed to load report:', err)
+        setError(err.message)
       } finally {
         setLoading(false)
       }
@@ -412,7 +412,7 @@ export default function CreditReportDetailPage() {
             
             <div className="flex-1 bg-slate-100 p-0 relative overflow-hidden min-h-[500px]">
               <iframe 
-                src={`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORT_PDF(id)}`} 
+                src={getPdfPreviewUrl(id)} 
                 title="Credit Report PDF"
                 className="absolute inset-0 w-full h-full border-0"
               />
@@ -427,7 +427,7 @@ export default function CreditReportDetailPage() {
               </button>
               <button 
                 className="px-6 py-2.5 rounded-lg font-bold text-white bg-primary hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm shadow-primary/30"
-                onClick={() => window.open(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORT_PDF(id, true)}`, '_blank')}
+                onClick={() => downloadPdf(id)}
               >
                 <span className="material-symbols-outlined text-[18px]">download</span>
                 Download Official PDF

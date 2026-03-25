@@ -1,23 +1,48 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CUSTOMERS, PIPELINE_LAYERS } from '../data/mockData'
-import { API_CONFIG } from '../config/api'
+import { PIPELINE_LAYERS } from '../data/mockData'
+import {
+  fetchCustomers,
+  runScorePipeline,
+  checkBackendHealth,
+  isBackendAvailable,
+  getPdfPreviewUrl,
+  downloadPdf,
+} from '../services/apiService'
 import './DashboardPage.css'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
 
+  // Customer data — loaded from API or fallback
+  const [customers, setCustomers] = useState([])
+  const [dataSource, setDataSource] = useState(null) // 'backend' | 'fallback'
+  const [loadingCustomers, setLoadingCustomers] = useState(true)
+
   const [selected, setSelected] = useState(new Set())
-  const [expanded, setExpanded] = useState(null) // which customer is expanded
+  const [expanded, setExpanded] = useState(null)
   const [running, setRunning] = useState(false)
   const [activeLayer, setActiveLayer] = useState(-1)
   const [layerProgress, setLayerProgress] = useState(0)
   const [completedLayers, setCompletedLayers] = useState(new Set())
-  const [layerData, setLayerData] = useState({}) // store result data per layer
-  const [customerResults, setCustomerResults] = useState({}) // { customerId: result }
+  const [layerData, setLayerData] = useState({})
+  const [customerResults, setCustomerResults] = useState({})
   const [currentCustomer, setCurrentCustomer] = useState(null)
   const [pipelineMeta, setPipelineMeta] = useState('Awaiting input — Select profiles and run pipeline')
   const [previewPdf, setPreviewPdf] = useState(null)
+
+  // ── Load customers on mount ──
+  useEffect(() => {
+    async function loadData() {
+      setLoadingCustomers(true)
+      await checkBackendHealth()
+      const result = await fetchCustomers()
+      setCustomers(result.customers)
+      setDataSource(result.source)
+      setLoadingCustomers(false)
+    }
+    loadData()
+  }, [])
 
   const toggleSelect = (id) => {
     setSelected(prev => {
@@ -32,7 +57,7 @@ export default function DashboardPage() {
   }
 
   const toggleAll = (checked) => {
-    setSelected(checked ? new Set(CUSTOMERS.map(c => c.id)) : new Set())
+    setSelected(checked ? new Set(customers.map(c => c.id)) : new Set())
   }
 
   /* ── Pipeline execution ── */
@@ -43,7 +68,7 @@ export default function DashboardPage() {
     setCompletedLayers(new Set())
     setLayerData({})
 
-    const selectedCustomers = CUSTOMERS.filter(c => selected.has(c.id))
+    const selectedCustomers = customers.filter(c => selected.has(c.id))
     const total = selectedCustomers.length
 
     for (let ci = 0; ci < selectedCustomers.length; ci++) {
@@ -51,16 +76,14 @@ export default function DashboardPage() {
       setCurrentCustomer(customer.id)
       setPipelineMeta(`Processing ${customer.label}... (${ci + 1}/${total})`)
 
-      // Reset layers for new customer
       setCompletedLayers(new Set())
       setLayerData({})
 
-      // Simulate each layer
+      // Animate each layer
       for (let li = 0; li < PIPELINE_LAYERS.length; li++) {
         setActiveLayer(li)
         setLayerProgress(0)
 
-        // Animate progress within each layer
         const stepDuration = li === 2 ? 1800 : 800
         const steps = 20
         for (let s = 0; s <= steps; s++) {
@@ -71,27 +94,34 @@ export default function DashboardPage() {
         setCompletedLayers(prev => new Set([...prev, li]))
       }
 
-      // Call API
+      // Call backend API
       let result
       try {
-        const formData = new FormData()
-        formData.append('applicant_id', customer.id)
-        formData.append('customer_type', 'INDIVIDUAL')
-        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCORE}`, { method: 'POST', body: formData })
-        if (response.ok) {
-          result = await response.json()
-        } else {
-          throw new Error(`HTTP ${response.status}`)
-        }
+        result = await runScorePipeline(customer.id)
       } catch (err) {
-        result = {
-          application_id: customer.id,
-          credit_score: 0,
-          risk_band: 'ERR',
-          pd_pct: 0,
-          recommendation: 'OFFLINE',
-          four_c_scores: {},
-          error: true,
+        console.warn(`[Pipeline] Score API failed for ${customer.id}:`, err.message)
+        
+        // Use pre-loaded scoreData as fallback if available
+        if (customer.scoreData) {
+          result = {
+            application_id: customer.id,
+            credit_score: customer.scoreData.creditScore,
+            pd_pct: customer.scoreData.pdPct,
+            risk_band: customer.scoreData.riskBand,
+            recommendation: customer.scoreData.recommendation,
+            four_c_scores: customer.scoreData.fiveCScores || {},
+            fallback: true,
+          }
+        } else {
+          result = {
+            application_id: customer.id,
+            credit_score: 0,
+            risk_band: 'ERR',
+            pd_pct: 0,
+            recommendation: 'OFFLINE',
+            four_c_scores: {},
+            error: true,
+          }
         }
       }
 
@@ -106,7 +136,6 @@ export default function DashboardPage() {
         },
       })
 
-      // Save customer result
       setCustomerResults(prev => ({ ...prev, [customer.id]: result }))
     }
 
@@ -114,7 +143,7 @@ export default function DashboardPage() {
     setCurrentCustomer(null)
     setPipelineMeta(`Completed ${total} profiles`)
     setRunning(false)
-  }, [selected, running])
+  }, [selected, running, customers])
 
   const getCustomerStatus = (customerId) => {
     const result = customerResults[customerId]
@@ -151,12 +180,17 @@ export default function DashboardPage() {
         </div>
         <span className="topbar-title">Credit Scoring Dashboard</span>
         <div className="topbar-spacer"></div>
+        {/* Backend connection indicator */}
         <div className={`live-badge ${running ? 'active' : ''}`}>
-          <div className="live-dot"></div>{running ? 'Processing...' : 'Live Demo'}
+          <div className={`live-dot ${dataSource === 'backend' ? '' : 'offline'}`}></div>
+          {running ? 'Processing...' : (
+            dataSource === 'backend' ? 'Backend Connected' : 
+            dataSource === 'fallback' ? 'Offline Mode' : 'Connecting...'
+          )}
         </div>
       </div>
 
-      {/* MAIN LAYOUT — 2 columns only */}
+      {/* MAIN LAYOUT — 2 columns */}
       <div className="layout">
 
         {/* ═══ LEFT SIDEBAR ═══ */}
@@ -167,98 +201,152 @@ export default function DashboardPage() {
               <label className="select-all" style={{ margin: 0 }}>
                 <input
                   type="checkbox"
-                  checked={selected.size === CUSTOMERS.length}
+                  checked={customers.length > 0 && selected.size === customers.length}
                   onChange={(e) => toggleAll(e.target.checked)}
+                  disabled={loadingCustomers}
                 />
                 {' '}Select All
               </label>
             </div>
-            <p style={{ margin: '2px 0 0 0' }}>Select profiles to process</p>
+            <p style={{ margin: '2px 0 0 0' }}>
+              {dataSource === 'backend' 
+                ? `${customers.length} profiles loaded from server`
+                : `${customers.length} profiles (offline fallback)`
+              }
+            </p>
           </div>
 
           <div className="customer-list">
-            {CUSTOMERS.map(c => {
-              const status = getCustomerStatus(c.id)
-              const isExpanded = expanded === c.id
-              const result = customerResults[c.id]
-              const isProcessing = currentCustomer === c.id
+            {loadingCustomers ? (
+              <div className="loading-state">
+                <span className="spinner"></span>
+                <p>Loading customer profiles...</p>
+              </div>
+            ) : (
+              customers.map(c => {
+                const status = getCustomerStatus(c.id)
+                const isExpanded = expanded === c.id
+                const result = customerResults[c.id]
+                const isProcessing = currentCustomer === c.id
 
-              return (
-                <div key={c.id} className={`customer-card ${status} ${isProcessing ? 'processing' : ''}`}>
-                  {/* Main row */}
-                  <div className="customer-row">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(c.id)}
-                      onChange={() => toggleSelect(c.id)}
-                      disabled={running}
-                    />
-                    <div className="customer-main" onClick={() => toggleExpand(c.id)}>
-                      <div className="customer-name-row">
-                        <span className="customer-name">{c.label}</span>
-                        <span className={`status-badge ${status}`}>
-                          {isProcessing ? (
-                            <><span className="spinner"></span> Processing</>
-                          ) : (
-                            getStatusLabel(status)
-                          )}
-                        </span>
+                return (
+                  <div key={c.id} className={`customer-card ${status} ${isProcessing ? 'processing' : ''}`}>
+                    {/* Main row */}
+                    <div className="customer-row">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                        disabled={running}
+                      />
+                      <div className="customer-main" onClick={() => toggleExpand(c.id)}>
+                        <div className="customer-name-row">
+                          <span className="customer-name">{c.label}</span>
+                          <span className={`status-badge ${status}`}>
+                            {isProcessing ? (
+                              <><span className="spinner"></span> Processing</>
+                            ) : (
+                              getStatusLabel(status)
+                            )}
+                          </span>
+                        </div>
+                        <span className="customer-id">ID: {c.folderId}</span>
                       </div>
-                      <span className="customer-id">ID: {c.folderId}</span>
+                      {/* View report button */}
+                      <button
+                        className="view-btn"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/report/${c.id}`) }}
+                        title="View Full Report"
+                      >
+                        <span className="material-symbols-outlined">visibility</span>
+                      </button>
+                      {/* Expand arrow */}
+                      <button className={`expand-btn ${isExpanded ? 'open' : ''}`} onClick={() => toggleExpand(c.id)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     </div>
-                    {/* Eye icon for viewing report (Always visible for testing) */}
-                    <button
-                      className="view-btn"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/report/${c.id}`) }}
-                      title="View Full Report"
-                    >
-                      <span className="material-symbols-outlined">visibility</span>
-                    </button>
-                    {/* Expand arrow */}
-                    <button className={`expand-btn ${isExpanded ? 'open' : ''}`} onClick={() => toggleExpand(c.id)}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </button>
-                  </div>
 
-                  {/* Expandable info */}
-                  {isExpanded && (
-                    <div className="customer-detail">
-                      <div className="detail-grid">
-                        <div className="detail-item"><span className="dt">Gender/Age</span><span className="dd">{c.info.gender}, {c.info.age}</span></div>
-                        <div className="detail-item"><span className="dt">Income</span><span className="dd">{c.info.income}</span></div>
-                        <div className="detail-item full"><span className="dt">Request</span><span className="dd">{c.info.amount} ({c.info.loan})</span></div>
-                      </div>
-                      {/* Show result summary if available */}
-                      {result && !result.error && (
-                        <>
-                          <div className="customer-result-summary">
+                    {/* Expandable info */}
+                    {isExpanded && (
+                      <div className="customer-detail">
+                        <div className="detail-grid">
+                          <div className="detail-item"><span className="dt">Gender/Age</span><span className="dd">{c.info.gender}, {c.info.age}</span></div>
+                          <div className="detail-item"><span className="dt">Income</span><span className="dd">{c.info.income}</span></div>
+                          <div className="detail-item full"><span className="dt">Request</span><span className="dd">{c.info.amount} ({c.info.loan})</span></div>
+                          {c.info.education && c.info.education !== 'N/A' && (
+                            <div className="detail-item"><span className="dt">Education</span><span className="dd">{c.info.education}</span></div>
+                          )}
+                          {c.info.housing && c.info.housing !== 'N/A' && (
+                            <div className="detail-item"><span className="dt">Housing</span><span className="dd">{c.info.housing}</span></div>
+                          )}
+                        </div>
+
+                        {/* Show pre-loaded score data if available */}
+                        {c.scoreData && !result && (
+                          <div className="customer-result-summary preloaded">
                             <div className="result-mini">
                               <span className="result-mini-label">Credit Score</span>
-                              <span className="result-mini-value">{result.credit_score}</span>
+                              <span className="result-mini-value">{c.scoreData.creditScore}</span>
                             </div>
                             <div className="result-mini">
                               <span className="result-mini-label">Risk Band</span>
-                              <span className="result-mini-value">{result.risk_band}</span>
+                              <span className="result-mini-value">{c.scoreData.riskBand}</span>
                             </div>
                             <div className="result-mini">
                               <span className="result-mini-label">PD</span>
-                              <span className="result-mini-value">{result.pd_pct}%</span>
+                              <span className="result-mini-value">{c.scoreData.pdPct}%</span>
                             </div>
                           </div>
-                          <div className="customer-detail-actions mt-2 pt-2 border-t border-slate-100 flex justify-end">
-                            <button className="flex items-center gap-1.5 text-xs font-bold text-accent bg-accent-light px-3 py-1.5 rounded hover:bg-red-100 transition-colors" onClick={() => setPreviewPdf(c.id)}>
-                              <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span> PDF Preview
-                            </button>
+                        )}
+
+                        {/* Show pipeline result if available */}
+                        {result && !result.error && (
+                          <>
+                            <div className="customer-result-summary">
+                              <div className="result-mini">
+                                <span className="result-mini-label">Credit Score</span>
+                                <span className="result-mini-value">{result.credit_score}</span>
+                              </div>
+                              <div className="result-mini">
+                                <span className="result-mini-label">Risk Band</span>
+                                <span className="result-mini-value">{result.risk_band}</span>
+                              </div>
+                              <div className="result-mini">
+                                <span className="result-mini-label">PD</span>
+                                <span className="result-mini-value">{result.pd_pct}%</span>
+                              </div>
+                            </div>
+                            <div className="customer-detail-actions mt-2 pt-2 border-t border-slate-100 flex justify-end">
+                              <button className="flex items-center gap-1.5 text-xs font-bold text-accent bg-accent-light px-3 py-1.5 rounded hover:bg-red-100 transition-colors" onClick={() => setPreviewPdf(c.id)}>
+                                <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span> PDF Preview
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Show error state */}
+                        {result && result.error && (
+                          <div className="customer-result-summary error-state">
+                            <span className="material-symbols-outlined text-error">error</span>
+                            <span className="text-xs text-slate-500">Backend unavailable — Run pipeline when server is online</span>
                           </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                        )}
+
+                        {/* Show fallback indicator */}
+                        {result && result.fallback && (
+                          <div className="fallback-notice">
+                            <span className="material-symbols-outlined text-[12px]">info</span>
+                            Showing cached report data (backend was offline)
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
           </div>
 
           <button
@@ -394,7 +482,7 @@ export default function DashboardPage() {
             </div>
             <div className="modal-body w-full h-[65vh] bg-slate-100 p-0">
                <iframe 
-                 src={`${API_BASE}/v1/report/${previewPdf}/pdf`} 
+                 src={getPdfPreviewUrl(previewPdf)} 
                  title="PDF Preview"
                  className="w-full h-full border-0"
                />
@@ -408,7 +496,7 @@ export default function DashboardPage() {
               </button>
               <button 
                 className="px-4 py-2 bg-accent hover:bg-accent-dark text-white text-sm font-bold rounded flex items-center gap-2 transition-colors shadow-sm"
-                onClick={() => window.open(`${API_BASE}/v1/report/${previewPdf}/pdf?download=1`, '_blank')}
+                onClick={() => downloadPdf(previewPdf)}
               >
                 <span className="material-symbols-outlined text-[16px]">download</span>
                 Download PDF

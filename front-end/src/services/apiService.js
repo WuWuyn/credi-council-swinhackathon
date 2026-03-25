@@ -1,0 +1,202 @@
+/**
+ * API Service Layer — Centralized fetch with fallback to mock data.
+ * 
+ * This module provides a single source of truth for all API calls.
+ * When the backend is offline, it automatically falls back to mock data.
+ * 
+ * In dev mode (Vite), requests to /v1/* and /health are proxied to the backend.
+ * In production, API_CONFIG.BASE_URL is used.
+ */
+
+import { API_CONFIG } from '../config/api'
+import { CUSTOMERS_FALLBACK, PIPELINE_LAYERS, reportFallbackData } from '../data/mockData'
+
+// ── URL Helpers ──────────────────────────────────────────────────────────
+// In development with Vite proxy, use relative paths (empty string).
+// In production builds, use the configured BASE_URL.
+const isDev = import.meta.env.DEV
+const API_BASE = isDev ? '' : API_CONFIG.BASE_URL
+
+// ── Health & Status ──────────────────────────────────────────────────────
+let _backendAvailable = null // cache
+
+/**
+ * Check if the backend server is reachable.
+ * Caches result for the session, can be refreshed.
+ */
+export async function checkBackendHealth(forceRefresh = false) {
+  if (_backendAvailable !== null && !forceRefresh) return _backendAvailable
+  
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000)
+    
+    const res = await fetch(`${API_BASE}${API_CONFIG.ENDPOINTS.HEALTH}`, {
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+    
+    _backendAvailable = res.ok
+    return _backendAvailable
+  } catch {
+    _backendAvailable = false
+    return false
+  }
+}
+
+/**
+ * Returns the cached backend availability status.
+ */
+export function isBackendAvailable() {
+  return _backendAvailable === true
+}
+
+
+// ── Customer Listing ─────────────────────────────────────────────────────
+
+/**
+ * Fetch list of available customers.
+ * Falls back to hardcoded data if backend is offline.
+ */
+export async function fetchCustomers() {
+  try {
+    const res = await fetch(`${API_BASE}${API_CONFIG.ENDPOINTS.CUSTOMERS}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+    
+    // Transform backend data to frontend format
+    return {
+      customers: json.customers.map(c => ({
+        id: c.id,
+        label: c.label,
+        folderId: c.folder_id,
+        skIdCurr: c.sk_id_curr,
+        target: c.target,
+        targetLabel: c.target_label,
+        info: {
+          gender: c.gender || 'N/A',
+          age: c.age || 0,
+          income: c.income_type || 'N/A',
+          loan: c.loan_purpose || 'N/A',
+          amount: c.amt_credit ? formatVND(c.amt_credit) : 'N/A',
+          education: c.education || 'N/A',
+          housing: c.housing || 'N/A',
+          familyStatus: c.family_status || 'N/A',
+          ownRealty: c.own_realty || 'N',
+          ownCar: c.own_car || 'N',
+        },
+        // Pre-loaded score data (from existing reports)
+        scoreData: c.has_report ? {
+          creditScore: c.credit_score,
+          riskBand: c.risk_band,
+          pdPct: c.pd_pct,
+          recommendation: c.recommendation,
+          fiveCTotal: c.five_c_total,
+          fiveCScores: c.five_c_scores,
+        } : null,
+      })),
+      total: json.total,
+      source: 'backend',
+    }
+  } catch (err) {
+    console.warn('[API] Backend offline for customers, using fallback data:', err.message)
+    return {
+      customers: CUSTOMERS_FALLBACK,
+      total: CUSTOMERS_FALLBACK.length,
+      source: 'fallback',
+    }
+  }
+}
+
+
+// ── Report Data ──────────────────────────────────────────────────────────
+
+/**
+ * Fetch detailed credit report JSON for a given customer.
+ * Falls back to mock data if backend is unavailable.
+ */
+export async function fetchReportJSON(customerId) {
+  try {
+    const res = await fetch(
+      `${API_BASE}${API_CONFIG.ENDPOINTS.REPORT_JSON(customerId)}`
+    )
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+    return { data: json, source: 'backend' }
+  } catch (err) {
+    console.warn(`[API] Report fallback for customer ${customerId}:`, err.message)
+    return { data: reportFallbackData, source: 'fallback' }
+  }
+}
+
+
+// ── Pipeline Scoring ─────────────────────────────────────────────────────
+
+/**
+ * Submit a customer for credit scoring via the pipeline.
+ */
+export async function runScorePipeline(customerId, customerType = 'INDIVIDUAL') {
+  const formData = new FormData()
+  formData.append('applicant_id', customerId)
+  formData.append('customer_type', customerType)
+
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.SCORE}`,
+    { method: 'POST', body: formData }
+  )
+  
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
+
+
+// ── PDF URLs ─────────────────────────────────────────────────────────────
+
+/**
+ * Get the URL for PDF preview (inline).
+ * Uses the Vite proxy in dev mode to avoid cross-origin iframe issues.
+ */
+export function getPdfPreviewUrl(customerId) {
+  return `${API_BASE}${API_CONFIG.ENDPOINTS.REPORT_PDF(customerId, false)}`
+}
+
+/**
+ * Get the URL for PDF download.
+ */
+export function getPdfDownloadUrl(customerId) {
+  return `${API_BASE}${API_CONFIG.ENDPOINTS.REPORT_PDF(customerId, true)}`
+}
+
+/**
+ * Download PDF as a file. Fetches the PDF as blob and triggers browser download.
+ * This ensures the file is saved with .pdf extension regardless of browser behavior.
+ */
+export async function downloadPdf(customerId) {
+  const url = `${API_BASE}${API_CONFIG.ENDPOINTS.REPORT_PDF(customerId, true)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to download PDF: HTTP ${res.status}`)
+  
+  const blob = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = `credit_report_${customerId}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
+}
+
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+function formatVND(amount) {
+  if (amount >= 1e9) return `${(amount / 1e9).toFixed(1)}B VND`
+  if (amount >= 1e6) return `${(amount / 1e6).toFixed(1)}M VND`
+  if (amount >= 1e3) return `${(amount / 1e3).toFixed(0)}K VND`
+  return `${amount} VND`
+}
+
+// Re-export constants
+export { PIPELINE_LAYERS }
