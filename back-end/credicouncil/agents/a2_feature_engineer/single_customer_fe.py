@@ -357,15 +357,25 @@ class SingleCustomerFE:
         # Ratio features (same as training)
         docs = [f for f in df.columns if "FLAG_DOC" in f]
         live = [f for f in df.columns if ("FLAG_" in f) and ("FLAG_DOC" not in f) and ("_FLAG_" not in f)]
-        live_num = [f for f in live if df[f].dtype != object]
+        live_num = [f for f in live if pd.api.types.is_numeric_dtype(df[f])]
+
+        # Force-coerce any remaining FLAG columns that slipped through as mixed/object type
+        for col in live:
+            if col not in live_num:
+                converted = pd.to_numeric(df[col], errors="coerce")
+                if converted.notna().any():
+                    df[col] = converted
+                    live_num.append(col)
 
         if docs:
-            df["NEW_DOC_IND_KURT"] = df[docs].kurtosis(axis=1)
+            # Ensure doc columns are numeric before kurtosis
+            doc_df = df[docs].apply(pd.to_numeric, errors="coerce").fillna(0)
+            df["NEW_DOC_IND_KURT"] = doc_df.kurtosis(axis=1)
         else:
             df["NEW_DOC_IND_KURT"] = 0
 
         if live_num:
-            df["NEW_LIVE_IND_SUM"] = df[live_num].sum(axis=1)
+            df["NEW_LIVE_IND_SUM"] = df[live_num].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
         else:
             df["NEW_LIVE_IND_SUM"] = 0
 

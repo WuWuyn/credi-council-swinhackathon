@@ -1,69 +1,69 @@
-# CrediCouncil AI — Hệ thống Đánh giá Tín dụng AI
+# CrediCouncil AI — AI Credit Assessment System
 
-> **AI-powered credit scoring pipeline** xây dựng trên kiến trúc MASCA (Multi-Agent System for Credit Assessment), sử dụng LightGBM + SHAP + Gemini LLM để tạo báo cáo tín dụng 5C theo chuẩn ngân hàng Việt Nam.
+> **AI-powered credit scoring pipeline** built on the MASCA architecture (Multi-Agent System for Credit Assessment), using LightGBM + SHAP + Gemini LLM to generate 5C credit reports compliant with Vietnamese banking standards.
 
 ---
 
-## Mục lục
+## Table of Contents
 
-- [1. Cài đặt & Chạy](#1-cài-đặt--chạy)
+- [1. Installation & Running](#1-installation--running)
 - [2. Test & Verify](#2-test--verify)
-- [3. Kiến trúc hệ thống](#3-kiến-trúc-hệ-thống)
-- [4. Cấu trúc thư mục](#4-cấu-trúc-thư-mục)
-- [5. Pipeline chi tiết: A1 → A2 → A3 → A4](#5-pipeline-chi-tiết-a1--a2--a3--a4)
+- [3. System Architecture](#3-system-architecture)
+- [4. Directory Structure](#4-directory-structure)
+- [5. Detailed Pipeline: A1 → A2 → A3 → A4](#5-detailed-pipeline-a1--a2--a3--a4)
 
 ---
 
-## 1. Cài đặt & Chạy
+## 1. Installation & Running
 
-### Yêu cầu
+### Requirements
 
-- Python 3.10+ (Conda khuyến nghị)
-- Node.js 18+ (cho frontend)
-- ~2GB RAM cho model LightGBM
+- Python 3.10+ (Conda recommended)
+- Node.js 18+ (for frontend)
+- ~2GB RAM for LightGBM model
 
-### Bước 1: Tạo môi trường
+### Step 1: Create Environment
 
 ```bash
 conda create -n swinburne_hackathon python=3.10 -y
 conda activate swinburne_hackathon
 ```
 
-### Bước 2: Cài dependencies
+### Step 2: Install Dependencies
 
 ```bash
 cd back-end
 pip install -r requirements.txt
 ```
 
-### Bước 3: Cấu hình `.env`
+### Step 3: Configure `.env`
 
 ```bash
 cd back-end
 cp .env.example .env
 ```
 
-Chỉnh sửa `.env` — thay các giá trị placeholder:
+Edit `.env` — replace the placeholder values:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here            # Google AI Studio API key (bắt buộc)
+GEMINI_API_KEY=your_gemini_api_key_here            # Google AI Studio API key (required)
 DOCLING_DEVICE=cpu                                  # cpu | cuda | mps
-MODEL_PATH=models/lgbm_ref_v1.pkl                   # Đường dẫn model
+MODEL_PATH=models/lgbm_ref_v1.pkl                   # Model path
 GEMINI_MODEL=gemini-3.1-flash-lite-preview
 GEMINI_RAG_MODEL=gemini-3.1-flash-lite-preview
-FILE_SEARCH_STORE_NAME=your_file_search_store_name   # Từ bước 4
+FILE_SEARCH_STORE_NAME=your_file_search_store_name   # From Step 4
 ```
 
-### Bước 4: Khởi tạo RAG Policy Store (chỉ chạy 1 lần)
+### Step 4: Initialize RAG Policy Store (run once only)
 
 ```bash
 cd back-end
 python policy_docs/init_policy_store.py
 ```
 
-Upload tài liệu chính sách ngân hàng (TT39, TT11, QĐ18, Basel...) lên Gemini FileSearchStore. Store name tự động thêm vào `.env`.
+Uploads banking policy documents (TT39, TT11, QĐ18, Basel...) to the Gemini FileSearchStore. The store name is automatically added to `.env`.
 
-### Bước 5: Chạy Backend
+### Step 5: Run Backend
 
 ```bash
 conda activate swinburne_hackathon
@@ -73,7 +73,7 @@ uvicorn credicouncil.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 - **Swagger UI**: http://localhost:8000/docs
 
-### Bước 6: Chạy Frontend
+### Step 6: Run Frontend
 
 ```bash
 cd front-end
@@ -87,7 +87,7 @@ npm run dev
 
 ## 2. Test & Verify
 
-### Test pipeline đơn lẻ (1 customer)
+### Single Pipeline Test (1 customer)
 
 ```bash
 conda activate swinburne_hackathon
@@ -95,34 +95,34 @@ cd back-end
 python test_pipeline.py
 ```
 
-### Test batch pipeline (5 customers song song)
+### Batch Pipeline Test (5 customers in parallel)
 
 ```bash
 python test_batch_pipeline.py
 ```
 
-### Evaluation — Đánh giá Model A3
+### Evaluation — A3 Model Assessment
 
-> Yêu cầu: Cần thư mục Home Credit dataset (`application_train.csv`, `bureau.csv`, v.v.).
+> Requirement: Home Credit dataset directory (`application_train.csv`, `bureau.csv`, etc.) is needed.
 
 ```bash
 cd back-end
 python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap
 ```
 
-| Argument | Default | Mô tả |
+| Argument | Default | Description |
 |---|---|---|
-| `--data-dir` | — | Thư mục Home Credit CSV (bắt buộc) |
-| `--model-path` | `None` | Path tới model `.pkl` |
-| `--train` | `false` | Train model mới trước khi evaluate |
-| `--no-shap` | `false` | Bỏ qua SHAP analysis (nhanh hơn) |
-| `--sample` | `None` | Giới hạn test set size |
+| `--data-dir` | — | Home Credit CSV directory (required) |
+| `--model-path` | `None` | Path to model `.pkl` file |
+| `--train` | `false` | Train a new model before evaluation |
+| `--no-shap` | `false` | Skip SHAP analysis (faster) |
+| `--sample` | `None` | Limit test set size |
 
-**Metrics mục tiêu**: AUC-ROC ≥ 0.77 · Gini ≥ 0.54 · KS ≥ 0.35
+**Target Metrics**: AUC-ROC ≥ 0.77 · Gini ≥ 0.54 · KS ≥ 0.35
 
 ---
 
-## 3. Kiến trúc hệ thống
+## 3. System Architecture
 
 ```
 ┌─────────────────┐   ┌─────────────────┐   ┌─────────────┐   ┌──────────────────┐
@@ -148,7 +148,7 @@ python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --
 
 ### Core Technologies
 
-| Component | Technology | Mục đích |
+| Component | Technology | Purpose |
 |---|---|---|
 | **OCR** | Docling + EasyOCR | Smart text extraction |
 | **LLM** | Gemini + Pydantic `response_schema` | Type-safe field extraction |
@@ -160,13 +160,13 @@ python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --
 
 ### 3-Tier Explainability
 
-1. **SHAP Attribution** — Feature-level importance từ LightGBM
-2. **Grounded LLM Narrative** — Gemini viết nhận xét, trích dẫn SHAP factors + policy RAG
-3. **Audit Trail** — Timestamp, model version, consistency check cho mỗi step
+1. **SHAP Attribution** — Feature-level importance from LightGBM
+2. **Grounded LLM Narrative** — Gemini generates commentary, citing SHAP factors + policy RAG
+3. **Audit Trail** — Timestamp, model version, consistency check for each step
 
 ### API Endpoints
 
-| Method | Path | Mô tả |
+| Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Health check |
 | `POST` | `/v1/score/mock` | Score demo customer (001–005) |
@@ -178,7 +178,7 @@ python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --
 
 ---
 
-## 4. Cấu trúc thư mục
+## 4. Directory Structure
 
 ```
 cridi-council-swinhackathon/
@@ -274,40 +274,40 @@ cridi-council-swinhackathon/
 
 ---
 
-## 5. Pipeline chi tiết: A1 → A2 → A3 → A4
+## 5. Detailed Pipeline: A1 → A2 → A3 → A4
 
 ### 5.1 A1 — Data Ingestion Agent
 
 **File**: `credicouncil/agents/a1_ingestion/agent.py`
 
-Thu thập và chuẩn hóa dữ liệu từ 4 kênh thành format tương thích Home Credit dataset.
+Collects and normalizes data from 4 channels into a format compatible with the Home Credit dataset.
 
-**Input**: Thư mục khách hàng chứa:
+**Input**: Customer directory containing:
 
-| File | Kênh | Mô tả |
+| File | Channel | Description |
 |---|---|---|
-| `01_cccd.pdf` | PDF → OCR → LLM | Căn cước công dân |
-| `02_hop_dong_lao_dong.pdf` | PDF → OCR → LLM | Hợp đồng lao động |
-| `03_so_ho_khau.pdf` | PDF → OCR → LLM | Sổ hộ khẩu |
-| `04_tham_dinh_nha_o.pdf` | PDF → OCR → LLM | Phiếu thẩm định nhà ở |
-| `05_don_vay.pdf` | PDF → OCR → LLM | Đơn đề nghị vay vốn |
+| `01_cccd.pdf` | PDF → OCR → LLM | National ID Card |
+| `02_hop_dong_lao_dong.pdf` | PDF → OCR → LLM | Employment Contract |
+| `03_so_ho_khau.pdf` | PDF → OCR → LLM | Household Registration Book |
+| `04_tham_dinh_nha_o.pdf` | PDF → OCR → LLM | Housing Appraisal Form |
+| `05_don_vay.pdf` | PDF → OCR → LLM | Loan Application Form |
 | `07_cic_api_response.json` | CIC API | Bureau records + EXT_SOURCE scores |
-| `08_internal_db.json` | Internal DB | Lịch sử vay nội bộ |
-| `application_row.json` | **Fast-path** | Dữ liệu gốc 122 cột (bỏ qua OCR) |
+| `08_internal_db.json` | Internal DB | Internal loan history |
+| `application_row.json` | **Fast-path** | Original 122-column data (skip OCR) |
 
-**OCR Pipeline**: Docling + EasyOCR cho text extraction → Gemini + Pydantic `response_schema` cho field extraction (5 document schemas: CCCD, Employment, Household, HousingSurvey, LoanApplication).
+**OCR Pipeline**: Docling + EasyOCR for text extraction → Gemini + Pydantic `response_schema` for field extraction (5 document schemas: CCCD, Employment, Household, HousingSurvey, LoanApplication).
 
 **Output**:
 
 ```python
 {
     "application_id": str,
-    "application_row": dict,         # 122 cột matching Home Credit format
+    "application_row": dict,         # 122 columns matching Home Credit format
     "bureau_df": pd.DataFrame,       # Bureau records
     "previous_application_df": DataFrame,
     "confidence_map": dict,          # Confidence per extracted field
-    "thin_file_flag": bool,          # True nếu không có lịch sử CIC
-    "raw_texts": dict,               # OCR text (dùng cho A2)
+    "thin_file_flag": bool,          # True if no CIC history
+    "raw_texts": dict,               # OCR text (used by A2)
     "audit_trail": list[dict],
 }
 ```
@@ -318,18 +318,18 @@ Thu thập và chuẩn hóa dữ liệu từ 4 kênh thành format tương thíc
 
 **File**: `credicouncil/agents/a2_feature_engineer/agent.py`
 
-Chuyển đổi 218 cột raw data từ A1 thành **753 features** cho ML model, kết hợp semantic extraction từ LLM.
+Transforms 218 raw columns from A1 into **753 features** for the ML model, combining semantic extraction from LLM.
 
-**Semantic Extraction** (via `SemanticExtractor`): Gửi OCR text → Gemini → extract `loan_purpose_category`, `positive_signals`, `risk_flags` với Pydantic validation.
+**Semantic Extraction** (via `SemanticExtractor`): Sends OCR text → Gemini → extracts `loan_purpose_category`, `positive_signals`, `risk_flags` with Pydantic validation.
 
-**Deterministic FE** (via `SingleCustomerFE`): Bureau aggregations, previous app features, one-hot encoding, derived ratios — mirror logic từ `training/feature_engineering.py`, dùng `fe_stats.pkl` cho imputation.
+**Deterministic FE** (via `SingleCustomerFE`): Bureau aggregations, previous app features, one-hot encoding, derived ratios — mirrors logic from `training/feature_engineering.py`, uses `fe_stats.pkl` for imputation.
 
 **Output**:
 
 ```python
 {
     "feature_vector": pd.Series,     # 753 ML features
-    "application_row": dict,         # Pass-through từ A1
+    "application_row": dict,         # Pass-through from A1
     "llm_feats": {                   # Semantic features
         "loan_purpose_category": str,
         "risk_flags": list[str],
@@ -346,7 +346,7 @@ Chuyển đổi 218 cột raw data từ A1 thành **753 features** cho ML model,
 
 **File**: `credicouncil/agents/a3_scoring/agent.py`
 
-Chấm điểm tín dụng bằng LightGBM, tạo SHAP explanation, áp dụng decision rules.
+Performs credit scoring using LightGBM, generates SHAP explanations, and applies decision rules.
 
 **Score Mapping** (PD → Credit Score 300–850 → Risk Band):
 
@@ -364,12 +364,12 @@ Chấm điểm tín dụng bằng LightGBM, tạo SHAP explanation, áp dụng d
 ```python
 {
     "credit_score": int,             # 300–850
-    "pd_pct": float,                 # Xác suất vỡ nợ (%)
+    "pd_pct": float,                 # Probability of Default (%)
     "risk_band": str,                # "AAA"|"AA"|"A"|"BBB"|"CC"
     "shap_values": {
-        "top_positive_factors": [...],     # Tăng rủi ro
-        "top_negative_factors": [...],     # Giảm rủi ro
-        "five_c_shap_allocation": {...},   # Phân bổ SHAP theo 5C
+        "top_positive_factors": [...],     # Increase risk
+        "top_negative_factors": [...],     # Decrease risk
+        "five_c_shap_allocation": {...},   # SHAP allocation by 5C
     },
     "routing": str,                  # "APPROVE"|"REVIEW"|"REJECT"
     "audit_trail": list[dict],
@@ -382,25 +382,25 @@ Chấm điểm tín dụng bằng LightGBM, tạo SHAP explanation, áp dụng d
 
 **File**: `credicouncil/agents/a4_report_generator/agent.py`
 
-Tạo báo cáo tín dụng 5C đầy đủ bằng tiếng Việt, kết hợp RAG policy citation + deterministic scoring.
+Generates a comprehensive 5C credit report in Vietnamese, combining RAG policy citation + deterministic scoring.
 
 **Sub-components**:
 
-| Module | Logic | Mô tả |
+| Module | Logic | Description |
 |---|---|---|
-| `five_c_scorer.py` | Deterministic | Chấm điểm 5C (Character/Capacity/Capital/Conditions/Collateral) |
+| `five_c_scorer.py` | Deterministic | 5C scoring (Character/Capacity/Capital/Conditions/Collateral) |
 | `decision_engine.py` | Deterministic | Band-based decision + suggested terms |
-| `policy_rag_service.py` | LLM + RAG | Trích dẫn quy định (TT39, TT11, Basel...) |
+| `policy_rag_service.py` | LLM + RAG | Regulatory citation (TT39, TT11, Basel...) |
 | `consistency_validator.py` | Deterministic | Validate SHAP ↔ narrative consistency |
 | `pdf_generator.py` | Deterministic | ReportLab PDF rendering |
 
 **Report Output — 6 Sections**:
 
-| Section | Nội dung |
+| Section | Content |
 |---|---|
-| I | Thông tin khách hàng |
-| II | Tóm tắt đánh giá + Scorecard |
-| III | Đánh giá 5C chi tiết |
-| IV | Tài chính & Phân tích nợ (DTI, DSCR, LTV) |
-| V | Tài sản bảo đảm |
-| VI | Khuyến nghị & Điều kiện |
+| I | Customer Information |
+| II | Assessment Summary + Scorecard |
+| III | Detailed 5C Assessment |
+| IV | Financial & Debt Analysis (DTI, DSCR, LTV) |
+| V | Collateral Assets |
+| VI | Recommendations & Conditions |
