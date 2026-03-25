@@ -18,9 +18,9 @@ function getConfidenceClass(conf) {
 }
 
 function getConfidenceLabel(conf) {
-  if (conf >= 0.90) return 'Cao'
-  if (conf >= 0.70) return 'Trung bình'
-  return 'Thấp'
+  if (conf >= 0.90) return 'High'
+  if (conf >= 0.70) return 'Medium'
+  return 'Low'
 }
 
 // ── VND scaling (display only) ────────────────────────────────────────────
@@ -62,7 +62,7 @@ function fromDisplayValue(fieldName, displayValue) {
 function formatValue(value) {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'number') {
-    if (Math.abs(value) >= 1000) return value.toLocaleString('vi-VN')
+    if (Math.abs(value) >= 1000) return value.toLocaleString('en-US')
     return String(value)
   }
   return String(value)
@@ -71,10 +71,10 @@ function formatValue(value) {
 function formatVNDShort(value) {
   if (value === null || value === undefined) return '—'
   const v = Math.abs(value)
-  if (v >= 1e9) return `${(value / 1e9).toFixed(1)} tỷ`
-  if (v >= 1e6) return `${(value / 1e6).toFixed(1)} triệu`
+  if (v >= 1e9) return `${(value / 1e9).toFixed(1)}B`
+  if (v >= 1e6) return `${(value / 1e6).toFixed(1)}M`
   if (v >= 1e3) return `${(value / 1e3).toFixed(0)}K`
-  return value.toLocaleString('vi-VN')
+  return value.toLocaleString('en-US')
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -191,9 +191,9 @@ export default function ExtractedDataReviewModal({
               <span className="material-symbols-outlined">fact_check</span>
             </div>
             <div>
-              <h2>Xác Nhận Dữ Liệu Trích Xuất</h2>
+              <h2>Verify Extracted Data</h2>
               <p className="review-header-sub">
-                Kiểm tra và xác nhận dữ liệu OCR trước khi chấm điểm tín dụng · {customerId}
+                Review and confirm OCR data before credit scoring · {customerId}
               </p>
             </div>
           </div>
@@ -247,17 +247,17 @@ export default function ExtractedDataReviewModal({
           <div className="review-stat">
             <span className="material-symbols-outlined" style={{ color: '#4caf50', fontSize: 16 }}>check_circle</span>
             <span className="stat-value">{stats.filledFields}</span>
-            <span className="stat-label">/ {stats.totalFields} trường</span>
+            <span className="stat-label">/ {stats.totalFields} fields</span>
           </div>
           <div className="review-stat">
             <span className="material-symbols-outlined" style={{ color: '#ff9800', fontSize: 16 }}>warning</span>
             <span className="stat-value warn">{stats.lowConfFields}</span>
-            <span className="stat-label">cần xác nhận</span>
+            <span className="stat-label">need review</span>
           </div>
           <div className="review-stat">
             <span className="material-symbols-outlined" style={{ color: '#2196f3', fontSize: 16 }}>edit</span>
             <span className="stat-value edit">{stats.editedCount}</span>
-            <span className="stat-label">đã sửa</span>
+            <span className="stat-label">edited</span>
           </div>
 
           {/* Filter buttons */}
@@ -265,20 +265,20 @@ export default function ExtractedDataReviewModal({
             <button
               className={`filter-btn ${filterMode === 'all' ? 'active' : ''}`}
               onClick={() => setFilterMode('all')}
-            >Tất cả</button>
+            >All</button>
             <button
               className={`filter-btn ${filterMode === 'low_confidence' ? 'active' : ''}`}
               onClick={() => setFilterMode('low_confidence')}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 13 }}>warning</span>
-              Cần xác nhận
+              Need Review
             </button>
             <button
               className={`filter-btn ${filterMode === 'edited' ? 'active' : ''}`}
               onClick={() => setFilterMode('edited')}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 13 }}>edit</span>
-              Đã sửa ({editedFields.size})
+              Edited ({editedFields.size})
             </button>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function ExtractedDataReviewModal({
                     )}
                   </div>
                   <div className="review-group-right">
-                    <span className="group-field-count">{group.fields.length} trường</span>
+                    <span className="group-field-count">{group.fields.length} fields</span>
                     <svg
                       className={`group-arrow ${isExpanded ? 'open' : ''}`}
                       width="12" height="12" viewBox="0 0 24 24"
@@ -356,7 +356,7 @@ export default function ExtractedDataReviewModal({
                                   onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
                                   className={`field-input field-select ${isEdited ? 'is-edited' : ''}`}
                                 >
-                                  <option value="">— chọn —</option>
+                                  <option value="">— select —</option>
                                   {field.options.map(opt => (
                                     <option key={opt} value={opt}>{opt}</option>
                                   ))}
@@ -391,7 +391,7 @@ export default function ExtractedDataReviewModal({
                                 />
                               )}
                               {isEdited && (
-                                <span className="edited-indicator" title="Đã chỉnh sửa">
+                                <span className="edited-indicator" title="Edited">
                                   <span className="material-symbols-outlined" style={{ fontSize: 14 }}>edit</span>
                                 </span>
                               )}
@@ -400,7 +400,7 @@ export default function ExtractedDataReviewModal({
                             {/* Show original value if edited */}
                             {isEdited && application_row[field.field_name] !== undefined && (
                               <div className="field-original">
-                                Gốc: <strong>{formatValue(toDisplayValue(field.field_name, application_row[field.field_name]))}</strong>
+                                Original: <strong>{formatValue(toDisplayValue(field.field_name, application_row[field.field_name]))}</strong>
                               </div>
                             )}
                           </div>
@@ -420,7 +420,7 @@ export default function ExtractedDataReviewModal({
             {editedFields.size > 0 && (
               <span className="footer-edited-note">
                 <span className="material-symbols-outlined" style={{ fontSize: 14 }}>edit_note</span>
-                {editedFields.size} trường đã được chỉnh sửa
+                {editedFields.size} field(s) edited
               </span>
             )}
           </div>
@@ -430,7 +430,7 @@ export default function ExtractedDataReviewModal({
               onClick={onCancel}
               disabled={isProcessing}
             >
-              Hủy bỏ
+              Cancel
             </button>
             <button
               className="review-btn approve"
@@ -440,12 +440,12 @@ export default function ExtractedDataReviewModal({
               {isProcessing ? (
                 <>
                   <span className="spinner white" />
-                  Đang xử lý A2→A3→A4...
+                   Processing A2→A3→A4...
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>verified</span>
-                  Phê duyệt & Tiếp tục
+                  Approve & Continue
                 </>
               )}
             </button>
