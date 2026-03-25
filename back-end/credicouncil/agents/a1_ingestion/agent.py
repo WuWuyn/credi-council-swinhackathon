@@ -1,11 +1,11 @@
 """
 CREDICOUNCIL A1 — Data Ingestion Agent (Local Version).
 
-# LOCAL_SUB: Uses PyMuPDF instead of AWS Textract, mock JSON instead of real APIs.
+# LOCAL_SUB: Uses Docling+EasyOCR+LLM instead of AWS Textract, mock JSON instead of real APIs.
 # See LOCAL_SUBSTITUTIONS.md for migration guide.
 
 Orchestrates 4-channel data ingestion:
-    1. PDF Documents → LocalDocumentParser → identity/employment/housing fields
+    1. PDF Documents → DoclingOCR + LLMFieldExtractor → identity/employment/housing fields
     2. CIC API (mock JSON) → CICService → bureau records + ext scores
     3. Bank Statement CSV → parse_bank_statement → alt data features
     4. Internal DB (mock JSON) → InternalDBReader → previous loan DataFrames
@@ -24,8 +24,10 @@ Outputs:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
+import threading
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -33,9 +35,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from credicouncil.agents.a1_ingestion.document_parser import LocalDocumentParser
 from credicouncil.agents.a1_ingestion.cic_service import CICService
 from credicouncil.agents.a1_ingestion.internal_db_reader import InternalDBReader
+from credicouncil.agents.a1_ingestion.llm_field_extractor import LLMFieldExtractor
+from credicouncil.services.docling_ocr_service import DoclingOCRService
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +51,8 @@ class IngestionAgent:
     """
 
     def __init__(self):
-        self.doc_parser = LocalDocumentParser()
+        self.ocr_service = DoclingOCRService()
+        self.llm_extractor = LLMFieldExtractor()
         self.cic = CICService()
         self.internal_db = InternalDBReader()
 
@@ -91,19 +95,6 @@ class IngestionAgent:
         logger.info(f"  Applicant ID: {applicant_id}")
         logger.info(f"{'='*60}")
 
-        # ── Mode selection: OCR vs Fast-path ─────────────────────────────
-        # Controlled by USE_OCR in .env (default: true)
-        # USE_OCR=true  → Always parse PDFs via OCR pipeline (full pipeline)
-        # USE_OCR=false → Read application_row.json directly (fast-path, demo)
-        from credicouncil.config.settings import get_settings
-        settings = get_settings()
-
-        app_row_path = customer_dir / "application_row.json"
-        if not settings.use_ocr and app_row_path.exists():
-            logger.info("  Mode: FAST-PATH (USE_OCR=false, reading application_row.json)")
-            return self._ingest_from_json(customer_dir, app_row_path, applicant_id)
-
-        logger.info(f"  Mode: OCR PIPELINE (USE_OCR=true, parsing PDFs)")
         # ── Channel 1: Parse PDF documents ─────────────────────────────
         doc_fields = {}
         confidence_map = {}
@@ -124,109 +115,69 @@ class IngestionAgent:
 
         pdf_files = sorted(customer_dir.glob("*.pdf"))
 
-        if settings.use_docling:
-            # ── Path A: Docling + EasyOCR + LLM extraction ────────────
-            # OCR runs sequentially (local CPU), LLM calls run in PARALLEL
-            logger.info("  Engine: DOCLING + EasyOCR + LLM extraction")
-            from credicouncil.services.docling_ocr_service import DoclingOCRService
-            from credicouncil.agents.a1_ingestion.llm_field_extractor import LLMFieldExtractor
-            import asyncio
+        # ── Docling + EasyOCR + LLM extraction ────────────────────────
+        # OCR runs sequentially (local CPU), LLM calls run in PARALLEL
+        logger.info("  Engine: DOCLING + EasyOCR + LLM extraction")
 
-            ocr_service = DoclingOCRService()
-            llm_extractor = LLMFieldExtractor()
+        # Step 1: Run OCR on all PDFs sequentially (fast, local CPU)
+        ocr_tasks = []  # list of (doc_type, ocr_text)
+        for pdf_path in pdf_files:
+            if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
+                logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
+                continue
 
-            # Step 1: Run OCR on all PDFs sequentially (fast, local CPU)
-            ocr_tasks = []  # list of (doc_type, ocr_text)
-            for pdf_path in pdf_files:
-                if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
-                    logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
-                    continue
+            prefix = pdf_path.name[:3]
+            doc_type = PREFIX_DOC_TYPE.get(prefix, "unknown")
+            logger.info(f"  Docling OCR: {pdf_path.name} → {doc_type}")
 
-                prefix = pdf_path.name[:3]
-                doc_type = PREFIX_DOC_TYPE.get(prefix, "unknown")
-                logger.info(f"  Docling OCR: {pdf_path.name} → {doc_type}")
+            ocr_result = self.ocr_service.extract(pdf_path)
+            ocr_text = ocr_result["markdown"] or ocr_result["raw_text"]
+            raw_texts[doc_type] = ocr_text
 
-                ocr_result = ocr_service.extract(pdf_path)
-                ocr_text = ocr_result["markdown"] or ocr_result["raw_text"]
-                raw_texts[doc_type] = ocr_text
+            if not ocr_text.strip():
+                logger.warning(f"  Empty OCR text for {pdf_path.name}, skipping LLM")
+                continue
 
-                if not ocr_text.strip():
-                    logger.warning(f"  Empty OCR text for {pdf_path.name}, skipping LLM")
-                    continue
+            ocr_tasks.append((doc_type, ocr_text))
 
-                ocr_tasks.append((doc_type, ocr_text))
+        # Step 2: Run ALL LLM extractions in PARALLEL (async gather)
+        # Stagger delay between calls to avoid Tier 1 rate limit (15 RPM)
+        STAGGER_DELAY = 0.2  # seconds between each API call start
+        if ocr_tasks:
+            async def _extract_all():
+                semaphore = asyncio.Semaphore(5)  # max 5 concurrent
 
-            # Step 2: Run ALL LLM extractions in PARALLEL (async gather)
-            # Stagger delay between calls to avoid Tier 1 rate limit (15 RPM)
-            STAGGER_DELAY = 0.2  # seconds between each API call start
-            if ocr_tasks:
-                async def _extract_all():
-                    semaphore = asyncio.Semaphore(5)  # max 5 concurrent
+                async def _extract_one(idx, dt, text):
+                    # Stagger: each call starts 0.2s after previous
+                    await asyncio.sleep(idx * STAGGER_DELAY)
+                    async with semaphore:
+                        return dt, await self.llm_extractor.extract_async(dt, text)
 
-                    async def _extract_one(idx, dt, text):
-                        # Stagger: each call starts 0.2s after previous
-                        await asyncio.sleep(idx * STAGGER_DELAY)
-                        async with semaphore:
-                            return dt, await llm_extractor.extract_async(dt, text)
+                tasks = [_extract_one(i, dt, text) for i, (dt, text) in enumerate(ocr_tasks)]
+                return await asyncio.gather(*tasks)
 
-                    tasks = [_extract_one(i, dt, text) for i, (dt, text) in enumerate(ocr_tasks)]
-                    return await asyncio.gather(*tasks)
+            # Always run in a separate thread to avoid conflicts with
+            # any existing event loop (uvicorn async or sync test_pipeline)
+            llm_results = []
+            llm_error = []
 
-                # Always run in a separate thread to avoid conflicts with
-                # any existing event loop (uvicorn async or sync test_pipeline)
-                import threading
-                llm_results = []
-                llm_error = []
+            def _run():
+                try:
+                    llm_results.extend(asyncio.run(_extract_all()))
+                except Exception as e:
+                    llm_error.append(e)
 
-                def _run():
-                    try:
-                        llm_results.extend(asyncio.run(_extract_all()))
-                    except Exception as e:
-                        llm_error.append(e)
+            logger.info(f"  LLM extraction: {len(ocr_tasks)} PDFs in PARALLEL...")
+            t = threading.Thread(target=_run)
+            t.start()
+            t.join()
 
-                logger.info(f"  LLM extraction: {len(ocr_tasks)} PDFs in PARALLEL...")
-                t = threading.Thread(target=_run)
-                t.start()
-                t.join()
+            if llm_error:
+                raise llm_error[0]
 
-                if llm_error:
-                    raise llm_error[0]
-
-                for doc_type, (fields, conf) in llm_results:
-                    doc_fields[doc_type] = fields
-                    confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
-                    name = fields.get("full_name", "")
-                    if name:
-                        identity_names.append(name.strip().upper())
-
-        else:
-            # ── Path B: PyMuPDF + regex (original) ────────────────────
-            logger.info("  Engine: PyMuPDF + regex parser")
-            for pdf_path in pdf_files:
-                if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
-                    logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
-                    continue
-
-                logger.info(f"  Parsing: {pdf_path.name}")
-                result = self.doc_parser.extract_document(pdf_path)
-                doc_type = result.get("doc_type", "unknown")
-                fields = result.get("fields", {})
-                conf = result.get("confidence", {})
-                raw_texts[doc_type] = result.get("raw_text", "")
-
-                # Merge fields — don't overwrite if doc_type already has richer data
-                if doc_type in doc_fields:
-                    existing = doc_fields[doc_type]
-                    if len(fields) > len(existing):
-                        doc_fields[doc_type] = fields
-                        logger.info(f"  Replaced {doc_type} ({len(existing)}→{len(fields)} fields)")
-                    else:
-                        logger.info(f"  Kept existing {doc_type} ({len(existing)} fields, new only {len(fields)})")
-                else:
-                    doc_fields[doc_type] = fields
+            for doc_type, (fields, conf) in llm_results:
+                doc_fields[doc_type] = fields
                 confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
-
-                # Collect names for cross-validation
                 name = fields.get("full_name", "")
                 if name:
                     identity_names.append(name.strip().upper())
@@ -292,81 +243,6 @@ class IngestionAgent:
             "identity_consistency_flag": identity_flag,
             "thin_file_flag": cic_result.get("thin_file_flag", True),
             "raw_texts": raw_texts,
-            "audit_trail": [audit_entry],
-        }
-
-    def _ingest_from_json(
-        self,
-        customer_dir: Path,
-        app_row_path: Path,
-        applicant_id: str,
-    ) -> dict[str, Any]:
-        """Fast-path: Load application_row directly from JSON file.
-
-        Skips PDF OCR — uses all 122 dataset columns from application_row.json.
-        Still loads CIC API JSON (bureau data) and Internal DB JSON.
-        """
-        import json as _json
-
-        logger.info(f"  [FAST-PATH] Loading from {app_row_path.name}")
-
-        with open(app_row_path, encoding="utf-8") as f:
-            application_row = _json.load(f)
-
-        # Remove TARGET column (label, not a feature)
-        application_row.pop("TARGET", None)
-
-        n_non_null = len([v for v in application_row.values() if v is not None])
-        logger.info(f"  [FAST-PATH] {n_non_null}/122 fields loaded from JSON")
-
-        # ── CIC API (bureau data) ──────────────────────────────────────
-        cic_path = customer_dir / "07_cic_api_response.json"
-        cic_result = self.cic.query(cic_path if cic_path.exists() else None)
-        logger.info(f"  CIC: thin_file={cic_result.get('thin_file_flag')}, "
-                    f"bureau_records={len(cic_result.get('bureau_records', []))}")
-
-        # ── Internal DB (previous_app, POS, installments, CC) ─────────
-        internal_path = customer_dir / "08_internal_db.json"
-        internal_dfs = self.internal_db.read(internal_path if internal_path.exists() else None)
-
-        # ── Bureau DataFrames from CIC ─────────────────────────────────
-        bureau_df, bureau_balance_df = self._build_bureau_dfs(cic_result)
-
-        logger.info(f"  Bureau records: {len(bureau_df)}")
-        logger.info(f"  previous_application: {len(internal_dfs.get('previous_application', pd.DataFrame()))} records")
-        logger.info(f"  POS_CASH_balance: {len(internal_dfs.get('POS_CASH_balance', pd.DataFrame()))} records")
-        logger.info(f"  installments_payments: {len(internal_dfs.get('installments_payments', pd.DataFrame()))} records")
-        logger.info(f"  credit_card_balance: {len(internal_dfs.get('credit_card_balance', pd.DataFrame()))} records")
-
-        audit_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "agent": "A1",
-            "action": "ingest_fast_path",
-            "input_summary": {
-                "source": "application_row.json",
-                "has_cic": not cic_result.get("thin_file_flag", True),
-                "has_internal_db": internal_path.exists(),
-            },
-            "output_summary": {
-                "n_application_fields": n_non_null,
-                "n_bureau_records": len(bureau_df),
-                "identity_consistency": "OK",
-            },
-        }
-
-        return {
-            "application_id": applicant_id,
-            "application_row": application_row,
-            "bureau_df": bureau_df,
-            "bureau_balance_df": bureau_balance_df,
-            "previous_application_df": internal_dfs.get("previous_application", pd.DataFrame()),
-            "pos_cash_df": internal_dfs.get("POS_CASH_balance", pd.DataFrame()),
-            "installments_df": internal_dfs.get("installments_payments", pd.DataFrame()),
-            "credit_card_df": internal_dfs.get("credit_card_balance", pd.DataFrame()),
-            "confidence_map": {"fast_path": 1.0},
-            "identity_consistency_flag": "OK",
-            "thin_file_flag": cic_result.get("thin_file_flag", True),
-            "raw_texts": {"fast_path": f"JSON loaded: {n_non_null}/122 fields"},
             "audit_trail": [audit_entry],
         }
 

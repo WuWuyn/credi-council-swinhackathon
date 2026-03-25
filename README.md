@@ -66,8 +66,6 @@ Chỉnh sửa `.env`:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here   # Google AI Studio API key
-USE_OCR=true                               # true = parse PDFs, false = read JSON
-USE_DOCLING=true                           # true = Docling+LLM, false = PyMuPDF+regex
 DOCLING_DEVICE=cpu                         # cpu | cuda | mps
 MODEL_PATH=models/lgbm_ref_v1.pkl         # Đường dẫn model đã train
 GEMINI_MODEL=gemini-3.1-flash-lite-preview
@@ -124,8 +122,8 @@ Truy cập **Dashboard React**: http://localhost:5173
 │  Ingestion       │──▶│  Feature         │──▶│  Scoring     │──▶│  Report           │
 │                  │   │  Engineer        │   │  (LightGBM)  │   │  Generator        │
 │ • Smart OCR      │   │ • Semantic LLM   │   │ • PD predict │   │ • 5C assessment   │
-│   (PyMuPDF/      │   │   extraction     │   │ • PD → Score │   │ • RAG policy cite │
-│    Docling)      │   │ • Pydantic valid. │   │ • SHAP       │   │ • Debt Analyst    │
+│   (Docling+      │   │   extraction     │   │ • PD → Score │   │ • RAG policy cite │
+│    EasyOCR)      │   │ • Pydantic valid. │   │ • SHAP       │   │ • Debt Analyst    │
 │ • LLM extraction │   │ • Imputation     │   │ • Decision   │   │ • Reward Modeler  │
 │ • CIC API        │   │ • 753 features   │   │              │   │ • PDF render      │
 │ • Internal DB    │   │                  │   │              │   │                   │
@@ -145,7 +143,7 @@ Truy cập **Dashboard React**: http://localhost:5173
 
 | Component | Technology | Mục đích |
 |---|---|---|
-| **OCR** | PyMuPDF + Docling + EasyOCR | Smart dual-mode text extraction |
+| **OCR** | Docling + EasyOCR (with PyMuPDF fast-path) | Smart text extraction |
 | **LLM Extraction** | Gemini + Pydantic `response_schema` | Type-safe field extraction |
 | **ML Scoring** | LightGBM (5-fold bagging) | Probability of Default |
 | **Explainability** | SHAP TreeExplainer | Feature-level attribution |
@@ -170,7 +168,6 @@ swinburn_new/
 │   │   │   ├── a1_ingestion/         # Data ingestion
 │   │   │   │   ├── agent.py          # IngestionAgent — main orchestrator
 │   │   │   │   ├── llm_field_extractor.py # Gemini+Pydantic field extraction
-│   │   │   │   ├── document_parser.py # PDF → structured fields (regex fallback)
 │   │   │   │   ├── cic_service.py    # CIC API client (mock JSON)
 │   │   │   │   └── internal_db_reader.py # Internal DB → DataFrames
 │   │   │   ├── a2_feature_engineer/  # Feature engineering
@@ -194,7 +191,7 @@ swinburn_new/
 │   │   │   ├── feature_config.py     # Feature→5C mapping, risk bands
 │   │   │   ├── feature_source_schema.json # 122-field schema
 │   │   │   ├── prompts.py            # LLM prompt templates
-│   │   │   └── settings.py           # App settings (USE_DOCLING, etc.)
+│   │   │   └── settings.py           # App settings (DOCLING_DEVICE, etc.)
 │   │   ├── schemas/
 │   │   │   └── document_schemas.py   # Pydantic schemas (5 doc types)
 │   │   └── services/
@@ -222,8 +219,7 @@ swinburn_new/
 │   │       └── extract_real_customers.py # Generate demo data from dataset
 │   ├── tests/
 │   │   └── unit/                     # Unit tests
-│   │       ├── test_docling_coverage.py # Docling+LLM vs ground truth
-│   │       └── test_ocr_coverage.py  # PyMuPDF+regex vs ground truth
+│   │       └── test_docling_coverage.py # Docling+LLM vs ground truth
 │   ├── test_pipeline.py              # Single customer pipeline test
 │   └── test_all_customers.py         # Multi-customer comparison test
 ├── front-end/                        # Frontend React + Vite SPA
@@ -248,20 +244,18 @@ swinburn_new/
 #### Nhiệm vụ
 Thu thập và chuẩn hóa dữ liệu từ 4 kênh khác nhau thành format tương thích Home Credit dataset.
 
-#### Dual-Mode OCR Engine
+#### OCR Engine: Docling + EasyOCR + LLM
 
-A1 hỗ trợ 2 extraction engine, điều khiển bởi `USE_DOCLING`:
+A1 sử dụng Docling + EasyOCR cho OCR và Gemini LLM cho field extraction:
 
-| | Path A: Docling+LLM (`USE_DOCLING=true`) | Path B: PyMuPDF+regex (`USE_DOCLING=false`) |
-|---|---|---|
-| **Text extraction** | Smart 3-tier: PyMuPDF → Docling+EasyOCR → fallback | PyMuPDF only |
-| **Field extraction** | Gemini + Pydantic `response_schema` | Regex + rule-based |
-| **Accuracy** | 93/121 fields (76.9%) | 93/121 fields (76.9%) |
-| **Speed** (text-layer PDF) | 0.12s + ~20s LLM = ~20s | ~0.5s |
-| **Speed** (scanned PDF) | ~10s OCR + ~20s LLM = ~30s | N/A (regex chỉ hỗ trợ text) |
-| **Ưu điểm** | Robust, hỗ trợ PDF scan, type-safe | Nhanh, không cần API |
+| Component | Mô tả |
+|---|---|
+| **Text extraction** | Smart 2-tier: PyMuPDF (fast) → Docling+EasyOCR (scanned PDFs) |
+| **Field extraction** | Gemini + Pydantic `response_schema` (type-safe, semantic) |
+| **Speed** (text-layer PDF) | 0.12s + ~20s LLM = ~20s |
+| **Speed** (scanned PDF) | ~10s OCR + ~20s LLM = ~30s |
 
-##### Smart 3-Tier OCR (`DoclingOCRService`)
+##### Smart 2-Tier OCR (`DoclingOCRService`)
 
 ```
 PDF input
@@ -269,8 +263,6 @@ PDF input
 Tier 1: PyMuPDF (0.003s) — text layer extraction
    ↓ (nếu text ≥ 50 chars → thành công, bỏ qua Tier 2)
 Tier 2: Docling + EasyOCR (5-10s) — cho scanned/image PDFs
-   ↓ (nếu thất bại)
-Tier 3: PyMuPDF fallback
 ```
 
 - **`DOCLING_DEVICE`**: `cpu` | `cuda` | `mps` — chọn thiết bị tính toán cho Docling layout model, TableFormer, và EasyOCR
@@ -519,8 +511,6 @@ RAROC = (gross_income - expected_loss) / loan_amount
 | Biến | Default | Mô tả |
 |---|---|---|
 | `GEMINI_API_KEY` | — | Google AI Studio API key (bắt buộc) |
-| `USE_OCR` | `true` | `true` = parse PDFs, `false` = read JSON directly |
-| `USE_DOCLING` | `true` | `true` = Docling+LLM extraction, `false` = PyMuPDF+regex |
 | `DOCLING_DEVICE` | `cpu` | `cpu` / `cuda` / `mps` — device cho AI models |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model cho field + semantic extraction |
 | `GEMINI_RAG_MODEL` | `gemini-2.5-flash` | Gemini model cho RAG policy query |

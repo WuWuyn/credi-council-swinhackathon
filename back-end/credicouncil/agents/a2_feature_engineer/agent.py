@@ -75,12 +75,11 @@ class FeatureEngineerAgent:
         # Source: OCR text (from PDFs) or structured summary (from application_row)
         raw_texts = a1_output.get("raw_texts", {})
         if raw_texts:
-            # USE_OCR=true: combine raw OCR text from all PDFs
+            # Combine raw OCR text from all PDFs
             input_text = " ".join(str(v) for v in raw_texts.values())
             logger.info("  Step 1: Semantic extraction from OCR text")
         else:
-            # USE_OCR=false: build structured summary from application_row
-            # This is actually MORE accurate than noisy OCR text
+            # Fallback: build structured summary from application_row
             input_text = self._build_text_from_application_row(application_row)
             logger.info("  Step 1: Semantic extraction from application_row summary")
 
@@ -208,7 +207,7 @@ class FeatureEngineerAgent:
         """Convert application_row dict into structured text for LLM semantic extraction.
 
         This produces a text summary that the SemanticExtractor can analyze,
-        enabling semantic features even when OCR text is not available (USE_OCR=false).
+        enabling semantic features even when OCR text is not available.
         """
         lines = []
 

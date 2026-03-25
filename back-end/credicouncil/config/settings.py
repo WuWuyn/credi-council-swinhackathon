@@ -67,8 +67,6 @@ class Settings(BaseSettings):
     data_dir: str = "home-credit-default-risk"
 
     # ── Ingestion Pipeline ──
-    use_ocr: bool = True  # True → OCR parse PDFs | False → read application_row.json directly
-    use_docling: bool = False  # True → Docling+EasyOCR+LLM extraction | False → PyMuPDF+regex
     docling_device: str = "cpu"  # cpu | cuda | mps (Apple Silicon)
 
     @property
