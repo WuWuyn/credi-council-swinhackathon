@@ -115,15 +115,22 @@ export default function ExtractedDataReviewModal({
     let filledFields = 0
     let lowConfFields = 0
     let highConfFields = 0
+    let confSum = 0
+    let confCount = 0
     for (const group of field_metadata || []) {
       for (const f of group.fields || []) {
         totalFields++
-        if (f.value !== null && f.value !== undefined && f.value !== '') filledFields++
+        if (f.value !== null && f.value !== undefined && f.value !== '') {
+          filledFields++
+          confSum += f.confidence
+          confCount++
+        }
         if (f.confidence < 0.70 && f.value !== null) lowConfFields++
         if (f.confidence >= 0.90) highConfFields++
       }
     }
-    return { totalFields, filledFields, lowConfFields, highConfFields, editedCount: editedFields.size }
+    const overallConfidence = confCount > 0 ? confSum / confCount : 0
+    return { totalFields, filledFields, lowConfFields, highConfFields, editedCount: editedFields.size, overallConfidence }
   }, [field_metadata, editedFields])
 
   // ── Handlers ───────────────────────────────────────────────────────
@@ -199,6 +206,39 @@ export default function ExtractedDataReviewModal({
 
         {/* ── Stats bar ─────────────────────────────────────────── */}
         <div className="review-stats-bar">
+          {/* Overall Confidence Gauge */}
+          <div className={`review-stat overall-conf ${
+            stats.overallConfidence >= 0.85 ? 'conf-proceed' :
+            stats.overallConfidence >= 0.70 ? 'conf-warn' : 'conf-halt'
+          }`}>
+            <div className="overall-conf-gauge">
+              <svg viewBox="0 0 36 36" className="conf-ring">
+                <path
+                  className="conf-ring-bg"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="conf-ring-fill"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  strokeDasharray={`${Math.round(stats.overallConfidence * 100)}, 100`}
+                />
+              </svg>
+              <span className="conf-ring-value">{Math.round(stats.overallConfidence * 100)}%</span>
+            </div>
+            <div className="overall-conf-text">
+              <span className="stat-label">Overall Confidence</span>
+              <span className={`overall-conf-status ${
+                stats.overallConfidence >= 0.85 ? 'status-proceed' :
+                stats.overallConfidence >= 0.70 ? 'status-warn' : 'status-halt'
+              }`}>
+                {stats.overallConfidence >= 0.85 ? 'PROCEED' :
+                 stats.overallConfidence >= 0.70 ? 'WARNING' : 'HALT'}
+              </span>
+            </div>
+          </div>
+
+          <div className="stats-divider" />
+
           <div className="review-stat">
             <span className="material-symbols-outlined" style={{ color: '#4caf50', fontSize: 16 }}>check_circle</span>
             <span className="stat-value">{stats.filledFields}</span>

@@ -141,6 +141,19 @@ export default function DashboardPage() {
           ...prev,
           A1: { value: Object.keys(ingestionResult.application_row || {}).length, label: 'Fields ✓' }
         }))
+
+        // Animate CG (confidence gate) layer — quick pass-through
+        setActiveLayer(1)
+        setLayerProgress(0)
+        for (let s = 0; s <= 10; s++) {
+          setLayerProgress((s / 10) * 100)
+          await new Promise(r => setTimeout(r, 60))
+        }
+        setCompletedLayers(prev => new Set([...prev, 1]))
+        setLayerData(prev => ({
+          ...prev,
+          CG: { value: '✓', label: 'PROCEED' }
+        }))
         setActiveLayer(-1)
         setPipelineMeta(`Chờ xác nhận dữ liệu — ${customer.label}`)
 
@@ -180,6 +193,7 @@ export default function DashboardPage() {
           // Update layer badges
           setLayerData({
             A1: { value: Object.keys(ingestionResult.application_row || {}).length, label: 'Fields ✓' },
+            CG: { value: '✓', label: 'PROCEED' },
             A2: { value: '753', label: 'Feats ✓' },
             A3: { value: processResult.credit_score || '—', label: 'Score ✓' },
             A4: {
@@ -188,7 +202,7 @@ export default function DashboardPage() {
               label: '5C pts ✓',
             },
           })
-          setCompletedLayers(new Set([0, 1, 2, 3]))
+          setCompletedLayers(new Set([0, 1, 2, 3, 4]))
         }
 
         setBatchProgress({ completed: i + 1, total })
@@ -260,14 +274,27 @@ export default function DashboardPage() {
 
   /* ── HITL: Handle approval from review popup ── */
   const handleReviewApprove = useCallback(async (editedRow, metadata) => {
+    // ① Close modal IMMEDIATELY so judges can see the pipeline animation
+    setReviewData(null)
     setIsProcessingApproval(true)
+    setPipelineMeta(`Đang xử lý A2→A3→A4 cho ${reviewCustomerLabel || reviewCustomerId}...`)
+
     try {
-      // Animate A2→A3→A4
-      for (let li = 1; li < PIPELINE_LAYERS.length; li++) {
+      // ② Start API call in background (non-blocking)
+      const apiPromise = runProcessing({
+        customer_id: reviewCustomerId,
+        application_row: editedRow,
+        raw_texts: metadata.raw_texts,
+        thin_file_flag: metadata.thin_file_flag,
+        identity_consistency_flag: metadata.identity_consistency_flag,
+      })
+
+      // ③ Animate A2→A3→A4 (skip CG at index 1, already completed)
+      for (let li = 2; li < PIPELINE_LAYERS.length; li++) {
         setActiveLayer(li)
         setLayerProgress(0)
         const steps = 15
-        const dur = li === 1 ? 1200 : 600
+        const dur = 600
         for (let s = 0; s <= steps; s++) {
           setLayerProgress((s / steps) * 100)
           await new Promise(r => setTimeout(r, dur / steps))
@@ -276,14 +303,8 @@ export default function DashboardPage() {
       }
       setActiveLayer(-1)
 
-      // Call Phase 2 API
-      const result = await runProcessing({
-        customer_id: reviewCustomerId,
-        application_row: editedRow,
-        raw_texts: metadata.raw_texts,
-        thin_file_flag: metadata.thin_file_flag,
-        identity_consistency_flag: metadata.identity_consistency_flag,
-      })
+      // ④ Wait for API result (may already be done by now)
+      const result = await apiPromise
 
       setIsProcessingApproval(false)
       // Resolve the promise that runPipeline is awaiting
@@ -302,7 +323,7 @@ export default function DashboardPage() {
         window.__hitlReject = null
       }
     }
-  }, [reviewCustomerId])
+  }, [reviewCustomerId, reviewCustomerLabel])
 
   /* ── HITL: Handle cancel from review popup ── */
   const handleReviewCancel = useCallback(() => {

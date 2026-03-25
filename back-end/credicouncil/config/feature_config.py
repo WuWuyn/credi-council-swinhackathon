@@ -39,9 +39,9 @@ TIER_WEIGHTS = {
 }
 
 # Overall confidence routing thresholds
-OVERALL_CONFIDENCE_AUTO_PROCEED = 0.80
-OVERALL_CONFIDENCE_PROCEED_WITH_WARNINGS = 0.65  # 0.65-0.80
-# Below 0.65 → ESCALATE_TO_HUMAN
+OVERALL_CONFIDENCE_AUTO_PROCEED = 0.85
+OVERALL_CONFIDENCE_PROCEED_WITH_WARNINGS = 0.70  # 0.70-0.85
+# Below 0.70 → ESCALATE_TO_HUMAN
 
 
 # ─── Field Tier Classification ────────────────────────────────────────────────
