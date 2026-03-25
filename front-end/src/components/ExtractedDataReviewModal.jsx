@@ -129,7 +129,12 @@ export default function ExtractedDataReviewModal({
         if (f.confidence >= 0.90) highConfFields++
       }
     }
-    const overallConfidence = confCount > 0 ? confSum / confCount : 0
+    // Method C: overall = coverage × quality
+    // coverage = filledFields / totalFields (penalizes missing fields)
+    // quality  = avg confidence of filled fields
+    const avgConfidence = confCount > 0 ? confSum / confCount : 0
+    const coverage = totalFields > 0 ? filledFields / totalFields : 0
+    const overallConfidence = coverage * avgConfidence
     return { totalFields, filledFields, lowConfFields, highConfFields, editedCount: editedFields.size, overallConfidence }
   }, [field_metadata, editedFields])
 

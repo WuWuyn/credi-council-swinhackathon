@@ -1,0 +1,193 @@
+{
+  "credit_score": 375,
+  "pd_prob": 0.6118541077282525,
+  "risk_band": "CC",
+  "top_positive_factors": [
+    {
+      "feature": "inst_mean_DPD_SCALE",
+      "shap_value": 0.3744,
+      "value": 4.2076,
+      "label_vi": "Trả góp mean_DPD_SCALE",
+      "dimension_5c": "character",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_PAY_YEAR",
+      "shap_value": 0.1992,
+      "value": 12.6585,
+      "label_vi": "Khoản trả hàng năm",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_to_prev_approved",
+      "shap_value": 0.1992,
+      "value": 21294000.0,
+      "label_vi": "Trả góp hiện tại / TB đơn đã duyệt",
+      "dimension_5c": "capacity",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "REG_CITY_NOT_LIVE_CITY",
+      "shap_value": 0.1131,
+      "value": 1.0,
+      "label_vi": "Reg city not live city",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_3",
+      "shap_value": 0.1122,
+      "value": 0.4615,
+      "label_vi": "Điểm tín dụng ngoại 3 (CIC)",
+      "dimension_5c": "character",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "DEF_60_CNT_SOCIAL_CIRCLE",
+      "shap_value": 0.1054,
+      "value": 1.0,
+      "label_vi": "Số người quen nợ xấu 60 ngày",
+      "dimension_5c": "character",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_refused_DAYS_DECISION_MAX",
+      "shap_value": 0.0959,
+      "value": 0.0,
+      "label_vi": "Đơn bị từ chối — DAYS_DECISION_MAX",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "DEF_30_CNT_SOCIAL_CIRCLE",
+      "shap_value": 0.0929,
+      "value": 1.0,
+      "label_vi": "Số người quen nợ xấu 30 ngày",
+      "dimension_5c": "character",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "bureau_sum_AMT_CREDIT_SUM",
+      "shap_value": 0.0868,
+      "value": -999.0,
+      "label_vi": "Tổng dư nợ CIC",
+      "dimension_5c": "capital",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_DEFALUTED_RATIO",
+      "shap_value": 0.0729,
+      "value": 1.0,
+      "label_vi": "Tỷ lệ vỡ nợ đơn vay trước",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    }
+  ],
+  "top_negative_factors": [
+    {
+      "feature": "NEW_SOURCES_PROD",
+      "shap_value": -0.1128,
+      "value": 0.1259,
+      "label_vi": "Tích điểm tín dụng ngoại",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "DAYS_BIRTH",
+      "shap_value": -0.0795,
+      "value": -10382.0,
+      "label_vi": "Tuổi khách hàng",
+      "dimension_5c": "capacity",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_2",
+      "shap_value": -0.0747,
+      "value": 0.6506,
+      "label_vi": "Điểm tín dụng ngoại 2 (CIC)",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_1",
+      "shap_value": -0.0631,
+      "value": 0.4192,
+      "label_vi": "Điểm tín dụng ngoại 1 (CIC)",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "OCCUPATION_TYPE_mean_encode",
+      "shap_value": -0.0515,
+      "value": 0.0807,
+      "label_vi": "Occupation type mean encode",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_INCOME_RATE",
+      "shap_value": -0.0462,
+      "value": 0.1352,
+      "label_vi": "Tỷ lệ trả góp/thu nhập",
+      "dimension_5c": "capacity",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "ORGANIZATION_TYPE_mean_encode",
+      "shap_value": -0.0444,
+      "value": 0.0807,
+      "label_vi": "Organization type mean encode",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_DIFF_CREDIT_GOODS",
+      "shap_value": -0.0433,
+      "value": 44550.0,
+      "label_vi": "Amt diff credit goods",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "prev_max_DAYS_LAST_DUE_1ST_VERSION",
+      "shap_value": -0.0415,
+      "value": -1059.0,
+      "label_vi": "Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "bureau_active_avg_AMT_DEBT_RATIO",
+      "shap_value": -0.0354,
+      "value": 0.0,
+      "label_vi": "TB (khoản CIC đang HĐ) AMT_DEBT_RATIO",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    }
+  ],
+  "five_c_shap_allocation": {
+    "character": {
+      "shap_sum": 1.2502,
+      "pct": 24
+    },
+    "capacity": {
+      "shap_sum": 0.7636,
+      "pct": 15
+    },
+    "capital": {
+      "shap_sum": 0.1833,
+      "pct": 4
+    },
+    "conditions": {
+      "shap_sum": 2.8682,
+      "pct": 56
+    },
+    "collateral": {
+      "shap_sum": 0.0543,
+      "pct": 1
+    }
+  },
+  "model_version": "lgb1_ref_v1",
+  "inference_timestamp": "2026-03-25T17:25:49.555246+00:00"
+}

@@ -376,6 +376,278 @@ def execute_processing_with_events(
     return result
 
 
+# ─── Batch Pipeline Functions ────────────────────────────────────────────────
+
+
+def execute_batch_ingestion(
+    customer_ids: list[str],
+    event_callback=None,
+) -> list[dict]:
+    """Phase 1 Batch: Run A1 ingestion in parallel for all customers.
+
+    Uses ThreadPoolExecutor with staggered launches to avoid LLM rate-limit bursts.
+    Calls event_callback after each customer's A1 completes.
+    Returns a list of ingestion results (one per customer).
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from credicouncil.config.batch_config import A1_MAX_WORKERS, A1_STAGGER_DELAY
+
+    total = len(customer_ids)
+
+    def _emit(event):
+        if event_callback:
+            try:
+                event_callback(event)
+            except Exception as e:
+                logger.warning(f"[Batch A1] Event callback error: {e}")
+
+    _emit({"event": "batch_started", "total": total, "phase": "ingestion"})
+
+    def _ingest_one(cid: str, idx: int) -> dict:
+        """Run A1 for a single customer in a thread."""
+        _emit({"event": "a1_started", "customer_id": cid, "index": idx})
+        try:
+            ingestion_result = execute_ingestion_only(cid)
+            _emit({
+                "event": "a1_completed",
+                "customer_id": cid,
+                "index": idx,
+                "data": ingestion_result,
+            })
+            return {
+                "customer_id": cid,
+                "status": "OK",
+                "data": ingestion_result,
+            }
+        except Exception as e:
+            logger.error(f"[Batch A1] Failed for {cid}: {e}")
+            traceback.print_exc()
+            _emit({
+                "event": "a1_error",
+                "customer_id": cid,
+                "index": idx,
+                "error": str(e),
+            })
+            return {
+                "customer_id": cid,
+                "status": "ERROR",
+                "error": str(e),
+                "data": None,
+            }
+
+    # Launch all A1 pipelines with staggered starts
+    results_map: dict[str, dict] = {}
+    with ThreadPoolExecutor(max_workers=A1_MAX_WORKERS) as executor:
+        futures = {}
+        for idx, cid in enumerate(customer_ids):
+            future = executor.submit(_ingest_one, cid, idx)
+            futures[future] = cid
+            logger.info(f"[Batch A1] Launched {idx+1}/{total}: {cid}")
+
+            # Stagger launches to avoid LLM rate-limit bursts
+            if idx < total - 1 and A1_STAGGER_DELAY > 0:
+                time.sleep(A1_STAGGER_DELAY)
+
+        # Collect results as they complete
+        completed = 0
+        for future in as_completed(futures):
+            result = future.result()
+            cid = result["customer_id"]
+            results_map[cid] = result
+            completed += 1
+            _emit({
+                "event": "a1_progress",
+                "completed": completed,
+                "total": total,
+            })
+
+    # Preserve original order
+    results = [results_map[cid] for cid in customer_ids if cid in results_map]
+
+    _emit({"event": "phase_ingestion_done", "results_count": len(results)})
+    return results
+
+
+def execute_batch_processing_parallel(
+    approved_customers: list[dict],
+    event_callback=None,
+) -> dict:
+    """Phase 3 Batch: Run A2→A3→A4 in parallel for all approved customers.
+
+    Args:
+        approved_customers: List of dicts, each with:
+            - customer_id: str
+            - application_row: dict (edited/approved data)
+            - raw_texts: dict
+            - thin_file_flag: bool
+            - identity_consistency_flag: str
+        event_callback: Called with events for progress tracking.
+
+    Returns:
+        Batch summary dict with per-customer results and aggregated metrics.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from credicouncil.config.batch_config import (
+        PROCESSING_MAX_WORKERS,
+        PROCESSING_STAGGER_DELAY,
+    )
+
+    total = len(approved_customers)
+
+    def _emit(event):
+        if event_callback:
+            try:
+                event_callback(event)
+            except Exception as e:
+                logger.warning(f"[Batch Processing] Event callback error: {e}")
+
+    _emit({"event": "processing_started", "total": total, "phase": "processing"})
+
+    batch_start = time.time()
+    customer_results = {}
+
+    def _process_one(customer_data: dict) -> tuple[str, dict]:
+        """Run A2→A4 for one customer in a thread."""
+        cid = customer_data["customer_id"]
+
+        # Reset token counter for this customer's pipeline
+        reset_token_counter()
+        start = time.time()
+
+        try:
+            def _per_customer_emit(event):
+                """Prefix events with customer_id for batch tracking."""
+                event["customer_id"] = cid
+                event["event"] = "customer_step"
+                _emit(event)
+
+            result = execute_processing_with_events(
+                customer_id=cid,
+                application_row=customer_data["application_row"],
+                raw_texts=customer_data.get("raw_texts", {}),
+                thin_file_flag=customer_data.get("thin_file_flag", False),
+                identity_consistency_flag=customer_data.get(
+                    "identity_consistency_flag", "OK"
+                ),
+                event_callback=_per_customer_emit,
+            )
+
+            elapsed = round(time.time() - start, 2)
+            metrics = result.pop("__metrics", {})
+            formatted = format_score_response(result, cid)
+
+            _emit({
+                "event": "customer_done",
+                "customer_id": cid,
+                "result": formatted,
+                "metrics": metrics,
+            })
+
+            return cid, {
+                **formatted,
+                "status": "SUCCESS",
+                "metrics": metrics,
+            }
+
+        except Exception as e:
+            elapsed = round(time.time() - start, 2)
+            logger.error(f"[Batch Processing] Failed for {cid}: {e}")
+            traceback.print_exc()
+
+            _emit({
+                "event": "customer_error",
+                "customer_id": cid,
+                "error": str(e),
+            })
+
+            return cid, {
+                "application_id": cid,
+                "credit_score": 0,
+                "pd_pct": 0.0,
+                "risk_band": "ERR",
+                "recommendation": "ERROR",
+                "status": "FAILED",
+                "error": str(e),
+                "metrics": {
+                    "runtime_seconds": elapsed,
+                    "total_tokens": 0,
+                    "prompt_tokens": 0,
+                    "candidates_tokens": 0,
+                },
+            }
+
+    # Launch all pipelines in parallel with staggered starts
+    futures = {}
+    with ThreadPoolExecutor(max_workers=PROCESSING_MAX_WORKERS) as executor:
+        for idx, cust_data in enumerate(approved_customers):
+            future = executor.submit(_process_one, cust_data)
+            futures[future] = cust_data["customer_id"]
+            logger.info(
+                f"[Batch Processing] Launched {idx+1}/{total}: "
+                f"customer {cust_data['customer_id']}"
+            )
+
+            # Stagger launches
+            if idx < total - 1 and PROCESSING_STAGGER_DELAY > 0:
+                time.sleep(PROCESSING_STAGGER_DELAY)
+
+        # Collect results as they complete
+        completed = 0
+        for future in as_completed(futures):
+            cid, result = future.result()
+            customer_results[cid] = result
+            completed += 1
+            _emit({
+                "event": "batch_progress",
+                "completed": completed,
+                "total": total,
+            })
+
+    batch_duration = round(time.time() - batch_start, 2)
+
+    # Aggregate batch summary
+    total_tokens = sum(
+        r.get("metrics", {}).get("total_tokens", 0)
+        for r in customer_results.values()
+    )
+    success_count = sum(
+        1 for r in customer_results.values() if r.get("status") == "SUCCESS"
+    )
+
+    summary = {
+        "total_time_seconds": batch_duration,
+        "total_tokens": total_tokens,
+        "total_customers": total,
+        "success_count": success_count,
+        "failed_count": total - success_count,
+        "customers": [
+            {
+                "customer_id": cid,
+                "status": r.get("status", "UNKNOWN"),
+                "credit_score": r.get("credit_score", 0),
+                "risk_band": r.get("risk_band", "N/A"),
+                "pd_pct": r.get("pd_pct", 0.0),
+                "recommendation": r.get("recommendation", "N/A"),
+                "time_seconds": r.get("metrics", {}).get("runtime_seconds", 0),
+                "tokens": r.get("metrics", {}).get("total_tokens", 0),
+            }
+            for cid, r in customer_results.items()
+        ],
+    }
+
+    _emit({"event": "batch_done", "summary": summary})
+
+    logger.info(
+        f"[Batch Processing] ✅ DONE — {success_count}/{total} succeeded "
+        f"in {batch_duration:.1f}s, {total_tokens} tokens"
+    )
+
+    return {
+        "results": customer_results,
+        "summary": summary,
+    }
+
+
 # ── Field metadata builder ───────────────────────────────────────────────────
 
 # Field grouping and Vietnamese labels for the review UI

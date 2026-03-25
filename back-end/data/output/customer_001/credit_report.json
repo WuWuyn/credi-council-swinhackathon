@@ -1,6 +1,5 @@
 {
   "customer_info": {
-    "summary": "Khách hàng nữ, 59 tuổi, là người hưu trí có nhu cầu vay tiêu dùng với số tiền 900,000 VND.",
     "gender": "Nữ",
     "age": 60,
     "education": "Đại học / Cao đẳng",
@@ -57,7 +56,7 @@
       "model_version": "lgb1_ref_v1",
       "auc": "0.803",
       "shap_verified": true,
-      "inference_timestamp": "2026-03-25T15:17:53.577066+00:00"
+      "inference_timestamp": "2026-03-25T17:25:57.448839+00:00"
     },
     "financial_ratios": {
       "income_annual_vnd": 31500000,
@@ -118,7 +117,7 @@
           "detail": "DEF_30_CNT_SOCIAL_CIRCLE = 0"
         }
       ],
-      "narrative": "Tư cách tín dụng của khách hàng được đánh giá dựa trên lịch sử giao dịch ổn định, thể hiện qua điểm tín dụng ngoại (EXT_SOURCE_1: 0.8923, EXT_SOURCE_2: 0.7802, EXT_SOURCE_3: 0.8625). Các yếu tố SHAP cho thấy việc không ghi nhận nợ quá hạn (inst_mean_DPD_SCALE: 0.0) là điểm tích cực củng cố uy tín. Tuy nhiên, theo Điều 17 Thông tư 39/2016/TT-NHNN, ngân hàng cần xem xét tính xác thực của hồ sơ khi khách hàng là người hưu trí, đảm bảo tuân thủ nguyên tắc tự chủ trong hoạt động cho vay theo Điều 4 của Thông tư này."
+      "narrative": null
     },
     "capacity_assessment": {
       "score": 33,
@@ -158,7 +157,7 @@
           "detail": "Pensioner — retired"
         }
       ],
-      "narrative": "Năng lực trả nợ của khách hàng ghi nhận DTI ở mức 14.3% và DSCR đạt 7.00, cho thấy khả năng đáp ứng nghĩa vụ nợ hiện tại. Tuy nhiên, các yếu tố SHAP như 'AMT_ANNUITY_to_prev_approved' (0.1687) và 'AMT_CREDIT_to_prev_approved' (0.0601) phản ánh áp lực từ các khoản vay trước đó. Dù tỷ lệ nợ thấp, việc thu nhập hưu trí không ổn định kết hợp với 'NEW_EMPLOY_TO_BIRTH_RATIO' (-999.0) làm tăng rủi ro về khả năng duy trì dòng tiền, đòi hỏi sự thận trọng theo quy định về khả năng tài chính tại Điều 7 Thông tư 39/2016/TT-NHNN."
+      "narrative": null
     },
     "capital_assessment": {
       "score": 15,
@@ -196,7 +195,7 @@
           "detail": "Bureau requests/year = 1"
         }
       ],
-      "narrative": "Khách hàng sở hữu bất động sản, đây là yếu tố vốn tự có tích cực. Tuy nhiên, dữ liệu SHAP về 'bureau_sum_AMT_CREDIT_SUM' (-999.0) cho thấy cần kiểm soát chặt chẽ tổng dư nợ CIC hiện tại. Việc đánh giá vốn tự có phải đảm bảo khách hàng có đủ nguồn lực tài chính để thực hiện nghĩa vụ nợ, tránh rủi ro phân loại nợ theo Thông tư 11/2021/TT-NHNN."
+      "narrative": null
     },
     "conditions_assessment": {
       "score": 8,
@@ -235,7 +234,7 @@
           "detail": "Age = 59"
         }
       ],
-      "narrative": "Mục đích vay tiêu dùng (CONSUMPTION) phù hợp với nhu cầu cá nhân. Trình độ học vấn cao và độ tuổi 59 là các yếu tố ổn định. Tuy nhiên, SHAP chỉ ra 'region_mean_income_rel' (0.0666) và 'AMT_PAY_YEAR' (0.056) là các biến số cần lưu ý. Theo Basel II (Thông tư 41/2016), các khoản vay tiêu dùng cần được đánh giá kỹ lưỡng về mục đích sử dụng vốn để đảm bảo tính minh bạch và an toàn hệ thống."
+      "narrative": null
     },
     "collateral_assessment": {
       "score": 10,
@@ -269,13 +268,10 @@
           "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.2439"
         }
       ],
-      "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Tuy nhiên, với LTV 100% và yếu tố SHAP 'AMT_CREDIT_GOODS_PERC' (1.0), tài sản này vượt ngưỡng an toàn thông thường. Theo quy định tại Thông tư 41/2016, khoản vay có LTV cao sẽ chịu trọng số rủi ro tín dụng lớn hơn, làm tăng yêu cầu vốn tự có của ngân hàng."
+      "narrative": null
     }
   },
-  "financial_summary": {
-    "income_analysis": "Thu nhập tháng đạt 2,625,000 VND từ nguồn hưu trí, cần xác minh tính bền vững.",
-    "debt_analysis": "DTI 14.3% và DSCR 7.00 cho thấy khả năng trả nợ hiện tại ở mức an toàn."
-  },
+  "financial_summary": {},
   "debt_assessment": {
     "score": 81,
     "max_score": 100,
@@ -346,18 +342,13 @@
         "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.2439"
       }
     ],
-    "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Tuy nhiên, với LTV 100% và yếu tố SHAP 'AMT_CREDIT_GOODS_PERC' (1.0), tài sản này vượt ngưỡng an toàn thông thường. Theo quy định tại Thông tư 41/2016, khoản vay có LTV cao sẽ chịu trọng số rủi ro tín dụng lớn hơn, làm tăng yêu cầu vốn tự có của ngân hàng."
+    "narrative": null
   },
   "suggested_terms": {
     "max_amount_vnd": 90000000,
-    "interest_rate_suggestion": "Theo biểu phí hiện hành của ngân hàng",
+    "interest_rate_suggestion": "theo biểu phí hiện hành",
     "conditions": [
-      "LTV 100% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức",
-      "Xác minh nguồn thu nhập hưu trí ổn định",
-      "Bổ sung tài sản bảo đảm có tính thanh khoản cao hơn",
-      "Giới hạn hạn mức tín dụng để kiểm soát rủi ro",
-      "Thực hiện giám sát đặc biệt sau giải ngân",
-      "Kiểm tra tính pháp lý của bất động sản thế chấp"
+      "LTV 100% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức"
     ]
   },
   "reward_assessment": {
@@ -382,31 +373,34 @@
     "loan_purpose": "CONSUMPTION",
     "positive_signals": [
       "Property ownership",
-      "Stable residential history",
-      "Single household status",
-      "Higher education level"
+      "Stable pensioner status",
+      "Consistent residency and work location",
+      "Long-term residency at current address"
     ],
     "risk_flags": [
       "Extremely low income",
       "Low property quality score (2.9/10)",
       "No contact phone number for employer",
-      "Pensioner status with minimal income"
+      "No email address provided",
+      "Single applicant with no dependents"
     ]
   },
-  "caveats": [
-    "LTV 100% vượt ngưỡng an toàn ngành",
-    "Thu nhập hưu trí thấp tiềm ẩn rủi ro dòng tiền",
-    "Chất lượng tài sản bảo đảm cần thẩm định lại",
-    "Dữ liệu CIC có các giá trị cần làm rõ",
-    "Rủi ro tập trung vào vay tiêu dùng"
-  ],
+  "caveats": [],
   "audit_reference": {
     "model_version": "lgb1_ref_v1",
-    "inference_timestamp": "2026-03-25T15:17:53.577066+00:00",
+    "inference_timestamp": "2026-03-25T17:25:57.448839+00:00",
     "rag_citations": [
       {
         "source": null,
-        "title": "credit_assessment_5c"
+        "title": "tt11_2021_debt_classification"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
       },
       {
         "source": null,
@@ -414,20 +408,34 @@
       },
       {
         "source": null,
-        "title": "tt39_2016_lending"
+        "title": "credit_assessment_5c"
       },
       {
-        "source": null,
-        "title": "tt39_2016_lending"
-      },
-      {
-        "source": null,
-        "title": "tt39_2016_lending"
+        "text": "Các quy định pháp lý và quản trị rủi ro",
+        "chunk_indices": [
+          0,
+          1,
+          2,
+          3
+        ]
       },
       {
         "text": "*   **Thông tư 11/2021/TT-NHNN:** Quy định về phân loại nợ.",
         "chunk_indices": [
-          0
+          0,
+          4
+        ]
+      },
+      {
+        "text": "*   Theo **TT41/2016 (Basel II)**, khoản vay tiêu dùng có LTV > 70% sẽ chịu trọng số rủi ro tín dụng là 100% (thay vì 50% nếu LTV ≤ 70%), làm tăng yêu cầu vốn tự có (CAR) của ngân hàng.",
+        "chunk_indices": [
+          3
+        ]
+      },
+      {
+        "text": "*Lưu ý: Đây là phân tích dựa trên dữ liệu cung cấp.",
+        "chunk_indices": [
+          4
         ]
       }
     ],

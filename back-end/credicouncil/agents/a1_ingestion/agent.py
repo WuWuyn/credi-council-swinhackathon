@@ -373,6 +373,23 @@ class IngestionAgent:
             **self._build_document_flags(doc_fields, loan_app),
         }
 
+        # ── Post-processing: sentinel values for non-employed applicants ──
+        # Home Credit uses DAYS_EMPLOYED = 365243 (≈1000 years) as sentinel
+        # for Pensioner/Unemployed — LLM may extract nonsensical dates.
+        income_type = row.get("NAME_INCOME_TYPE", "")
+        if income_type in ("Pensioner", "Unemployed", "Student", "Maternity leave"):
+            row["DAYS_EMPLOYED"] = 365243
+            logger.info(f"  Post-process: {income_type} → DAYS_EMPLOYED set to HC sentinel 365243")
+
+        # Also guard against absurdly large DAYS_EMPLOYED from LLM date errors
+        days_emp = row.get("DAYS_EMPLOYED")
+        if days_emp is not None and isinstance(days_emp, (int, float)):
+            if days_emp > 0:
+                # DAYS_EMPLOYED should be negative (past) or 365243 (sentinel)
+                # A positive value means a future date — likely extraction error
+                row["DAYS_EMPLOYED"] = 365243
+                logger.warning(f"  Post-process: DAYS_EMPLOYED={days_emp} > 0 → corrected to 365243")
+
         return row
 
     def _build_housing_features(self, housing: dict) -> dict[str, Any]:

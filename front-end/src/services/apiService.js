@@ -357,3 +357,68 @@ export function connectProcessingWebSocket(params, onEvent) {
     close: () => ws.close(),
   }
 }
+
+
+// ── WebSocket Batch Pipeline ─────────────────────────────────────────────────
+
+/**
+ * Connect to WebSocket batch pipeline endpoint for full batch lifecycle.
+ *
+ * @param {string[]} customerIds - Array of customer IDs to process
+ * @param {Function} onEvent - Called for each WebSocket event
+ * @returns {{ promise: Promise<Object>, sendAction: Function, close: Function }}
+ */
+export function connectBatchWebSocket(customerIds, onEvent) {
+  const wsUrl = `${getWsBaseUrl()}/ws/batch`
+  const ws = new WebSocket(wsUrl)
+
+  const promise = new Promise((resolve, reject) => {
+    ws.onopen = () => {
+      console.log('[WS-Batch] Connected to', wsUrl)
+      ws.send(JSON.stringify({
+        action: 'start',
+        customer_ids: customerIds,
+      }))
+    }
+
+    ws.onmessage = (msg) => {
+      try {
+        const event = JSON.parse(msg.data)
+        console.log('[WS-Batch] Event:', event.event, event.customer_id || '')
+        if (onEvent) onEvent(event)
+
+        if (event.event === 'batch_done') {
+          resolve(event.summary)
+        } else if (event.event === 'error') {
+          reject(new Error(event.message || 'Batch pipeline error'))
+          ws.close()
+        }
+      } catch (err) {
+        console.error('[WS-Batch] Parse error:', err)
+      }
+    }
+
+    ws.onerror = (err) => {
+      console.error('[WS-Batch] WebSocket error:', err)
+      reject(new Error('Batch WebSocket connection failed'))
+    }
+
+    ws.onclose = (ev) => {
+      console.log('[WS-Batch] Closed:', ev.code, ev.reason)
+    }
+  })
+
+  function sendAction(actionData) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(actionData))
+    } else {
+      console.warn('[WS-Batch] Cannot send — WebSocket not open')
+    }
+  }
+
+  return {
+    promise,
+    sendAction,
+    close: () => ws.close(),
+  }
+}

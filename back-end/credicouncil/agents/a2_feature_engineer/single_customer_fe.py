@@ -350,7 +350,9 @@ class SingleCustomerFE:
         df["CODE_GENDER"] = df["CODE_GENDER"].replace("XNA", np.nan)
         df["NAME_FAMILY_STATUS"] = df["NAME_FAMILY_STATUS"].replace("Unknown", np.nan)
         df["ORGANIZATION_TYPE"] = df["ORGANIZATION_TYPE"].replace("XNA", np.nan)
-        df.loc[df["DAYS_EMPLOYED"] == 365243, "DAYS_EMPLOYED"] = np.nan
+        # HC sentinel 365243 means "not employed" (Pensioner/Unemployed).
+        # Use range check (>= 365000) to catch off-by-one from LLM date calculations.
+        df.loc[df["DAYS_EMPLOYED"] >= 365000, "DAYS_EMPLOYED"] = np.nan
 
         # Ratio features (same as training)
         docs = [f for f in df.columns if "FLAG_DOC" in f]

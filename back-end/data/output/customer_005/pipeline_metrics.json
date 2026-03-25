@@ -1,0 +1,8 @@
+{
+  "runtime_seconds": 20.17,
+  "prompt_tokens": 7263,
+  "candidates_tokens": 1201,
+  "total_tokens": 8464,
+  "customer_id": "005",
+  "timestamp": "2026-03-25T17:26:08.615489+00:00"
+}

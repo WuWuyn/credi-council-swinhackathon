@@ -1,0 +1,193 @@
+{
+  "credit_score": 555,
+  "pd_prob": 0.18655742662990923,
+  "risk_band": "BBB",
+  "top_positive_factors": [
+    {
+      "feature": "prev_active_sum_AMT_LEFT",
+      "shap_value": 0.3056,
+      "value": 75655.1328,
+      "label_vi": "Đơn đang HĐ tổng AMT_LEFT",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_max_DAYS_LAST_DUE_1ST_VERSION",
+      "shap_value": 0.2564,
+      "value": 1195.0,
+      "label_vi": "Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_active_sum_AMT_PAY_YEAR_LEFT",
+      "shap_value": 0.1506,
+      "value": 3.2717,
+      "label_vi": "Đơn đang HĐ tổng AMT_PAY_YEAR_LEFT",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AGE_PAYOFF",
+      "shap_value": 0.1502,
+      "value": 94.0475,
+      "label_vi": "Age payoff",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_ANNUITY_to_prev_approved",
+      "shap_value": 0.1265,
+      "value": 27734000.0,
+      "label_vi": "Trả góp hiện tại / TB đơn đã duyệt",
+      "dimension_5c": "capacity",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_refused_DAYS_DECISION_MAX",
+      "shap_value": 0.0902,
+      "value": 0.0,
+      "label_vi": "Đơn bị từ chối — DAYS_DECISION_MAX",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "DAYS_BIRTH",
+      "shap_value": 0.0868,
+      "value": -23298.0,
+      "label_vi": "Tuổi khách hàng",
+      "dimension_5c": "capacity",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "pos_recent_CNT_INSTALMENT_FUTURE",
+      "shap_value": 0.0849,
+      "value": 41.0,
+      "label_vi": "POS/Cash recent_CNT_INSTALMENT_FUTURE",
+      "dimension_5c": "conditions",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "AMT_CREDIT_to_prev_approved",
+      "shap_value": 0.0729,
+      "value": 839259000.0,
+      "label_vi": "Tín dụng hiện tại / TB đơn đã duyệt",
+      "dimension_5c": "capacity",
+      "direction": "positive_for_default"
+    },
+    {
+      "feature": "prev_avg_AMT_CREDIT_GOODS_PERC",
+      "shap_value": 0.0632,
+      "value": 1.127,
+      "label_vi": "TB đơn vay trước AMT_CREDIT_GOODS_PERC",
+      "dimension_5c": "capacity",
+      "direction": "positive_for_default"
+    }
+  ],
+  "top_negative_factors": [
+    {
+      "feature": "NEW_EXT_SOURCES_MEAN",
+      "shap_value": -0.5019,
+      "value": 0.801,
+      "label_vi": "Trung bình điểm tín dụng ngoại",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_2",
+      "shap_value": -0.2713,
+      "value": 0.7728,
+      "label_vi": "Điểm tín dụng ngoại 2 (CIC)",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "NEW_SOURCES_PROD",
+      "shap_value": -0.1676,
+      "value": 0.5134,
+      "label_vi": "Tích điểm tín dụng ngoại",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_3",
+      "shap_value": -0.1258,
+      "value": 0.8128,
+      "label_vi": "Điểm tín dụng ngoại 3 (CIC)",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "EXT_SOURCE_1",
+      "shap_value": -0.1234,
+      "value": 0.8174,
+      "label_vi": "Điểm tín dụng ngoại 1 (CIC)",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "inst_mean_DPD_SCALE",
+      "shap_value": -0.0956,
+      "value": 0.0,
+      "label_vi": "Trả góp mean_DPD_SCALE",
+      "dimension_5c": "character",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "AMT_PAY_YEAR",
+      "shap_value": -0.0825,
+      "value": 30.261,
+      "label_vi": "Khoản trả hàng năm",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "DAYS_ID_PUBLISH",
+      "shap_value": -0.0664,
+      "value": -4797.0,
+      "label_vi": "Thời gian cấp CCCD",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "REGION_POPULATION_RELATIVE",
+      "shap_value": -0.052,
+      "value": 0.005,
+      "label_vi": "Mật độ dân số khu vực",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    },
+    {
+      "feature": "NEW_CAR_TO_BIRTH_RATIO",
+      "shap_value": -0.0453,
+      "value": -0.0007,
+      "label_vi": "Chỉ số dẫn xuất CAR_TO_BIRTH_RATIO",
+      "dimension_5c": "conditions",
+      "direction": "negative_for_default"
+    }
+  ],
+  "five_c_shap_allocation": {
+    "character": {
+      "shap_sum": 0.9504,
+      "pct": 16
+    },
+    "capacity": {
+      "shap_sum": 0.6947,
+      "pct": 12
+    },
+    "capital": {
+      "shap_sum": 0.1138,
+      "pct": 2
+    },
+    "conditions": {
+      "shap_sum": 4.0963,
+      "pct": 69
+    },
+    "collateral": {
+      "shap_sum": 0.0413,
+      "pct": 1
+    }
+  },
+  "model_version": "lgb1_ref_v1",
+  "inference_timestamp": "2026-03-25T17:25:50.979088+00:00"
+}
