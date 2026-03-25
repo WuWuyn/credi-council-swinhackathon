@@ -6,10 +6,10 @@ Sử dụng pipeline mới mirroring lgb1.ipynb (reference code).
 
 Usage:
     # Evaluate với model đã train:
-    python evaluation/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap
+    python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap
 
     # Train mới + evaluate:
-    python evaluation/evaluate.py --data-dir home-credit-default-risk/ --train --no-shap
+    python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --train --no-shap
 
 Output (evaluation/results/):
     ├── metrics_summary.json       ← tất cả metrics dạng JSON
@@ -36,7 +36,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# __file__ is at evaluation/a3_scoring/evaluate.py → 3 levels up to back-end/
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
@@ -52,7 +53,7 @@ try:
 except ImportError:
     FEATURE_TO_4C_MAPPING = {}
 
-from evaluation.metrics import (
+from evaluation.a3_scoring.metrics import (
     compute_core_metrics,
     compute_riskband_breakdown,
     compute_thinfile_subauc,
@@ -60,7 +61,7 @@ from evaluation.metrics import (
     pd_to_credit_score,
     credit_score_to_band,
 )
-from evaluation.plots import (
+from evaluation.a3_scoring.plots import (
     plot_roc_curve,
     plot_pr_curve,
     plot_score_distribution,
@@ -211,7 +212,7 @@ def run_evaluation(
     # ── Step 6: SHAP Analysis ────────────────────────────────────────
     shap_metrics: dict = {}
     if not no_shap:
-        from evaluation.shap_analysis import (
+        from evaluation.a3_scoring.shap_analysis import (
             compute_global_shap_importance,
             compute_shap_summary_plot,
             compute_4c_shap_allocation,
@@ -303,16 +304,16 @@ def main():
         epilog="""
 Examples:
   # Evaluate pre-trained model (no SHAP, fast):
-  python evaluation/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap
+  python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap
 
   # Evaluate with SHAP:
-  python evaluation/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl
+  python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl
 
   # Train new model then evaluate:
-  python evaluation/evaluate.py --data-dir home-credit-default-risk/ --train --no-shap
+  python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --train --no-shap
 
   # Sample test set for faster evaluation:
-  python evaluation/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap --sample 10000
+  python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --model-path models/lgbm_ref_v1.pkl --no-shap --sample 10000
         """
     )
     parser.add_argument(
