@@ -25,8 +25,8 @@
 ### Bước 1: Tạo môi trường
 
 ```bash
-conda create -n swinburn_hackathon python=3.10 -y
-conda activate swinburn_hackathon
+conda create -n swinburne_hackathon python=3.10 -y
+conda activate swinburne_hackathon
 ```
 
 ### Bước 2: Cài dependencies
@@ -66,7 +66,7 @@ Upload tài liệu chính sách ngân hàng (TT39, TT11, QĐ18, Basel...) lên G
 ### Bước 5: Chạy Backend
 
 ```bash
-conda activate swinburn_hackathon
+conda activate swinburne_hackathon
 cd back-end
 uvicorn credicouncil.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
@@ -90,7 +90,7 @@ npm run dev
 ### Test pipeline đơn lẻ (1 customer)
 
 ```bash
-conda activate swinburn_hackathon
+conda activate swinburne_hackathon
 cd back-end
 python test_pipeline.py
 ```
@@ -181,7 +181,7 @@ python evaluation/a3_scoring/evaluate.py --data-dir home-credit-default-risk/ --
 ## 4. Cấu trúc thư mục
 
 ```
-swinburn_new/
+cridi-council-swinhackathon/
 ├── back-end/
 │   ├── credicouncil/                    # Core application package
 │   │   ├── agents/
