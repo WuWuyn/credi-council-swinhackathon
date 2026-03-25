@@ -1,140 +1,276 @@
 {
   "customer_info": {
-    "summary": "Khách hàng cá nhân, không thuộc diện thin-file, với điểm tín dụng 349 và thuộc nhóm rủi ro CC (PD 72.28%)."
+    "summary": "Khách hàng nữ, 47 tuổi, làm việc tại doanh nghiệp loại 3 với thâm niên 7.9 năm, có nhu cầu vay tiêu dùng với số tiền 371,862 VND.",
+    "gender": "Nữ",
+    "age": 48,
+    "education": "Trung cấp / THPT",
+    "family_status": "Đã kết hôn",
+    "income_type": "Kinh doanh",
+    "housing": "Nhà công vụ",
+    "own_realty": "Y",
+    "own_car": "N",
+    "loan_purpose": "CONSUMPTION"
   },
   "executive_summary": {
-    "credit_score": 349,
-    "risk_band": "CC",
-    "pd_pct": 72.28,
+    "credit_score": 580,
+    "risk_band": "A",
+    "pd_pct": 14.72,
     "recommendation": "REVIEW",
-    "five_c_total": 52,
+    "five_c_total": 84,
     "five_c_scores": {
-      "character": 18,
-      "capacity": 25,
-      "capital": 5,
-      "conditions": 4,
-      "collateral": 0
+      "character": 20,
+      "capacity": 39,
+      "capital": 11,
+      "conditions": 7,
+      "collateral": 7
     },
     "five_c_shap_allocation": {
       "character": {
-        "shap_sum": 1.6371,
-        "pct": 26
+        "shap_sum": 0.9959,
+        "pct": 17
       },
       "capacity": {
-        "shap_sum": 0.7855,
-        "pct": 12
+        "shap_sum": 0.4555,
+        "pct": 8
       },
       "capital": {
-        "shap_sum": 0.1856,
-        "pct": 3
+        "shap_sum": 0.1001,
+        "pct": 2
       },
       "conditions": {
-        "shap_sum": 3.6524,
-        "pct": 58
+        "shap_sum": 4.1687,
+        "pct": 72
       },
       "collateral": {
-        "shap_sum": 0.074,
+        "shap_sum": 0.0496,
         "pct": 1
       }
     },
+    "decision_reasons": [
+      "Credit Score 580 → Band A → REVIEW (Đánh giá đầy đủ 5C + điều kiện)"
+    ],
+    "decision_overrides": [],
     "model_info": {
       "model_version": "lgb1_ref_v1",
       "auc": "0.803",
       "shap_verified": true,
-      "inference_timestamp": "2026-03-23T09:46:37.592813+00:00"
+      "inference_timestamp": "2026-03-24T15:16:10.795389+00:00"
     },
     "financial_ratios": {
-      "income_annual_vnd": 58500.0,
-      "income_monthly_vnd": 4875.0,
-      "annuity_monthly_vnd": 562.5,
-      "credit_total_vnd": 135000.0,
-      "goods_price_vnd": 135000.0,
-      "dti": 0.1154,
-      "dti_pct": "11.5%",
-      "dscr": 8.67,
-      "ltv": 1.0,
-      "ltv_pct": "100.0%"
+      "income_annual_vnd": 15750000.0,
+      "income_monthly_vnd": 1312500.0,
+      "annuity_monthly_vnd": 245925.0,
+      "credit_total_vnd": 37186200.0,
+      "goods_price_vnd": 32850000.0,
+      "dti": 0.1874,
+      "dti_pct": "18.7%",
+      "dscr": 5.34,
+      "ltv": 1.132,
+      "ltv_pct": "113.2%"
     }
   },
   "five_c_scorecard": {
     "character_assessment": {
-      "score": 18,
-      "status": "XEM_XET",
-      "shap_pct": "26%",
+      "score": 20,
+      "max_score": 30,
+      "status": "XEM_XÉT",
+      "shap_pct": "17%",
       "indicators_met": [
-        "Điểm tín dụng ngoại 3 (CIC) có giá trị 0.0251 (SHAP: 0.6370)",
-        "Điểm tín dụng ngoại 2 (CIC) có giá trị 0.0012 (SHAP: 0.5095)"
+        "Không ghi nhận nợ quá hạn (DPD)",
+        "Vòng xã hội không có nợ xấu"
       ],
       "indicators_review": [
-        "Trung bình điểm tín dụng ngoại có giá trị 0.0643 (SHAP: 0.7707) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Trả góp mean_DPD_SCALE có giá trị 0.0 (SHAP: -0.0612) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+        "Điểm CIC ngoại trung bình (0.65)",
+        "Nhiều yêu cầu tín dụng (11/năm)"
       ],
-      "narrative": "Yếu tố uy tín của khách hàng được đánh giá dựa trên các điểm tín dụng ngoại (CIC) có giá trị lần lượt là 0.0251 và 0.0012, đóng góp tích cực vào việc đánh giá rủi ro. Tuy nhiên, trung bình điểm tín dụng ngoại (0.0643) lại có xu hướng làm tăng xác suất vỡ nợ. Yếu tố trả góp mean_DPD_SCALE (0.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ. Tổng thể, các chỉ số về uy tín cần được xem xét kỹ lưỡng."
+      "breakdown": [
+        {
+          "criterion": "CIC External Score",
+          "points": 5,
+          "max": 10,
+          "detail": "EXT_SOURCE avg = 0.6466"
+        },
+        {
+          "criterion": "Lịch sử thanh toán (DPD)",
+          "points": 7,
+          "max": 7,
+          "detail": "DPD issue: False"
+        },
+        {
+          "criterion": "Định danh & hồ sơ",
+          "points": 4,
+          "max": 5,
+          "detail": "Document flags + ID publish stability"
+        },
+        {
+          "criterion": "Lịch sử tín dụng trước",
+          "points": 1,
+          "max": 5,
+          "detail": "Bureau requests: 11.0/year, 1.0/month"
+        },
+        {
+          "criterion": "Vòng xã hội (social circle)",
+          "points": 3,
+          "max": 3,
+          "detail": "DEF_30_CNT_SOCIAL_CIRCLE = 0"
+        }
+      ],
+      "narrative": "Uy tín tín dụng của khách hàng được đánh giá dựa trên dữ liệu CIC và hành vi trả nợ quá khứ. Theo SHAP, các yếu tố như 'EXT_SOURCE_2' (0.7686) và 'EXT_SOURCE_1' (0.7276) đóng vai trò tích cực, tuy nhiên, chỉ số 'bureau_recent_AMT_DEBT_RATIO' (0.966) và 'bureau_recent_AMT_CREDIT_SUM' (202,500 VND) phản ánh áp lực nợ hiện tại cao. Theo Điều 17 Thông tư 39/2016/TT-NHNN, việc thẩm định tư cách phải dựa trên lịch sử tín dụng minh bạch; mặc dù không ghi nhận nợ quá hạn, nhưng tần suất yêu cầu tín dụng cao (11 lần/năm) là yếu tố cần lưu ý trong đánh giá rủi ro đạo đức và khả năng quản lý tài chính cá nhân."
     },
     "capacity_assessment": {
-      "score": 25,
-      "status": "XEM_XET",
-      "shap_pct": "12%",
+      "score": 39,
+      "max_score": 40,
+      "status": "ĐẠT",
+      "shap_pct": "8%",
       "indicators_met": [
-        "Tỷ lệ tín dụng/giá trị hàng có giá trị 1.0 (SHAP: -0.0744) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+        "DTI 18.7% — rất tốt",
+        "DSCR 5.34 — dư dả",
+        "Nguồn thu nhập ổn định (Commercial associate)",
+        "Thâm niên công tác 7.9 năm"
       ],
-      "indicators_review": [
-        "Trả góp hiện tại / TB đơn đã duyệt có giá trị 6,750,000.0 (SHAP: 0.1771) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Tuổi khách hàng có giá trị -7777.0 (SHAP: -0.0873) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      "indicators_review": [],
+      "breakdown": [
+        {
+          "criterion": "DTI (Nợ/Thu nhập)",
+          "points": 14,
+          "max": 14,
+          "detail": "DTI = 18.7%"
+        },
+        {
+          "criterion": "DSCR (Dòng tiền/Nợ)",
+          "points": 10,
+          "max": 10,
+          "detail": "DSCR = 5.34"
+        },
+        {
+          "criterion": "Loại thu nhập",
+          "points": 7,
+          "max": 8,
+          "detail": "NAME_INCOME_TYPE = Commercial associate"
+        },
+        {
+          "criterion": "Thâm niên công tác",
+          "points": 8,
+          "max": 8,
+          "detail": "7.9 years"
+        }
       ],
-      "narrative": "Năng lực trả nợ của khách hàng được đánh giá qua các chỉ số. Tỷ lệ tín dụng/giá trị hàng (1.0) có tác động tiêu cực đến xác suất vỡ nợ. Tuy nhiên, khoản trả góp hiện tại so với trung bình đơn đã duyệt (6,750,000.0) lại có xu hướng làm tăng xác suất vỡ nợ. Tuổi khách hàng (-7777.0) cũng là một yếu tố tiêu cực. Cần phân tích sâu hơn về dòng tiền và khả năng chi trả thực tế."
+      "narrative": "Năng lực trả nợ của khách hàng thể hiện qua DTI 18.7% và DSCR 5.34, cho thấy khả năng đáp ứng nghĩa vụ nợ tốt theo quy định tại Điều 17 Thông tư 39/2016/TT-NHNN. Tuy nhiên, các yếu tố SHAP như 'inst_mean_AMT_PAYMENT_PERC' (1.0) và 'prev_avg_AMT_CREDIT_GOODS_PERC' (1.2408) cho thấy khách hàng đang duy trì mức trả nợ sát với hạn mức. Mặc dù thu nhập ổn định từ công việc 'Commercial associate', việc tỷ lệ tín dụng trên giá trị hàng hóa cao gây áp lực lên dòng tiền thực tế, đòi hỏi sự thận trọng trong việc đánh giá khả năng duy trì thanh khoản dài hạn."
     },
     "capital_assessment": {
-      "score": 5,
-      "status": "KHONG_DAT",
-      "shap_pct": "3%",
-      "indicators_met": [],
-      "indicators_review": [
-        "Tổng dư nợ tín dụng có giá trị 135,000.0 (SHAP: -0.0889) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      "score": 11,
+      "max_score": 20,
+      "status": "XEM_XÉT",
+      "shap_pct": "2%",
+      "indicators_met": [
+        "Sở hữu bất động sản"
       ],
-      "narrative": "Vốn tự có của khách hàng được đánh giá ở mức thấp. Yếu tố tổng dư nợ tín dụng (135,000.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ, cho thấy khả năng tự chủ về tài chính còn hạn chế. Cần có thêm thông tin về tài sản và nguồn vốn khác để đánh giá đầy đủ."
+      "indicators_review": [
+        "Quá nhiều khoản tín dụng (11/năm)"
+      ],
+      "breakdown": [
+        {
+          "criterion": "Bất động sản",
+          "points": 7,
+          "max": 7,
+          "detail": "FLAG_OWN_REALTY = Y"
+        },
+        {
+          "criterion": "Ô tô",
+          "points": 0,
+          "max": 3,
+          "detail": "FLAG_OWN_CAR = N"
+        },
+        {
+          "criterion": "Đòn bẩy (Vay/Thu nhập)",
+          "points": 4,
+          "max": 6,
+          "detail": "Ratio = 37186200.0/15750000.0"
+        },
+        {
+          "criterion": "Gánh nặng nợ ngoài (CIC)",
+          "points": 0,
+          "max": 4,
+          "detail": "Bureau requests/year = 11.0"
+        }
+      ],
+      "narrative": "Khách hàng sở hữu bất động sản, tuy nhiên, dữ liệu CIC cho thấy sự hiện diện của nhiều khoản tín dụng (11 khoản/năm) làm giảm tính bền vững của vốn tự có. Theo quy định tại Thông tư 41/2016/TT-NHNN về Basel II, việc duy trì quá nhiều khoản nợ nhỏ lẻ làm tăng trọng số rủi ro tín dụng. Mặc dù tài sản bất động sản là điểm tựa, nhưng việc quản lý nợ hiện tại chưa tối ưu, ảnh hưởng đến khả năng đối ứng vốn trong các tình huống tài chính khẩn cấp."
     },
     "conditions_assessment": {
-      "score": 4,
-      "status": "KHONG_DAT",
-      "shap_pct": "58%",
+      "score": 7,
+      "max_score": 10,
+      "status": "ĐẠT",
+      "shap_pct": "72%",
       "indicators_met": [
-        "Trung bình điểm tín dụng ngoại có giá trị 0.0643 (SHAP: 0.7707) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Đơn bị từ chối — DAYS_DECISION_MAX có giá trị 0.0 (SHAP: 0.1257) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Thời gian cấp CCCD có giá trị -196.0 (SHAP: 0.1212) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Khoản trả hàng năm có giá trị 20.0 (SHAP: 0.1117) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Tích điểm tín dụng ngoại có giá trị 0.0 (SHAP: 0.0740) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Trình độ học vấn có giá trị 0.0 (SHAP: 0.0603) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ.",
-        "Có SĐT nơi làm việc có giá trị 1.0 (SHAP: 0.0598) cho thấy yếu tố này có ảnh hưởng tích cực đến xác suất vỡ nợ."
+        "Mục đích vay rõ ràng (CONSUMPTION)",
+        "Độ tuổi phù hợp (47 tuổi)"
       ],
-      "indicators_review": [
-        "Amt diff credit goods có giá trị 0.0 (SHAP: -0.0617) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
-        "Occupation type mean encode có giá trị 0.0807 (SHAP: -0.0563) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
-        "Kurtosis tài liệu đã nộp có giá trị 0.0 (SHAP: -0.0543) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
-        "Organization type mean encode có giá trị 0.0807 (SHAP: -0.0472) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
-        "Tuổi bắt đầu làm việc có giá trị 6686.0 (SHAP: -0.0457) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ.",
-        "Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION có giá trị -367.0 (SHAP: -0.0412) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      "indicators_review": [],
+      "breakdown": [
+        {
+          "criterion": "Mục đích vay",
+          "points": 2,
+          "max": 3,
+          "detail": "Purpose = CONSUMPTION"
+        },
+        {
+          "criterion": "Trình độ học vấn",
+          "points": 2,
+          "max": 3,
+          "detail": "Education = Secondary / secondary special"
+        },
+        {
+          "criterion": "Xếp hạng vùng",
+          "points": 1,
+          "max": 2,
+          "detail": "REGION_RATING = 2"
+        },
+        {
+          "criterion": "Tuổi & ổn định gia đình",
+          "points": 2,
+          "max": 2,
+          "detail": "Age = 47"
+        }
       ],
-      "narrative": "Các yếu tố về điều kiện có ảnh hưởng lớn nhất đến đánh giá tín dụng. Nhiều chỉ số như trung bình điểm tín dụng ngoại (0.0643), đơn bị từ chối (0.0), thời gian cấp CCCD (-196.0), khoản trả hàng năm (20.0), tích điểm tín dụng ngoại (0.0), trình độ học vấn (0.0) và có SĐT nơi làm việc (1.0) đều có xu hướng làm tăng xác suất vỡ nợ. Ngược lại, các yếu tố như Amt diff credit goods (0.0), Occupation type mean encode (0.0807), Kurtosis tài liệu đã nộp (0.0), Organization type mean encode (0.0807), tuổi bắt đầu làm việc (6686.0) và Max đơn vay trước DAYS_LAST_DUE_1ST_VERSION (-367.0) có tác động tiêu cực đến xác suất vỡ nợ. Cần xem xét kỹ lưỡng các yếu tố này."
+      "narrative": "Mục đích vay tiêu dùng phù hợp với độ tuổi 47 và thâm niên công tác 7.9 năm. Tuy nhiên, các yếu tố SHAP như 'AMT_PAY_YEAR' (12.6) và 'cc_mean4_AMT_BALANCE_CREDIT_RATIO' (1.0041) cho thấy khách hàng đang phụ thuộc lớn vào tín dụng thẻ. Theo Điều 17 Thông tư 39/2016/TT-NHNN, ngân hàng cần kiểm soát chặt chẽ mục đích sử dụng vốn. Việc có 10 đơn vay bị từ chối trước đó ('prev_sum_NAME_CONTRACT_STATUS_Refused') là yếu tố cảnh báo về điều kiện tiếp cận tín dụng của khách hàng."
     },
     "collateral_assessment": {
-      "score": 0,
-      "status": "KHONG_DAT",
-      "indicators_met": [],
-      "indicators_review": [
-        "Tỷ lệ tín dụng/giá trị hàng có giá trị 1.0 (SHAP: -0.0744) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+      "score": 7,
+      "max_score": 20,
+      "status": "CHƯA_ĐẠT",
+      "shap_pct": "1%",
+      "indicators_met": [
+        "Sở hữu bất động sản"
       ],
-      "narrative": "Hiện tại chưa có thông tin chi tiết về tài sản bảo đảm. Yếu tố tỷ lệ tín dụng/giá trị hàng (1.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ, cho thấy mức độ phụ thuộc vào tín dụng cao. Việc thiếu tài sản bảo đảm là một điểm trừ lớn."
+      "indicators_review": [
+        "LTV 113% — vượt 100%, rủi ro cao"
+      ],
+      "breakdown": [
+        {
+          "criterion": "LTV (Vay/TSBĐ)",
+          "points": 0,
+          "max": 10,
+          "detail": "LTV = 113.2%"
+        },
+        {
+          "criterion": "Quyền sở hữu tài sản",
+          "points": 5,
+          "max": 5,
+          "detail": "Realty=Y, Car=N"
+        },
+        {
+          "criterion": "Chất lượng TSBĐ",
+          "points": 2,
+          "max": 5,
+          "detail": "Housing=office apartment, Walls=, Area=None"
+        }
+      ],
+      "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Tuy nhiên, với tỷ lệ LTV lên tới 113.2%, giá trị tài sản không đủ bao phủ khoản vay theo thông lệ an toàn (thường dưới 70-80%). Theo Thông tư 41/2016/TT-NHNN, mức LTV này không giúp giảm trọng số rủi ro tín dụng, gây áp lực lên hệ số CAR của ngân hàng."
     }
   },
   "financial_summary": {
-    "income_analysis": "Thu nhập tháng: 4,875 VND. Tỷ lệ DTI là 11.5%, cho thấy khả năng chi trả cho các khoản vay mới còn hạn chế.",
-    "debt_analysis": "Trả nợ tháng: 562 VND. Tỷ lệ DSCR là 8.67, cho thấy khả năng trả nợ hiện tại ở mức chấp nhận được, tuy nhiên cần xem xét tổng thể các khoản nợ.",
-    "key_ratios": {
-      "dti": "11.5%",
-      "dscr": "8.67",
-      "ltv": "100.0%"
-    }
+    "income_analysis": "Thu nhập ổn định từ công việc thâm niên 7.9 năm, tuy nhiên cần xác thực thêm để đảm bảo tính chính xác theo yêu cầu của TT39.",
+    "debt_analysis": "DTI 18.7% và DSCR 5.34 ở mức an toàn, nhưng áp lực từ các khoản nợ CIC hiện hữu là yếu tố rủi ro cần giám sát."
   },
   "debt_assessment": {
     "score": 81,
@@ -145,21 +281,21 @@
     "metrics": [
       {
         "name": "DTI (Nợ/Thu nhập)",
-        "value": "11.5%",
+        "value": "18.7%",
         "threshold": "< 40%",
         "status": "Tốt",
         "flag": "OK"
       },
       {
         "name": "DSCR (Dòng tiền/Nợ)",
-        "value": "8.67",
+        "value": "5.34",
         "threshold": "> 1.20",
         "status": "Tốt",
         "flag": "OK"
       },
       {
         "name": "LTV (Vay/TSBĐ)",
-        "value": "100.0%",
+        "value": "113.2%",
         "threshold": "< 70%",
         "status": "Rủi ro",
         "flag": "!!"
@@ -172,57 +308,148 @@
         "flag": "OK"
       }
     ],
-    "summary": "Phân tích nợ tổng hợp: 81/100 điểm (81%). Mục đích vay: Tiêu dùng. DTI 11.5% — trong ngưỡng an toàn. DSCR 8.67 — đạt ngưỡng."
+    "summary": "Phân tích nợ tổng hợp: 81/100 điểm (81%). Mục đích vay: Tiêu dùng. DTI 18.7% — trong ngưỡng an toàn. DSCR 5.34 — đạt ngưỡng."
   },
   "collateral_detail": {
-    "score": 0,
-    "status": "KHONG_DAT",
-    "indicators_met": [],
-    "indicators_review": [
-      "Tỷ lệ tín dụng/giá trị hàng có giá trị 1.0 (SHAP: -0.0744) cho thấy yếu tố này có ảnh hưởng tiêu cực đến xác suất vỡ nợ."
+    "score": 7,
+    "max_score": 20,
+    "status": "CHƯA_ĐẠT",
+    "shap_pct": "1%",
+    "indicators_met": [
+      "Sở hữu bất động sản"
     ],
-    "narrative": "Hiện tại chưa có thông tin chi tiết về tài sản bảo đảm. Yếu tố tỷ lệ tín dụng/giá trị hàng (1.0) có ảnh hưởng tiêu cực đến xác suất vỡ nợ, cho thấy mức độ phụ thuộc vào tín dụng cao. Việc thiếu tài sản bảo đảm là một điểm trừ lớn."
+    "indicators_review": [
+      "LTV 113% — vượt 100%, rủi ro cao"
+    ],
+    "breakdown": [
+      {
+        "criterion": "LTV (Vay/TSBĐ)",
+        "points": 0,
+        "max": 10,
+        "detail": "LTV = 113.2%"
+      },
+      {
+        "criterion": "Quyền sở hữu tài sản",
+        "points": 5,
+        "max": 5,
+        "detail": "Realty=Y, Car=N"
+      },
+      {
+        "criterion": "Chất lượng TSBĐ",
+        "points": 2,
+        "max": 5,
+        "detail": "Housing=office apartment, Walls=, Area=None"
+      }
+    ],
+    "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Tuy nhiên, với tỷ lệ LTV lên tới 113.2%, giá trị tài sản không đủ bao phủ khoản vay theo thông lệ an toàn (thường dưới 70-80%). Theo Thông tư 41/2016/TT-NHNN, mức LTV này không giúp giảm trọng số rủi ro tín dụng, gây áp lực lên hệ số CAR của ngân hàng."
   },
   "suggested_terms": {
-    "max_amount_vnd": 0,
-    "max_term_months": 0,
-    "interest_rate_suggestion": "theo biểu phí hiện hành",
+    "max_amount_vnd": 37186200.0,
+    "interest_rate_suggestion": "Áp dụng lãi suất theo biểu phí rủi ro (Risk-based pricing) do PD ở mức 14.72%.",
     "conditions": [
-      "Yêu cầu bổ sung thông tin chi tiết về tài sản bảo đảm.",
-      "Xem xét kỹ lưỡng lịch sử tín dụng và các yếu tố điều kiện có ảnh hưởng lớn đến xác suất vỡ nợ.",
-      "Đánh giá lại khả năng trả nợ dựa trên dòng tiền thực tế và các khoản chi tiêu cố định."
+      "LTV 113% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức",
+      "Chứng minh thu nhập thực tế",
+      "Giải trình mục đích vay tiêu dùng",
+      "Bổ sung tài sản đảm bảo để đưa LTV về dưới 70%",
+      "Tất toán các khoản vay nhỏ lẻ không cần thiết",
+      "Kiểm tra tình trạng pháp lý bất động sản"
     ]
   },
   "reward_assessment": {
-    "interest_rate_pct": "22.0%",
-    "loan_amount_fmt": "135,000 VND",
-    "term_months": 20,
-    "gross_income_fmt": "49,500 VND",
-    "expected_loss_fmt": "43,910 VND",
-    "risk_adj_income_fmt": "5,590 VND",
-    "raroc_pct": "4.1%",
+    "interest_rate_pct": "11.0%",
+    "loan_amount_fmt": "37 triệu VND",
+    "term_months": 13,
+    "gross_income_fmt": "4 triệu VND",
+    "expected_loss_fmt": "2 triệu VND",
+    "risk_adj_income_fmt": "2 triệu VND",
+    "raroc_pct": "5.3%",
     "verdict": "Chấp nhận được",
     "verdict_flag": "OK",
     "verdict_color": "orange",
-    "customer_segment": "Sub-prime",
-    "upsell_opportunities": [],
-    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 4.1% — Chấp nhận được. Phân khúc: Sub-prime. Thu nhập lãi ước tính: 49,500 VND, Tổn thất kỳ vọng: 43,910 VND."
+    "customer_segment": "Mass",
+    "upsell_opportunities": [
+      "Bảo hiểm khoản vay"
+    ],
+    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 5.3% — Chấp nhận được. Phân khúc: Mass. Thu nhập lãi ước tính: 4 triệu VND, Tổn thất kỳ vọng: 2 triệu VND."
   },
   "llm_insights": {
     "loan_purpose": "CONSUMPTION",
-    "positive_signals": [],
+    "positive_signals": [
+      "long-term employment since 2018",
+      "property ownership",
+      "stable residential status"
+    ],
     "risk_flags": [
-      "Inconsistent income documentation",
-      "Unclear loan purpose",
-      "Vague repayment plan"
+      "emergency status on property",
+      "low stated annual income",
+      "limited documentation provided"
     ]
   },
   "caveats": [
-    "Đánh giá dựa trên dữ liệu và mô hình SHAP được cung cấp.",
-    "Cần có thêm thông tin định tính và xác minh từ khách hàng để có quyết định cuối cùng."
+    "LTV vượt ngưỡng an toàn (113.2%)",
+    "Xác suất vỡ nợ (PD) ở mức cao 14.72%",
+    "Tần suất yêu cầu tín dụng cao (11 lần/năm)",
+    "Dữ liệu CIC cho thấy nhiều khoản vay tiêu dùng nhỏ lẻ",
+    "Lịch sử có nhiều đơn vay bị từ chối"
   ],
   "audit_reference": {
     "model_version": "lgb1_ref_v1",
-    "inference_timestamp": "2026-03-23T09:46:37.592813+00:00"
+    "inference_timestamp": "2026-03-24T15:16:10.795389+00:00",
+    "rag_citations": [
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "source": null,
+        "title": "tt11_2021_debt_classification"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "source": null,
+        "title": "credit_assessment_5c"
+      },
+      {
+        "source": null,
+        "title": "basel_vietnam_car"
+      },
+      {
+        "text": "Các quy định pháp lý liên quan",
+        "chunk_indices": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "text": "*   **Thông tư 39/2016/TT-NHNN (Điều kiện cho vay):** TCTD phải thẩm định khả năng tài chính và phương án trả nợ.",
+        "chunk_indices": [
+          3
+        ]
+      },
+      {
+        "text": "*   **Thông tư 11/2021/TT-NHNN (Phân loại nợ):** TCTD phải phân loại nợ hàng tháng.",
+        "chunk_indices": [
+          1
+        ]
+      },
+      {
+        "text": "*   **Basel II/III (Hệ số CAR):** Theo TT41/2016 (Basel II), cho vay cá nhân/tiêu dùng thường có trọng số rủi ro 100%.",
+        "chunk_indices": [
+          4
+        ]
+      }
+    ],
+    "rag_policy_docs": [
+      "TT39/2016/TT-NHNN",
+      "TT11/2021/TT-NHNN",
+      "QĐ493/2005/QĐ-NHNN",
+      "CIC Scoring Guide",
+      "Basel II/III (TT41/2016, TT14/2025)",
+      "5C Assessment Framework"
+    ]
   }
 }

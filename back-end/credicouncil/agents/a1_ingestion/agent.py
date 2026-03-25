@@ -126,25 +126,26 @@ class IngestionAgent:
 
         if settings.use_docling:
             # ── Path A: Docling + EasyOCR + LLM extraction ────────────
+            # OCR runs sequentially (local CPU), LLM calls run in PARALLEL
             logger.info("  Engine: DOCLING + EasyOCR + LLM extraction")
             from credicouncil.services.docling_ocr_service import DoclingOCRService
             from credicouncil.agents.a1_ingestion.llm_field_extractor import LLMFieldExtractor
+            import asyncio
 
             ocr_service = DoclingOCRService()
             llm_extractor = LLMFieldExtractor()
 
+            # Step 1: Run OCR on all PDFs sequentially (fast, local CPU)
+            ocr_tasks = []  # list of (doc_type, ocr_text)
             for pdf_path in pdf_files:
                 if not pdf_path.name.startswith(KNOWN_PDF_PREFIXES):
                     logger.info(f"  Skipping non-input PDF: {pdf_path.name}")
                     continue
 
-                # Detect doc type from filename prefix
                 prefix = pdf_path.name[:3]
                 doc_type = PREFIX_DOC_TYPE.get(prefix, "unknown")
-
                 logger.info(f"  Docling OCR: {pdf_path.name} → {doc_type}")
 
-                # Step 1: Docling OCR (local)
                 ocr_result = ocr_service.extract(pdf_path)
                 ocr_text = ocr_result["markdown"] or ocr_result["raw_text"]
                 raw_texts[doc_type] = ocr_text
@@ -153,15 +154,50 @@ class IngestionAgent:
                     logger.warning(f"  Empty OCR text for {pdf_path.name}, skipping LLM")
                     continue
 
-                # Step 2: LLM extraction (Gemini + Pydantic)
-                fields, conf = llm_extractor.extract(doc_type, ocr_text)
-                doc_fields[doc_type] = fields
-                confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
+                ocr_tasks.append((doc_type, ocr_text))
 
-                # Collect names
-                name = fields.get("full_name", "")
-                if name:
-                    identity_names.append(name.strip().upper())
+            # Step 2: Run ALL LLM extractions in PARALLEL (async gather)
+            # Stagger delay between calls to avoid Tier 1 rate limit (15 RPM)
+            STAGGER_DELAY = 0.2  # seconds between each API call start
+            if ocr_tasks:
+                async def _extract_all():
+                    semaphore = asyncio.Semaphore(5)  # max 5 concurrent
+
+                    async def _extract_one(idx, dt, text):
+                        # Stagger: each call starts 0.2s after previous
+                        await asyncio.sleep(idx * STAGGER_DELAY)
+                        async with semaphore:
+                            return dt, await llm_extractor.extract_async(dt, text)
+
+                    tasks = [_extract_one(i, dt, text) for i, (dt, text) in enumerate(ocr_tasks)]
+                    return await asyncio.gather(*tasks)
+
+                # Always run in a separate thread to avoid conflicts with
+                # any existing event loop (uvicorn async or sync test_pipeline)
+                import threading
+                llm_results = []
+                llm_error = []
+
+                def _run():
+                    try:
+                        llm_results.extend(asyncio.run(_extract_all()))
+                    except Exception as e:
+                        llm_error.append(e)
+
+                logger.info(f"  LLM extraction: {len(ocr_tasks)} PDFs in PARALLEL...")
+                t = threading.Thread(target=_run)
+                t.start()
+                t.join()
+
+                if llm_error:
+                    raise llm_error[0]
+
+                for doc_type, (fields, conf) in llm_results:
+                    doc_fields[doc_type] = fields
+                    confidence_map.update({f"{doc_type}.{k}": v for k, v in conf.items()})
+                    name = fields.get("full_name", "")
+                    if name:
+                        identity_names.append(name.strip().upper())
 
         else:
             # ── Path B: PyMuPDF + regex (original) ────────────────────

@@ -28,10 +28,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Load .env
+# Load .env — check PROJECT_ROOT first, then parent (repo root)
 try:
     from dotenv import load_dotenv
-    load_dotenv(PROJECT_ROOT / ".env")
+    env_local = PROJECT_ROOT / ".env"
+    env_parent = PROJECT_ROOT.parent / ".env"
+    if env_local.exists():
+        load_dotenv(env_local)
+    elif env_parent.exists():
+        load_dotenv(env_parent)
+    else:
+        load_dotenv()  # fallback: search cwd upward
 except ImportError:
     pass
 
@@ -57,8 +64,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend static files
+# Serve frontend static files — check PROJECT_ROOT and parent (repo root)
 _FRONTEND_DIR = PROJECT_ROOT / "front-end" / "app"
+if not _FRONTEND_DIR.exists():
+    _FRONTEND_DIR = PROJECT_ROOT.parent / "front-end" / "app"
 if _FRONTEND_DIR.exists():
     app.mount("/app", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
     logger.info(f"Frontend served at /app from {_FRONTEND_DIR}")

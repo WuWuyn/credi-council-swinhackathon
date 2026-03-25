@@ -1,0 +1,463 @@
+{
+  "customer_info": {
+    "summary": "Khách hàng nam, 37 tuổi, nhân viên kinh doanh với 9.2 năm thâm niên, có nhu cầu vay tiêu dùng với số tiền 1,188,765 VND.",
+    "gender": "Nam",
+    "age": 37,
+    "education": "Đại học / Cao đẳng",
+    "family_status": "Đã kết hôn",
+    "income_type": "Kinh doanh",
+    "housing": "Nhà riêng / Chung cư",
+    "own_realty": "Y",
+    "own_car": "Y",
+    "loan_purpose": "CONSUMPTION"
+  },
+  "executive_summary": {
+    "credit_score": 666,
+    "risk_band": "AA",
+    "pd_pct": 5.07,
+    "recommendation": "REVIEW",
+    "five_c_total": 92,
+    "five_c_scores": {
+      "character": 20,
+      "capacity": 39,
+      "capital": 16,
+      "conditions": 8,
+      "collateral": 9
+    },
+    "five_c_shap_allocation": {
+      "character": {
+        "shap_sum": 1.1453,
+        "pct": 21
+      },
+      "capacity": {
+        "shap_sum": 0.7184,
+        "pct": 13
+      },
+      "capital": {
+        "shap_sum": 0.296,
+        "pct": 5
+      },
+      "conditions": {
+        "shap_sum": 3.3019,
+        "pct": 60
+      },
+      "collateral": {
+        "shap_sum": 0.0617,
+        "pct": 1
+      }
+    },
+    "decision_reasons": [
+      "Credit Score 666 → Band AA → APPROVE_REVIEW (Chuyên viên xem nhanh báo cáo)",
+      "LTV 109% > 80% → chuyển sang REVIEW"
+    ],
+    "decision_overrides": [
+      "LTV 109% > 80% → chuyển sang REVIEW"
+    ],
+    "model_info": {
+      "model_version": "lgb1_ref_v1",
+      "auc": "0.803",
+      "shap_verified": true,
+      "inference_timestamp": "2026-03-24T15:57:20.134520+00:00"
+    },
+    "financial_ratios": {
+      "income_annual_vnd": 22500000.0,
+      "income_monthly_vnd": 1875000.0,
+      "annuity_monthly_vnd": 393933.3333333334,
+      "credit_total_vnd": 118876500.0,
+      "goods_price_vnd": 109350000.0,
+      "dti": 0.2101,
+      "dti_pct": "21.0%",
+      "dscr": 4.76,
+      "ltv": 1.0871,
+      "ltv_pct": "108.7%"
+    }
+  },
+  "five_c_scorecard": {
+    "character_assessment": {
+      "score": 20,
+      "max_score": 30,
+      "status": "XEM_XÉT",
+      "shap_pct": "21%",
+      "indicators_met": [
+        "Giấy tờ định danh ổn định",
+        "Ít yêu cầu tín dụng gần đây",
+        "Vòng xã hội không có nợ xấu"
+      ],
+      "indicators_review": [
+        "Điểm CIC ngoại trung bình (0.60)",
+        "Ghi nhận chỉ số DPD trong SHAP — cần kiểm tra"
+      ],
+      "breakdown": [
+        {
+          "criterion": "CIC External Score",
+          "points": 5,
+          "max": 10,
+          "detail": "EXT_SOURCE avg = 0.6003"
+        },
+        {
+          "criterion": "Lịch sử thanh toán (DPD)",
+          "points": 2,
+          "max": 7,
+          "detail": "DPD issue: True"
+        },
+        {
+          "criterion": "Định danh & hồ sơ",
+          "points": 5,
+          "max": 5,
+          "detail": "Document flags + ID publish stability"
+        },
+        {
+          "criterion": "Lịch sử tín dụng trước",
+          "points": 5,
+          "max": 5,
+          "detail": "Bureau requests: 0/year, 1.0/month"
+        },
+        {
+          "criterion": "Vòng xã hội (social circle)",
+          "points": 3,
+          "max": 3,
+          "detail": "DEF_30_CNT_SOCIAL_CIRCLE = 0"
+        }
+      ],
+      "narrative": "Uy tín của khách hàng được đánh giá dựa trên lịch sử tín dụng và hành vi trả nợ. Các yếu tố SHAP cho thấy 'bureau_recent_AMT_DEBT_RATIO' (0.2209) và 'bureau_recent_AMT_CREDIT_SUM' (0.0624) là các biến số ảnh hưởng đến rủi ro vỡ nợ, phản ánh mức độ sử dụng hạn mức tín dụng hiện tại. Mặc dù điểm tín dụng ngoại (EXT_SOURCE_2: 0.7825) đóng góp tích cực vào việc giảm rủi ro, nhưng các chỉ số về độ trễ thanh toán (inst_mean_DPD_SCALE: 0.054) cần được kiểm soát chặt chẽ theo quy định về phân loại nợ tại Thông tư 11/2021/TT-NHNN để đảm bảo tính minh bạch trong lịch sử tín dụng."
+    },
+    "capacity_assessment": {
+      "score": 39,
+      "max_score": 40,
+      "status": "ĐẠT",
+      "shap_pct": "13%",
+      "indicators_met": [
+        "DTI 21.0% — rất tốt",
+        "DSCR 4.76 — dư dả",
+        "Nguồn thu nhập ổn định (Commercial associate)",
+        "Thâm niên công tác 9.2 năm"
+      ],
+      "indicators_review": [],
+      "breakdown": [
+        {
+          "criterion": "DTI (Nợ/Thu nhập)",
+          "points": 14,
+          "max": 14,
+          "detail": "DTI = 21.0%"
+        },
+        {
+          "criterion": "DSCR (Dòng tiền/Nợ)",
+          "points": 10,
+          "max": 10,
+          "detail": "DSCR = 4.76"
+        },
+        {
+          "criterion": "Loại thu nhập",
+          "points": 7,
+          "max": 8,
+          "detail": "NAME_INCOME_TYPE = Commercial associate"
+        },
+        {
+          "criterion": "Thâm niên công tác",
+          "points": 8,
+          "max": 8,
+          "detail": "9.2 years"
+        }
+      ],
+      "narrative": "Năng lực trả nợ của khách hàng thể hiện qua DTI 21.0% và DSCR 4.76, cho thấy khả năng đáp ứng nghĩa vụ tài chính tốt theo Điều 7 Thông tư 39/2016/TT-NHNN. Tuy nhiên, các yếu tố SHAP như 'AMT_ANNUITY_to_prev_approved' (0.127) và 'AMT_ANNUITY' (0.0835) cho thấy áp lực từ các khoản trả góp định kỳ đang là yếu tố tăng rủi ro. Mặc dù thu nhập ổn định từ công việc nhân viên kinh doanh, ngân hàng cần lưu ý biến số 'DAYS_BIRTH' (0.0436) trong mô hình dự báo rủi ro để đánh giá tính bền vững của dòng tiền trong dài hạn."
+    },
+    "capital_assessment": {
+      "score": 16,
+      "max_score": 20,
+      "status": "ĐẠT",
+      "shap_pct": "5%",
+      "indicators_met": [
+        "Sở hữu bất động sản",
+        "Sở hữu ô tô",
+        "Ít khoản vay ngoài"
+      ],
+      "indicators_review": [
+        "Đòn bẩy tài chính cao (5.3x thu nhập)"
+      ],
+      "breakdown": [
+        {
+          "criterion": "Bất động sản",
+          "points": 7,
+          "max": 7,
+          "detail": "FLAG_OWN_REALTY = Y"
+        },
+        {
+          "criterion": "Ô tô",
+          "points": 3,
+          "max": 3,
+          "detail": "FLAG_OWN_CAR = Y"
+        },
+        {
+          "criterion": "Đòn bẩy (Vay/Thu nhập)",
+          "points": 2,
+          "max": 6,
+          "detail": "Ratio = 118876500.0/22500000.0"
+        },
+        {
+          "criterion": "Gánh nặng nợ ngoài (CIC)",
+          "points": 4,
+          "max": 4,
+          "detail": "Bureau requests/year = 0"
+        }
+      ],
+      "narrative": "Khách hàng sở hữu tài sản bất động sản và ô tô, cho thấy tiềm lực tài chính nhất định. Tuy nhiên, yếu tố SHAP 'bureau_AMT_DEBT_TOTAL_RATIO' (0.0959) và 'bureau_sum_AMT_CREDIT_SUM' (-0.0754) cho thấy đòn bẩy tài chính hiện tại đang ở mức cao. Theo quy định an toàn vốn tại Thông tư 41/2016/TT-NHNN, việc duy trì tỷ lệ nợ trên tổng tài sản cao có thể ảnh hưởng đến khả năng chống chịu rủi ro của khách hàng trong các tình huống tài chính biến động."
+    },
+    "conditions_assessment": {
+      "score": 8,
+      "max_score": 10,
+      "status": "ĐẠT",
+      "shap_pct": "60%",
+      "indicators_met": [
+        "Mục đích vay rõ ràng (CONSUMPTION)",
+        "Trình độ học vấn cao",
+        "Độ tuổi phù hợp (37 tuổi)"
+      ],
+      "indicators_review": [],
+      "breakdown": [
+        {
+          "criterion": "Mục đích vay",
+          "points": 2,
+          "max": 3,
+          "detail": "Purpose = CONSUMPTION"
+        },
+        {
+          "criterion": "Trình độ học vấn",
+          "points": 3,
+          "max": 3,
+          "detail": "Education = Higher education"
+        },
+        {
+          "criterion": "Xếp hạng vùng",
+          "points": 1,
+          "max": 2,
+          "detail": "REGION_RATING = 2"
+        },
+        {
+          "criterion": "Tuổi & ổn định gia đình",
+          "points": 2,
+          "max": 2,
+          "detail": "Age = 37"
+        }
+      ],
+      "narrative": "Điều kiện vay được xem xét dựa trên mục đích tiêu dùng và trình độ học vấn cao của khách hàng. Các yếu tố SHAP như 'NEW_EXT_SOURCES_MEAN' (-0.2803) và 'NAME_EDUCATION_TYPE' (-0.1174) đóng góp tích cực vào việc giảm rủi ro. Tuy nhiên, cần lưu ý các yếu tố tăng rủi ro như 'region_mean_income_rel' (0.1197) và 'inst_sum_DPD_SCALE' (0.0688). Việc thẩm định mục đích vay phải tuân thủ nghiêm ngặt Điều 4 Thông tư 39/2016/TT-NHNN về sử dụng vốn vay đúng mục đích."
+    },
+    "collateral_assessment": {
+      "score": 9,
+      "max_score": 20,
+      "status": "XEM_XÉT",
+      "shap_pct": "1%",
+      "indicators_met": [
+        "Sở hữu bất động sản",
+        "Chất lượng tài sản tốt (nhà xây kiên cố)"
+      ],
+      "indicators_review": [
+        "LTV 109% — vượt 100%, rủi ro cao"
+      ],
+      "breakdown": [
+        {
+          "criterion": "LTV (Vay/TSBĐ)",
+          "points": 0,
+          "max": 10,
+          "detail": "LTV = 108.7%"
+        },
+        {
+          "criterion": "Quyền sở hữu tài sản",
+          "points": 5,
+          "max": 5,
+          "detail": "Realty=Y, Car=Y"
+        },
+        {
+          "criterion": "Chất lượng TSBĐ",
+          "points": 4,
+          "max": 5,
+          "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.0505"
+        }
+      ],
+      "narrative": "Tài sản bảo đảm là bất động sản, tuy nhiên với tỷ lệ LTV 108.7%, giá trị tài sản hiện không đủ bao phủ khoản vay theo các chuẩn mực an toàn. Theo Thông tư 39/2016/TT-NHNN, việc LTV vượt ngưỡng 70% đòi hỏi ngân hàng phải thực hiện định giá lại tài sản và xem xét các biện pháp bảo đảm bổ sung để giảm thiểu rủi ro tín dụng."
+    }
+  },
+  "financial_summary": {
+    "income_analysis": "Thu nhập ổn định từ công việc nhân viên kinh doanh với thâm niên 9.2 năm, đảm bảo khả năng trả nợ định kỳ.",
+    "debt_analysis": "DTI ở mức 21.0% là an toàn, tuy nhiên tỷ lệ nợ trên tổng tài sản và các khoản vay CIC hiện hữu đang tạo áp lực lên dòng tiền."
+  },
+  "debt_assessment": {
+    "score": 81,
+    "max_score": 100,
+    "score_pct": "81%",
+    "overall_status": "ĐẠT",
+    "overall_color": "green",
+    "metrics": [
+      {
+        "name": "DTI (Nợ/Thu nhập)",
+        "value": "21.0%",
+        "threshold": "< 40%",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "DSCR (Dòng tiền/Nợ)",
+        "value": "4.76",
+        "threshold": "> 1.20",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "LTV (Vay/TSBĐ)",
+        "value": "108.7%",
+        "threshold": "< 70%",
+        "status": "Rủi ro",
+        "flag": "!!"
+      },
+      {
+        "name": "Mục đích vay",
+        "value": "Tiêu dùng",
+        "threshold": "PRODUCTION / INVESTMENT",
+        "status": "Rõ ràng",
+        "flag": "OK"
+      }
+    ],
+    "summary": "Phân tích nợ tổng hợp: 81/100 điểm (81%). Mục đích vay: Tiêu dùng. DTI 21.0% — trong ngưỡng an toàn. DSCR 4.76 — đạt ngưỡng."
+  },
+  "collateral_detail": {
+    "score": 9,
+    "max_score": 20,
+    "status": "XEM_XÉT",
+    "shap_pct": "1%",
+    "indicators_met": [
+      "Sở hữu bất động sản",
+      "Chất lượng tài sản tốt (nhà xây kiên cố)"
+    ],
+    "indicators_review": [
+      "LTV 109% — vượt 100%, rủi ro cao"
+    ],
+    "breakdown": [
+      {
+        "criterion": "LTV (Vay/TSBĐ)",
+        "points": 0,
+        "max": 10,
+        "detail": "LTV = 108.7%"
+      },
+      {
+        "criterion": "Quyền sở hữu tài sản",
+        "points": 5,
+        "max": 5,
+        "detail": "Realty=Y, Car=Y"
+      },
+      {
+        "criterion": "Chất lượng TSBĐ",
+        "points": 4,
+        "max": 5,
+        "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.0505"
+      }
+    ],
+    "narrative": "Tài sản bảo đảm là bất động sản, tuy nhiên với tỷ lệ LTV 108.7%, giá trị tài sản hiện không đủ bao phủ khoản vay theo các chuẩn mực an toàn. Theo Thông tư 39/2016/TT-NHNN, việc LTV vượt ngưỡng 70% đòi hỏi ngân hàng phải thực hiện định giá lại tài sản và xem xét các biện pháp bảo đảm bổ sung để giảm thiểu rủi ro tín dụng."
+  },
+  "suggested_terms": {
+    "max_amount_vnd": 118876500.0,
+    "interest_rate_suggestion": "Áp dụng lãi suất theo biểu phí rủi ro (Risk-based pricing) do PD ở mức 5.07%.",
+    "conditions": [
+      "LTV 109% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức",
+      "Yêu cầu bổ sung tài sản bảo đảm để đưa LTV về mức dưới 70%.",
+      "Thẩm định mục đích vay tiêu dùng theo Điều 4 TT39/2016.",
+      "Kiểm tra chi tiết lịch sử DPD trong CIC.",
+      "Yêu cầu chứng minh nguồn thu nhập bổ sung nếu có.",
+      "Giám sát định kỳ theo Thông tư 11/2021/TT-NHNN."
+    ]
+  },
+  "reward_assessment": {
+    "interest_rate_pct": "9.5%",
+    "loan_amount_fmt": "119 triệu VND",
+    "term_months": 25,
+    "gross_income_fmt": "24 triệu VND",
+    "expected_loss_fmt": "3 triệu VND",
+    "risk_adj_income_fmt": "21 triệu VND",
+    "raroc_pct": "17.5%",
+    "verdict": "Tốt",
+    "verdict_flag": "OK",
+    "verdict_color": "green",
+    "customer_segment": "Mid-tier",
+    "upsell_opportunities": [
+      "Bảo hiểm tài sản",
+      "Thẻ tín dụng cơ bản"
+    ],
+    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 17.5% — Tốt. Phân khúc: Mid-tier. Thu nhập lãi ước tính: 24 triệu VND, Tổn thất kỳ vọng: 3 triệu VND."
+  },
+  "llm_insights": {
+    "loan_purpose": "CONSUMPTION",
+    "positive_signals": [
+      "Stable employment since 2016",
+      "Property ownership",
+      "Car ownership",
+      "Married status",
+      "Consistent address and work location data"
+    ],
+    "risk_flags": [
+      "Very low property quality rating (0.8/10)",
+      "Small living area (12.8 m2)",
+      "Building lacks elevator",
+      "Extremely low stated income (18,750 VND/month)"
+    ]
+  },
+  "caveats": [
+    "LTV 108.7% vượt ngưỡng an toàn quy định.",
+    "PD 5.07% yêu cầu trích lập dự phòng rủi ro cao.",
+    "Chất lượng tài sản đảm bảo cần được thẩm định lại.",
+    "Áp lực nợ từ các khoản vay CIC hiện hữu."
+  ],
+  "audit_reference": {
+    "model_version": "lgb1_ref_v1",
+    "inference_timestamp": "2026-03-24T15:57:20.134520+00:00",
+    "rag_citations": [
+      {
+        "source": null,
+        "title": "tt11_2021_debt_classification"
+      },
+      {
+        "source": null,
+        "title": "credit_assessment_5c"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "source": null,
+        "title": "basel_vietnam_car"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "text": "Đánh giá theo khung 5C (Credit Assessment)",
+        "chunk_indices": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "text": "|\n| **Conditions** (Điều kiện) | **Rủi ro** | Mục đích vay tiêu dùng.",
+        "chunk_indices": [
+          3,
+          1,
+          4
+        ]
+      },
+      {
+        "text": "*   **Thông tư 11/2021/TT-NHNN (Phân loại nợ):** TCTD phải thực hiện phân loại nợ hàng tháng.",
+        "chunk_indices": [
+          0
+        ]
+      }
+    ],
+    "rag_policy_docs": [
+      "TT39/2016/TT-NHNN",
+      "TT11/2021/TT-NHNN",
+      "QĐ493/2005/QĐ-NHNN",
+      "CIC Scoring Guide",
+      "Basel II/III (TT41/2016, TT14/2025)",
+      "5C Assessment Framework"
+    ]
+  }
+}

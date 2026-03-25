@@ -122,6 +122,46 @@ class LLMFieldExtractor:
 
         return fields, confidence
 
+    async def extract_async(
+        self,
+        doc_type: str,
+        ocr_text: str,
+        max_text_chars: int = 8000,
+    ) -> tuple[dict[str, Any], dict[str, float]]:
+        """Async version of extract() for parallel LLM calls.
+
+        Uses LLMService.generate_structured_async() to enable
+        concurrent extraction of multiple PDFs.
+        """
+        schema_class = DOC_SCHEMAS.get(doc_type)
+        if schema_class is None:
+            logger.warning(f"No schema for doc_type={doc_type}, skipping LLM extraction")
+            return {}, {}
+
+        doc_type_vi = DOC_TYPE_VI.get(doc_type, doc_type)
+        text = ocr_text[:max_text_chars]
+
+        user_prompt = EXTRACT_USER_TEMPLATE.format(
+            doc_type_vi=doc_type_vi,
+            ocr_text=text,
+        )
+
+        fields = await self.llm.generate_structured_async(
+            system_prompt=EXTRACT_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            schema_class=schema_class,
+            max_tokens=8192,
+            temperature=0.1,
+        )
+        confidence = self._estimate_confidence(fields, ocr_text)
+
+        n_filled = sum(1 for v in fields.values() if v is not None)
+        logger.info(
+            f"LLM extracted {n_filled}/{len(fields)} fields for {doc_type}"
+        )
+
+        return fields, confidence
+
     def _estimate_confidence(
         self,
         fields: dict[str, Any],

@@ -176,21 +176,46 @@ class PolicyRAGService:
             from google.genai import types
 
             client = _get_rag_client()
-            response = client.models.generate_content(
-                model=_FILE_SEARCH_MODEL,
-                contents=question,
-                config=types.GenerateContentConfig(
-                    tools=[
-                        types.Tool(
-                            file_search=types.FileSearch(
-                                file_search_store_names=[target_store]
+
+            def _rag_call():
+                return client.models.generate_content(
+                    model=_FILE_SEARCH_MODEL,
+                    contents=question,
+                    config=types.GenerateContentConfig(
+                        tools=[
+                            types.Tool(
+                                file_search=types.FileSearch(
+                                    file_search_store_names=[target_store]
+                                )
                             )
-                        )
-                    ],
-                    temperature=0.1,
-                    max_output_tokens=2048,
-                ),
-            )
+                        ],
+                        temperature=0.1,
+                        max_output_tokens=2048,
+                    ),
+                )
+
+            # Retry with exponential backoff (429, 503, timeout)
+            MAX_RETRIES = 3
+            last_exc = None
+            for attempt in range(MAX_RETRIES):
+                try:
+                    response = _rag_call()
+                    break
+                except Exception as e:
+                    err_str = str(e).lower()
+                    is_retryable = any(kw in err_str for kw in [
+                        "429", "resource_exhausted", "rate",
+                        "503", "unavailable", "timeout", "connection",
+                    ])
+                    if not is_retryable or attempt == MAX_RETRIES - 1:
+                        raise
+                    delay = 1.0 * (2 ** attempt)
+                    logger.warning(
+                        f"RAG API error (attempt {attempt+1}/{MAX_RETRIES}): {e}. "
+                        f"Retrying in {delay:.1f}s..."
+                    )
+                    time.sleep(delay)
+                    last_exc = e
 
             # Extract text
             context_text = response.text or ""
