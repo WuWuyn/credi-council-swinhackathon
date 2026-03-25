@@ -4,6 +4,8 @@ import { PIPELINE_LAYERS } from '../data/mockData'
 import {
   fetchCustomers,
   runScorePipeline,
+  runIngestion,
+  runProcessing,
   runBatchScorePipeline,
   clearOutputData,
   checkBackendHealth,
@@ -11,6 +13,7 @@ import {
   getPdfPreviewUrl,
   downloadPdf,
 } from '../services/apiService'
+import ExtractedDataReviewModal from '../components/ExtractedDataReviewModal'
 import './DashboardPage.css'
 
 export default function DashboardPage() {
@@ -35,6 +38,13 @@ export default function DashboardPage() {
 
   // Batch progress tracking
   const [batchProgress, setBatchProgress] = useState(null) // { completed: N, total: N }
+
+  // Human-in-the-Loop review state
+  const [reviewData, setReviewData] = useState(null)         // IngestionResponse from backend
+  const [reviewCustomerId, setReviewCustomerId] = useState(null)
+  const [reviewCustomerLabel, setReviewCustomerLabel] = useState('')
+  const [isProcessingApproval, setIsProcessingApproval] = useState(false)
+  const [pendingCustomers, setPendingCustomers] = useState([]) // queue for batch HITL
 
   // Clear output confirm dialog
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -89,7 +99,7 @@ export default function DashboardPage() {
     }
   }, [])
 
-  /* ── Pipeline execution (BATCH PARALLEL) ── */
+  /* ── Pipeline execution (2-Phase: HITL for each customer) ── */
   const runPipeline = useCallback(async () => {
     if (selected.size === 0 || running) return
     setRunning(true)
@@ -99,108 +109,117 @@ export default function DashboardPage() {
 
     const selectedCustomers = customers.filter(c => selected.has(c.id))
     const total = selectedCustomers.length
-    const customerIds = selectedCustomers.map(c => c.id)
 
-    // Show batch meta
     setCurrentCustomer(null)
-    setPipelineMeta(`Batch processing ${total} profiles in parallel...`)
+    setPipelineMeta(`Phase 1: Extracting data from ${total} profiles...`)
     setBatchProgress({ completed: 0, total })
 
-    // ── Start animation (runs independently, purely cosmetic) ──
-    const animationPromise = (async () => {
-      const totalAnimTime = PIPELINE_LAYERS.length * 1200 // ~4.8s total animation
-      for (let li = 0; li < PIPELINE_LAYERS.length; li++) {
-        setActiveLayer(li)
-        setLayerProgress(0)
+    // Animate A1 layer
+    setActiveLayer(0)
+    setLayerProgress(0)
+    const a1AnimSteps = 20
+    const a1AnimInterval = setInterval(() => {
+      setLayerProgress(prev => Math.min(prev + (100 / a1AnimSteps), 95))
+    }, 200)
 
-        const stepDuration = li === 2 ? 1800 : 800
-        const steps = 20
-        for (let s = 0; s <= steps; s++) {
-          setLayerProgress((s / steps) * 100)
-          await new Promise(r => setTimeout(r, stepDuration / steps))
-        }
-        setCompletedLayers(prev => new Set([...prev, li]))
-      }
-    })()
+    // ── Phase 1: Run A1 ingestion for first customer, show review popup ──
+    // Process sequentially: ingest → review → process → next customer
+    for (let i = 0; i < selectedCustomers.length; i++) {
+      const customer = selectedCustomers[i]
+      setCurrentCustomer(customer.id)
+      setPipelineMeta(`Phase 1: Extracting data — ${customer.label} (${i + 1}/${total})`)
 
-    // ── Fire batch API call in parallel with animation ──
-    let batchResult = null
-    let batchError = null
-    const apiPromise = (async () => {
       try {
-        batchResult = await runBatchScorePipeline(customerIds)
-      } catch (err) {
-        console.warn('[Pipeline] Batch API failed:', err.message)
-        batchError = err
-      }
-    })()
+        // Run A1 ingestion only
+        const ingestionResult = await runIngestion(customer.id)
 
-    // ── Wait for BOTH animation and API to finish ──
-    await Promise.all([animationPromise, apiPromise])
+        // Stop A1 animation, mark A1 complete
+        clearInterval(a1AnimInterval)
+        setLayerProgress(100)
+        setCompletedLayers(prev => new Set([...prev, 0]))
+        setLayerData(prev => ({
+          ...prev,
+          A1: { value: Object.keys(ingestionResult.application_row || {}).length, label: 'Fields ✓' }
+        }))
+        setActiveLayer(-1)
+        setPipelineMeta(`Chờ xác nhận dữ liệu — ${customer.label}`)
 
-    // ── Process results ──
-    if (batchResult && batchResult.results) {
-      const batchResults = batchResult.results
+        // Show review popup and wait for approval
+        const processResult = await new Promise((resolve, reject) => {
+          setReviewData(ingestionResult)
+          setReviewCustomerId(customer.id)
+          setReviewCustomerLabel(customer.label)
 
-      for (const customer of selectedCustomers) {
-        const result = batchResults[customer.id]
+          // Store resolve/reject in refs so the modal callbacks can call them
+          window.__hitlResolve = resolve
+          window.__hitlReject = reject
+        })
 
-        if (result && result.status !== 'FAILED') {
-          setCustomerResults(prev => ({ ...prev, [customer.id]: result }))
+        // Clear review state
+        setReviewData(null)
+        setReviewCustomerId(null)
 
-          // Update hasOutput flag and scoreData for persistence
+        // processResult is the ScoreResponse from Phase 2
+        if (processResult) {
+          setCustomerResults(prev => ({ ...prev, [customer.id]: processResult }))
           setCustomers(prev => prev.map(cust =>
             cust.id === customer.id ? {
               ...cust,
               hasOutput: true,
-              // Score data ONLY from output/ (never mock)
               scoreData: {
-                creditScore: result.credit_score,
-                riskBand: result.risk_band,
-                pdPct: result.pd_pct,
-                recommendation: result.recommendation,
-                fiveCTotal: Object.values(result.four_c_scores || {}).reduce((a, b) => a + b, 0),
-                fiveCScores: result.four_c_scores,
+                creditScore: processResult.credit_score,
+                riskBand: processResult.risk_band,
+                pdPct: processResult.pd_pct,
+                recommendation: processResult.recommendation,
+                fiveCTotal: Object.values(processResult.four_c_scores || {}).reduce((a, b) => a + b, 0),
+                fiveCScores: processResult.four_c_scores,
               },
             } : cust
           ))
-        } else {
-          // Per-customer fallback if batch had individual failures
-          const fallbackResult = result || {
-            application_id: customer.id,
-            credit_score: 0,
-            risk_band: 'ERR',
-            pd_pct: 0,
-            recommendation: 'ERROR',
-            four_c_scores: {},
-            error: true,
-          }
-          setCustomerResults(prev => ({ ...prev, [customer.id]: fallbackResult }))
+
+          // Update layer badges
+          setLayerData({
+            A1: { value: Object.keys(ingestionResult.application_row || {}).length, label: 'Fields ✓' },
+            A2: { value: '753', label: 'Feats ✓' },
+            A3: { value: processResult.credit_score || '—', label: 'Score ✓' },
+            A4: {
+              value: processResult.four_c_scores
+                ? Object.values(processResult.four_c_scores).reduce((a, b) => a + b, 0).toFixed(0) : '—',
+              label: '5C pts ✓',
+            },
+          })
+          setCompletedLayers(new Set([0, 1, 2, 3]))
         }
-      }
 
-      // Update layer badges with data from last successful result
-      const anySuccess = Object.values(batchResults).find(r => r.status === 'SUCCESS')
-      if (anySuccess) {
-        setLayerData({
-          A1: { value: '122', label: 'Fields ✓' },
-          A2: { value: anySuccess.four_c_scores ? '753' : '—', label: 'Feats ✓' },
-          A3: { value: anySuccess.credit_score || '—', label: 'Score ✓' },
-          A4: {
-            value: anySuccess.four_c_scores
-              ? Object.values(anySuccess.four_c_scores).reduce((a, b) => a + b, 0).toFixed(0) : '—',
-            label: '5C pts ✓',
-          },
-        })
-      }
+        setBatchProgress({ completed: i + 1, total })
+        setPipelineMeta(`Completed ${i + 1}/${total} profiles`)
+      } catch (err) {
+        clearInterval(a1AnimInterval)
+        console.warn(`[Pipeline] Error for ${customer.id}:`, err.message)
 
-      const duration = batchResult.duration_s || 0
-      setPipelineMeta(
-        `Completed ${batchResult.success_count}/${total} profiles in ${duration}s (parallel)`
-      )
-    } else {
-      // Entire batch failed — fallback per-customer using preloaded scoreData
-      for (const customer of selectedCustomers) {
+        // Clear review modal state
+        setReviewData(null)
+        setReviewCustomerId(null)
+
+        // If cancelled by user, still handle gracefully
+        if (err.message === 'USER_CANCELLED') {
+          setCustomerResults(prev => ({
+            ...prev,
+            [customer.id]: {
+              application_id: customer.id,
+              credit_score: 0,
+              risk_band: 'SKIP',
+              pd_pct: 0,
+              recommendation: 'SKIPPED',
+              four_c_scores: {},
+              skipped: true,
+            },
+          }))
+          setBatchProgress({ completed: i + 1, total })
+          continue
+        }
+
+        // Real error — try fallback
         if (customer.scoreData) {
           setCustomerResults(prev => ({
             ...prev,
@@ -222,22 +241,79 @@ export default function DashboardPage() {
               credit_score: 0,
               risk_band: 'ERR',
               pd_pct: 0,
-              recommendation: 'OFFLINE',
+              recommendation: 'ERROR',
               four_c_scores: {},
               error: true,
             },
           }))
         }
+        setBatchProgress({ completed: i + 1, total })
       }
-
-      setPipelineMeta(`Batch failed — ${batchError?.message || 'Unknown error'}`)
     }
 
     setActiveLayer(-1)
     setCurrentCustomer(null)
     setBatchProgress(null)
     setRunning(false)
+    setPipelineMeta(`Pipeline complete — ${total} profiles processed`)
   }, [selected, running, customers])
+
+  /* ── HITL: Handle approval from review popup ── */
+  const handleReviewApprove = useCallback(async (editedRow, metadata) => {
+    setIsProcessingApproval(true)
+    try {
+      // Animate A2→A3→A4
+      for (let li = 1; li < PIPELINE_LAYERS.length; li++) {
+        setActiveLayer(li)
+        setLayerProgress(0)
+        const steps = 15
+        const dur = li === 1 ? 1200 : 600
+        for (let s = 0; s <= steps; s++) {
+          setLayerProgress((s / steps) * 100)
+          await new Promise(r => setTimeout(r, dur / steps))
+        }
+        setCompletedLayers(prev => new Set([...prev, li]))
+      }
+      setActiveLayer(-1)
+
+      // Call Phase 2 API
+      const result = await runProcessing({
+        customer_id: reviewCustomerId,
+        application_row: editedRow,
+        raw_texts: metadata.raw_texts,
+        thin_file_flag: metadata.thin_file_flag,
+        identity_consistency_flag: metadata.identity_consistency_flag,
+      })
+
+      setIsProcessingApproval(false)
+      // Resolve the promise that runPipeline is awaiting
+      if (window.__hitlResolve) {
+        window.__hitlResolve(result)
+        window.__hitlResolve = null
+        window.__hitlReject = null
+      }
+    } catch (err) {
+      setIsProcessingApproval(false)
+      console.error('[HITL] Processing failed:', err)
+      // Resolve with null to indicate failure but don't block pipeline
+      if (window.__hitlResolve) {
+        window.__hitlResolve(null)
+        window.__hitlResolve = null
+        window.__hitlReject = null
+      }
+    }
+  }, [reviewCustomerId])
+
+  /* ── HITL: Handle cancel from review popup ── */
+  const handleReviewCancel = useCallback(() => {
+    setReviewData(null)
+    setReviewCustomerId(null)
+    if (window.__hitlReject) {
+      window.__hitlReject(new Error('USER_CANCELLED'))
+      window.__hitlResolve = null
+      window.__hitlReject = null
+    }
+  }, [])
 
   const getCustomerStatus = (customerId) => {
     // Check in-memory pipeline result first (from current session)
@@ -647,6 +723,17 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* HUMAN-IN-THE-LOOP REVIEW MODAL */}
+      {reviewData && (
+        <ExtractedDataReviewModal
+          ingestionData={reviewData}
+          customerId={reviewCustomerLabel || reviewCustomerId}
+          onApprove={handleReviewApprove}
+          onCancel={handleReviewCancel}
+          isProcessing={isProcessingApproval}
+        />
       )}
     </div>
   )

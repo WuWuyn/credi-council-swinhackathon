@@ -192,7 +192,43 @@ export async function runBatchScorePipeline(customerIds, staggerDelay = 2.0) {
 }
 
 
-// ── PDF URLs ─────────────────────────────────────────────────────────────
+// ── 2-Phase Pipeline (Human-in-the-Loop) ─────────────────────────────────
+
+/**
+ * Phase 1: Run OCR + LLM extraction only.
+ * Returns extracted features + confidence for human review.
+ */
+export async function runIngestion(customerId) {
+  const formData = new FormData()
+  formData.append('applicant_id', customerId)
+
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.INGEST}`,
+    { method: 'POST', body: formData }
+  )
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
+
+/**
+ * Phase 2: Submit approved/edited data to complete pipeline (A2→A3→A4).
+ *
+ * @param {Object} params - { customer_id, application_row, raw_texts, thin_file_flag, identity_consistency_flag }
+ */
+export async function runProcessing(params) {
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.PROCESS}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    }
+  )
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
 
 /**
  * Get the URL for PDF preview (inline).

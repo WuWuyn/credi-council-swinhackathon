@@ -47,3 +47,48 @@ class ScoringResult(BaseModel):
     consistency_check: bool
     audit_trail: list[dict[str, Any]]
     warnings: list[str]
+
+
+# ── Human-in-the-Loop (2-Phase Pipeline) ─────────────────────────────────────
+
+
+class ExtractedFieldInfo(BaseModel):
+    """A single extracted field with its value, confidence, and metadata."""
+
+    value: Any = None
+    confidence: float = 0.0
+    source_document: str = ""
+    label_vi: str = ""
+    field_type: str = "text"  # text, number, date, boolean, enum
+
+
+class IngestionResponse(BaseModel):
+    """Response from Phase 1 (A1 Ingestion only).
+
+    Returns extracted features + confidence for human review.
+    """
+
+    application_id: str
+    customer_id: str
+    application_row: dict[str, Any]
+    confidence_map: dict[str, float]
+    identity_consistency_flag: str
+    thin_file_flag: bool
+    raw_texts: dict[str, str]
+    field_metadata: list[dict[str, Any]]  # grouped field info for UI
+    warnings: list[str]
+
+
+class ProcessRequest(BaseModel):
+    """Request for Phase 2 — submit approved/edited data.
+
+    After human review, the frontend sends back the (possibly edited)
+    application_row to continue the pipeline (A2→A3→A4).
+    """
+
+    customer_id: str
+    application_row: dict[str, Any]
+    # Original A1 output fields needed by A2
+    raw_texts: dict[str, str] = {}
+    thin_file_flag: bool = False
+    identity_consistency_flag: str = "OK"

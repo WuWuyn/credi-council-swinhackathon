@@ -13,6 +13,10 @@ export const API_CONFIG = {
     SCORE: '/v1/score',
     SCORE_BATCH: '/v1/score/batch',
     CLEAR_OUTPUT: '/v1/output',
+
+    // 2-Phase Pipeline (Human-in-the-Loop)
+    INGEST: '/v1/ingest',       // Phase 1: OCR + LLM extraction only
+    PROCESS: '/v1/process',     // Phase 2: A2→A3→A4 with approved data
     
     // Credit Report details
     REPORT_JSON: (customerId) => `/v1/report/${customerId}/json`,

@@ -22,12 +22,19 @@ from pydantic import BaseModel
 from credicouncil.api.config import MOCK_DIR, settings
 from credicouncil.api.data_access import normalize_folder_id
 from credicouncil.api.pipeline import (
+    execute_ingestion_only,
+    execute_processing,
     format_legacy_result,
     format_score_response,
     get_agents,
     run_pipeline_for_customer,
 )
-from credicouncil.api.schemas import ScoreResponse, ScoringResult
+from credicouncil.api.schemas import (
+    IngestionResponse,
+    ProcessRequest,
+    ScoreResponse,
+    ScoringResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +75,63 @@ async def score_application(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Pipeline error for {applicant_id}: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# /v1/ingest — Phase 1: OCR + LLM extraction only (for human review)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router_v1.post("/ingest", response_model=IngestionResponse)
+async def ingest_customer(
+    applicant_id: str = Form(..., description="Customer ID (e.g. '001')"),
+):
+    """
+    Phase 1: Run A1 Ingestion (OCR + LLM extraction) only.
+
+    Returns extracted features with confidence scores for human review.
+    The frontend should display these in a review popup before proceeding.
+    """
+    try:
+        result = execute_ingestion_only(applicant_id)
+        return IngestionResponse(**result)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Ingestion error for {applicant_id}: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# /v1/process — Phase 2: Run A2→A3→A4 with approved data
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router_v1.post("/process", response_model=ScoreResponse)
+async def process_approved_data(req: ProcessRequest):
+    """
+    Phase 2: Process approved/edited extracted data through A2→A3→A4.
+
+    After human review, submit the (possibly modified) application_row
+    to complete the credit scoring pipeline.
+    """
+    try:
+        result = execute_processing(
+            customer_id=req.customer_id,
+            application_row=req.application_row,
+            raw_texts=req.raw_texts,
+            thin_file_flag=req.thin_file_flag,
+            identity_consistency_flag=req.identity_consistency_flag,
+        )
+        formatted = format_score_response(result, req.customer_id)
+        return ScoreResponse(**formatted)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Processing error for {req.customer_id}: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
