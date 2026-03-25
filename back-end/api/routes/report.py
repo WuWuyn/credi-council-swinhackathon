@@ -95,6 +95,24 @@ async def get_report_pdf(
     )
 
 
+@router.get("/report/{customer_id}/json")
+async def get_report_json(customer_id: str):
+    """
+    Get the raw JSON report data for a given customer.
+
+    - **customer_id**: e.g. "001", "1", "customer_001"
+    """
+    try:
+        report_data, shap_data = _load_customer_data(customer_id)
+        return {
+            "report_data": report_data,
+            "shap_data": shap_data,
+        }
+    except Exception as e:
+        logger.error(f"Failed to load JSON report for {customer_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class PDFFromJSONRequest:
     """Request body for POST /report/generate-pdf."""
     report_data: dict[str, Any]

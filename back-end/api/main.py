@@ -10,6 +10,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from api.config import settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,15 +18,15 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="credicouncil AI API",
-    description="Credit Scoring & Creditworthiness Assessment for Underbanked & Micro SMEs",
-    version="0.1.0",
+    title=settings.PROJECT_NAME,
+    description=settings.PROJECT_DESCRIPTION,
+    version=settings.VERSION,
 )
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,5 +42,7 @@ async def health_check():
 # Import routes
 from api.routes.score import router as score_router
 from api.routes.report import router as report_router
-app.include_router(score_router, prefix="/v1")
-app.include_router(report_router, prefix="/v1")
+from api.routes.customers import router as customers_router
+app.include_router(score_router, prefix=settings.API_V1_STR)
+app.include_router(report_router, prefix=settings.API_V1_STR)
+app.include_router(customers_router, prefix=settings.API_V1_STR)
