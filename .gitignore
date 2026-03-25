@@ -2,16 +2,11 @@
 .env
 .env.*
 !.env.example
-.agents
+.agents/
 
 # ─── Dataset (Home Credit CSV files) ─────────────────────────────────────────
 *.csv
 home-credit-default-risk/
-
-# ─── Evaluation results (auto-generated) ─────────────────────────────────────
-evaluation/results/*.png
-evaluation/results/*.json
-evaluation/results/*.csv
 
 # ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
@@ -35,15 +30,6 @@ env/
 *.swp
 *.swo
 *~
-.agents
-
-# ─── ML Artifacts ─────────────────────────────────────────────────────────────
-models/*.pkl
-models/*.joblib
-models/*.lgb
-*.h5
-*.pt
-*.onnx
 
 # ─── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store

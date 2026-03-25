@@ -19,7 +19,7 @@ import io
 import logging
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Load .env
 try:
@@ -44,7 +44,7 @@ def main():
     print("=" * 60)
 
     rag = PolicyRAGService()
-    policy_dir = os.path.join(os.path.dirname(__file__), "policy_docs")
+    policy_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Check policy docs exist
     if not os.path.exists(policy_dir):
