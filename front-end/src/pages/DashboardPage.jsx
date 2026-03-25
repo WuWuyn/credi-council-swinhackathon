@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PIPELINE_LAYERS } from '../data/mockData'
 import {
   fetchCustomers,
   runScorePipeline,
+  runBatchScorePipeline,
+  clearOutputData,
   checkBackendHealth,
   isBackendAvailable,
   getPdfPreviewUrl,
@@ -30,6 +32,13 @@ export default function DashboardPage() {
   const [currentCustomer, setCurrentCustomer] = useState(null)
   const [pipelineMeta, setPipelineMeta] = useState('Awaiting input — Select profiles and run pipeline')
   const [previewPdf, setPreviewPdf] = useState(null)
+
+  // Batch progress tracking
+  const [batchProgress, setBatchProgress] = useState(null) // { completed: N, total: N }
+
+  // Clear output confirm dialog
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   // ── Load customers on mount ──
   useEffect(() => {
@@ -60,7 +69,27 @@ export default function DashboardPage() {
     setSelected(checked ? new Set(customers.map(c => c.id)) : new Set())
   }
 
-  /* ── Pipeline execution ── */
+  /* ── Clear output data for demo reset ── */
+  const handleClearOutput = useCallback(async () => {
+    setClearing(true)
+    try {
+      const result = await clearOutputData()
+      // Reset all local state
+      setCustomerResults({})
+      setCustomers(prev => prev.map(c => ({ ...c, hasOutput: false, scoreData: null })))
+      setCompletedLayers(new Set())
+      setLayerData({})
+      setPipelineMeta(`Output cleared — ${result.cleared} items removed`)
+      setShowClearConfirm(false)
+    } catch (err) {
+      console.error('[Clear] Failed:', err)
+      setPipelineMeta(`Clear failed — ${err.message}`)
+    } finally {
+      setClearing(false)
+    }
+  }, [])
+
+  /* ── Pipeline execution (BATCH PARALLEL) ── */
   const runPipeline = useCallback(async () => {
     if (selected.size === 0 || running) return
     setRunning(true)
@@ -70,16 +99,16 @@ export default function DashboardPage() {
 
     const selectedCustomers = customers.filter(c => selected.has(c.id))
     const total = selectedCustomers.length
+    const customerIds = selectedCustomers.map(c => c.id)
 
-    for (let ci = 0; ci < selectedCustomers.length; ci++) {
-      const customer = selectedCustomers[ci]
-      setCurrentCustomer(customer.id)
-      setPipelineMeta(`Processing ${customer.label}... (${ci + 1}/${total})`)
+    // Show batch meta
+    setCurrentCustomer(null)
+    setPipelineMeta(`Batch processing ${total} profiles in parallel...`)
+    setBatchProgress({ completed: 0, total })
 
-      setCompletedLayers(new Set())
-      setLayerData({})
-
-      // Animate each layer
+    // ── Start animation (runs independently, purely cosmetic) ──
+    const animationPromise = (async () => {
+      const totalAnimTime = PIPELINE_LAYERS.length * 1200 // ~4.8s total animation
       for (let li = 0; li < PIPELINE_LAYERS.length; li++) {
         setActiveLayer(li)
         setLayerProgress(0)
@@ -90,69 +119,147 @@ export default function DashboardPage() {
           setLayerProgress((s / steps) * 100)
           await new Promise(r => setTimeout(r, stepDuration / steps))
         }
-
         setCompletedLayers(prev => new Set([...prev, li]))
       }
+    })()
 
-      // Call backend API
-      let result
+    // ── Fire batch API call in parallel with animation ──
+    let batchResult = null
+    let batchError = null
+    const apiPromise = (async () => {
       try {
-        result = await runScorePipeline(customer.id)
+        batchResult = await runBatchScorePipeline(customerIds)
       } catch (err) {
-        console.warn(`[Pipeline] Score API failed for ${customer.id}:`, err.message)
-        
-        // Use pre-loaded scoreData as fallback if available
-        if (customer.scoreData) {
-          result = {
-            application_id: customer.id,
-            credit_score: customer.scoreData.creditScore,
-            pd_pct: customer.scoreData.pdPct,
-            risk_band: customer.scoreData.riskBand,
-            recommendation: customer.scoreData.recommendation,
-            four_c_scores: customer.scoreData.fiveCScores || {},
-            fallback: true,
-          }
+        console.warn('[Pipeline] Batch API failed:', err.message)
+        batchError = err
+      }
+    })()
+
+    // ── Wait for BOTH animation and API to finish ──
+    await Promise.all([animationPromise, apiPromise])
+
+    // ── Process results ──
+    if (batchResult && batchResult.results) {
+      const batchResults = batchResult.results
+
+      for (const customer of selectedCustomers) {
+        const result = batchResults[customer.id]
+
+        if (result && result.status !== 'FAILED') {
+          setCustomerResults(prev => ({ ...prev, [customer.id]: result }))
+
+          // Update hasOutput flag and scoreData for persistence
+          setCustomers(prev => prev.map(cust =>
+            cust.id === customer.id ? {
+              ...cust,
+              hasOutput: true,
+              // Score data ONLY from output/ (never mock)
+              scoreData: {
+                creditScore: result.credit_score,
+                riskBand: result.risk_band,
+                pdPct: result.pd_pct,
+                recommendation: result.recommendation,
+                fiveCTotal: Object.values(result.four_c_scores || {}).reduce((a, b) => a + b, 0),
+                fiveCScores: result.four_c_scores,
+              },
+            } : cust
+          ))
         } else {
-          result = {
+          // Per-customer fallback if batch had individual failures
+          const fallbackResult = result || {
             application_id: customer.id,
             credit_score: 0,
             risk_band: 'ERR',
             pd_pct: 0,
-            recommendation: 'OFFLINE',
+            recommendation: 'ERROR',
             four_c_scores: {},
             error: true,
           }
+          setCustomerResults(prev => ({ ...prev, [customer.id]: fallbackResult }))
         }
       }
 
-      // Update layer badges with real data
-      setLayerData({
-        A1: { value: '122', label: 'Fields ✓' },
-        A2: { value: result.four_c_scores ? '753' : '—', label: 'Feats ✓' },
-        A3: { value: result.credit_score || '—', label: 'Score ✓' },
-        A4: {
-          value: result.four_c_scores ? Object.values(result.four_c_scores).reduce((a, b) => a + b, 0).toFixed(0) : '—',
-          label: '5C pts ✓',
-        },
-      })
+      // Update layer badges with data from last successful result
+      const anySuccess = Object.values(batchResults).find(r => r.status === 'SUCCESS')
+      if (anySuccess) {
+        setLayerData({
+          A1: { value: '122', label: 'Fields ✓' },
+          A2: { value: anySuccess.four_c_scores ? '753' : '—', label: 'Feats ✓' },
+          A3: { value: anySuccess.credit_score || '—', label: 'Score ✓' },
+          A4: {
+            value: anySuccess.four_c_scores
+              ? Object.values(anySuccess.four_c_scores).reduce((a, b) => a + b, 0).toFixed(0) : '—',
+            label: '5C pts ✓',
+          },
+        })
+      }
 
-      setCustomerResults(prev => ({ ...prev, [customer.id]: result }))
+      const duration = batchResult.duration_s || 0
+      setPipelineMeta(
+        `Completed ${batchResult.success_count}/${total} profiles in ${duration}s (parallel)`
+      )
+    } else {
+      // Entire batch failed — fallback per-customer using preloaded scoreData
+      for (const customer of selectedCustomers) {
+        if (customer.scoreData) {
+          setCustomerResults(prev => ({
+            ...prev,
+            [customer.id]: {
+              application_id: customer.id,
+              credit_score: customer.scoreData.creditScore,
+              pd_pct: customer.scoreData.pdPct,
+              risk_band: customer.scoreData.riskBand,
+              recommendation: customer.scoreData.recommendation,
+              four_c_scores: customer.scoreData.fiveCScores || {},
+              fallback: true,
+            },
+          }))
+        } else {
+          setCustomerResults(prev => ({
+            ...prev,
+            [customer.id]: {
+              application_id: customer.id,
+              credit_score: 0,
+              risk_band: 'ERR',
+              pd_pct: 0,
+              recommendation: 'OFFLINE',
+              four_c_scores: {},
+              error: true,
+            },
+          }))
+        }
+      }
+
+      setPipelineMeta(`Batch failed — ${batchError?.message || 'Unknown error'}`)
     }
 
     setActiveLayer(-1)
     setCurrentCustomer(null)
-    setPipelineMeta(`Completed ${total} profiles`)
+    setBatchProgress(null)
     setRunning(false)
   }, [selected, running, customers])
 
   const getCustomerStatus = (customerId) => {
+    // Check in-memory pipeline result first (from current session)
     const result = customerResults[customerId]
-    if (!result) return 'pending'
-    if (result.error) return 'error'
-    const rec = (result.recommendation || '').toUpperCase()
-    if (rec.includes('APPROVE')) return 'approved'
-    if (rec === 'REJECT') return 'rejected'
-    return 'review'
+    if (result) {
+      if (result.error) return 'error'
+      const rec = (result.recommendation || '').toUpperCase()
+      if (rec.includes('APPROVE')) return 'approved'
+      if (rec === 'REJECT') return 'rejected'
+      return 'review'
+    }
+
+    // Check persisted output data (survives F5 refresh)
+    const customer = customers.find(c => c.id === customerId)
+    if (customer?.scoreData) {
+      const rec = (customer.scoreData.recommendation || '').toUpperCase()
+      if (rec.includes('APPROVE')) return 'approved'
+      if (rec === 'REJECT') return 'rejected'
+      return 'review'
+    }
+
+    return 'pending'
   }
 
   const getStatusLabel = (status) => {
@@ -184,8 +291,8 @@ export default function DashboardPage() {
         <div className={`live-badge ${running ? 'active' : ''}`}>
           <div className={`live-dot ${dataSource === 'backend' ? '' : 'offline'}`}></div>
           {running ? 'Processing...' : (
-            dataSource === 'backend' ? 'Backend Connected' : 
-            dataSource === 'fallback' ? 'Offline Mode' : 'Connecting...'
+            dataSource === 'backend' ? 'Backend Connected' :
+              dataSource === 'fallback' ? 'Offline Mode' : 'Connecting...'
           )}
         </div>
       </div>
@@ -196,8 +303,19 @@ export default function DashboardPage() {
         {/* ═══ LEFT SIDEBAR ═══ */}
         <div className="sidebar-left">
           <div className="sidebar-header">
-            <div className="flex justify-between items-center w-full">
+            <div className="sidebar-header-top">
               <h3>Evaluation Queue</h3>
+              <button
+                className="clear-output-btn"
+                onClick={() => setShowClearConfirm(true)}
+                disabled={running || clearing}
+                title="Clear all pipeline output data"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>delete_sweep</span>
+                Reset
+              </button>
+            </div>
+            <div className="sidebar-header-actions">
               <label className="select-all" style={{ margin: 0 }}>
                 <input
                   type="checkbox"
@@ -207,14 +325,37 @@ export default function DashboardPage() {
                 />
                 {' '}Select All
               </label>
+              <span className="sidebar-subtitle">
+                {dataSource === 'backend'
+                  ? `${customers.length} profiles`
+                  : `${customers.length} (offline)`
+                }
+              </span>
             </div>
-            <p style={{ margin: '2px 0 0 0' }}>
-              {dataSource === 'backend' 
-                ? `${customers.length} profiles loaded from server`
-                : `${customers.length} profiles (offline fallback)`
-              }
-            </p>
           </div>
+
+          {/* Clear Output Confirm Dialog */}
+          {showClearConfirm && (
+            <div className="clear-confirm-overlay">
+              <div className="clear-confirm-dialog">
+                <div className="clear-confirm-icon">
+                  <span className="material-symbols-outlined">warning</span>
+                </div>
+                <div className="clear-confirm-text">
+                  <strong>Reset Output Data?</strong>
+                  <p>This will delete all pipeline results. All customer statuses will revert to Pending.</p>
+                </div>
+                <div className="clear-confirm-actions">
+                  <button className="clear-cancel-btn" onClick={() => setShowClearConfirm(false)} disabled={clearing}>
+                    Cancel
+                  </button>
+                  <button className="clear-delete-btn" onClick={handleClearOutput} disabled={clearing}>
+                    {clearing ? <><span className="spinner white"></span> Clearing...</> : 'Clear All'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="customer-list">
             {loadingCustomers ? (
@@ -227,7 +368,7 @@ export default function DashboardPage() {
                 const status = getCustomerStatus(c.id)
                 const isExpanded = expanded === c.id
                 const result = customerResults[c.id]
-                const isProcessing = currentCustomer === c.id
+                const isProcessing = running && selected.has(c.id) && !result
 
                 return (
                   <div key={c.id} className={`customer-card ${status} ${isProcessing ? 'processing' : ''}`}>
@@ -252,14 +393,16 @@ export default function DashboardPage() {
                         </div>
                         <span className="customer-id">ID: {c.folderId}</span>
                       </div>
-                      {/* View report button */}
-                      <button
-                        className="view-btn"
-                        onClick={(e) => { e.stopPropagation(); navigate(`/report/${c.id}`) }}
-                        title="View Full Report"
-                      >
-                        <span className="material-symbols-outlined">visibility</span>
-                      </button>
+                      {/* View report button — only shown when output data exists */}
+                      {(c.hasOutput || result) && (
+                        <button
+                          className="view-btn"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/report/${c.id}`) }}
+                          title="View Full Report"
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                        </button>
+                      )}
                       {/* Expand arrow */}
                       <button className={`expand-btn ${isExpanded ? 'open' : ''}`} onClick={() => toggleExpand(c.id)}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -481,20 +624,20 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="modal-body w-full h-[65vh] bg-slate-100 p-0">
-               <iframe 
-                 src={getPdfPreviewUrl(previewPdf)} 
-                 title="PDF Preview"
-                 className="w-full h-full border-0"
-               />
+              <iframe
+                src={getPdfPreviewUrl(previewPdf)}
+                title="PDF Preview"
+                className="w-full h-full border-0"
+              />
             </div>
             <div className="modal-footer border-t border-border p-3 bg-white flex justify-end gap-3 rounded-b-lg">
-              <button 
+              <button
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-sm font-bold rounded flex items-center gap-2 transition-colors"
                 onClick={() => setPreviewPdf(null)}
               >
                 Close
               </button>
-              <button 
+              <button
                 className="px-4 py-2 bg-accent hover:bg-accent-dark text-white text-sm font-bold rounded flex items-center gap-2 transition-colors shadow-sm"
                 onClick={() => downloadPdf(previewPdf)}
               >

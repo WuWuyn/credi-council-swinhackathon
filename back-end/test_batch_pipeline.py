@@ -30,9 +30,10 @@ logger = logging.getLogger(__name__)
 # ── Configuration ────────────────────────────────────────────────────
 CUSTOMERS = [
     "data/mock/customer_001",  
-    "data/mock/customer_005",  
-    "data/mock/customer_017",  
-    "data/mock/customer_025",  
+    "data/mock/customer_002",  
+    "data/mock/customer_003",  
+    "data/mock/customer_004",  
+    "data/mock/customer_005", 
 ]
 STAGGER_DELAY = 3.0  # seconds between each pipeline start
 

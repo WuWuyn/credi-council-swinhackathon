@@ -391,7 +391,7 @@ export default function CreditReportDetailPage() {
       {/* PDF PREVIEW MODAL */}
       {showPdf && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowPdf(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[100vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center px-6 py-4 border-b border-outline-variant/30 bg-surface-container-lowest">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -410,7 +410,7 @@ export default function CreditReportDetailPage() {
               </button>
             </div>
             
-            <div className="flex-1 bg-slate-100 p-0 relative overflow-hidden min-h-[500px]">
+            <div className="flex-1 bg-slate-100 p-0 relative overflow-hidden min-h-[680px]">
               <iframe 
                 src={getPdfPreviewUrl(id)} 
                 title="Credit Report PDF"

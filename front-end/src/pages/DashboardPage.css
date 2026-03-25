@@ -127,20 +127,142 @@
   overflow: hidden;
 }
 .sidebar-header {
-  height: 56px;
   padding: 8px 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 4px;
 }
-.sidebar-header h3 { margin: 0 0 2px; font-size: 14px; font-weight: 700; line-height: 1.2; }
-.sidebar-header p { margin: 0 0 6px; font-size: 11px; color: var(--text-secondary); line-height: 1.2; }
+.sidebar-header h3 { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.2; }
+.sidebar-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
 .select-all {
   display: flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
 }
 .select-all input { accent-color: var(--accent); }
+
+/* Clear Output Button */
+.clear-output-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.clear-output-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.clear-output-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Clear Confirm Dialog (inline within sidebar) */
+.clear-confirm-overlay {
+  padding: 8px 12px;
+  background: #fff8f8;
+  border-bottom: 1px solid #fdd;
+  animation: slideDown 0.2s ease;
+}
+.clear-confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.clear-confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.clear-confirm-icon .material-symbols-outlined {
+  font-size: 28px;
+  color: var(--accent);
+}
+.clear-confirm-text {
+  text-align: center;
+}
+.clear-confirm-text strong {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.clear-confirm-text p {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+.clear-confirm-text code {
+  font-family: var(--mono);
+  font-size: 9px;
+  background: #f5f5f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.clear-confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+.clear-cancel-btn,
+.clear-delete-btn {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sans);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.clear-cancel-btn {
+  background: var(--card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.clear-cancel-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+.clear-delete-btn {
+  background: var(--accent);
+  color: white;
+  border: 1px solid var(--accent);
+}
+.clear-delete-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+.clear-delete-btn:disabled,
+.clear-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .customer-list {
   flex: 1;
@@ -629,20 +751,20 @@
   animation: blink 2s ease-in-out infinite;
 }
 
-/* Pre-loaded score data (dimmed) */
+/* Pre-loaded score data from output/ */
 .customer-result-summary.preloaded {
-  opacity: 0.65;
+  opacity: 0.85;
   position: relative;
 }
 .customer-result-summary.preloaded::after {
-  content: 'CACHED';
+  content: 'OUTPUT';
   position: absolute;
   top: 4px;
   right: 4px;
   font-size: 7px;
   font-weight: 700;
-  color: var(--text-muted);
-  background: #f0f0f0;
+  color: var(--green);
+  background: var(--green-light);
   padding: 1px 5px;
   border-radius: 3px;
   letter-spacing: 0.5px;

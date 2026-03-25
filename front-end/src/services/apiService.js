@@ -52,6 +52,22 @@ export function isBackendAvailable() {
 }
 
 
+// ── Clear Output (Demo Reset) ────────────────────────────────────────────
+
+/**
+ * Clear all pipeline output data for a fresh demo.
+ * @returns {Promise<{cleared: number, message: string}>}
+ */
+export async function clearOutputData() {
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.CLEAR_OUTPUT}`,
+    { method: 'DELETE' }
+  )
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
+
+
 // ── Customer Listing ─────────────────────────────────────────────────────
 
 /**
@@ -73,6 +89,7 @@ export async function fetchCustomers() {
         skIdCurr: c.sk_id_curr,
         target: c.target,
         targetLabel: c.target_label,
+        hasOutput: c.has_output || false,
         info: {
           gender: c.gender || 'N/A',
           age: c.age || 0,
@@ -85,8 +102,8 @@ export async function fetchCustomers() {
           ownRealty: c.own_realty || 'N',
           ownCar: c.own_car || 'N',
         },
-        // Pre-loaded score data (from existing reports)
-        scoreData: c.has_report ? {
+        // Score data ONLY from output/ (never mock)
+        scoreData: c.has_output ? {
           creditScore: c.credit_score,
           riskBand: c.risk_band,
           pdPct: c.pd_pct,
@@ -146,6 +163,31 @@ export async function runScorePipeline(customerId, customerType = 'INDIVIDUAL') 
   )
   
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
+
+/**
+ * Submit multiple customers for parallel batch scoring.
+ * Backend runs all pipelines concurrently with staggered starts.
+ * 
+ * @param {string[]} customerIds - Array of customer IDs to process
+ * @param {number} staggerDelay - Seconds between each pipeline launch (default: 2)
+ * @returns {Promise<{results: Object, total: number, success_count: number, duration_s: number}>}
+ */
+export async function runBatchScorePipeline(customerIds, staggerDelay = 2.0) {
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.SCORE_BATCH}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_ids: customerIds,
+        stagger_delay: staggerDelay,
+      }),
+    }
+  )
+
+  if (!res.ok) throw new Error(`Batch HTTP ${res.status}`)
   return await res.json()
 }
 

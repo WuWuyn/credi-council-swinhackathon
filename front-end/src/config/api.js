@@ -11,6 +11,8 @@ export const API_CONFIG = {
 
     // Pipeline Scoring
     SCORE: '/v1/score',
+    SCORE_BATCH: '/v1/score/batch',
+    CLEAR_OUTPUT: '/v1/output',
     
     // Credit Report details
     REPORT_JSON: (customerId) => `/v1/report/${customerId}/json`,
