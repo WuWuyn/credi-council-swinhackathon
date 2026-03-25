@@ -233,11 +233,15 @@ export async function downloadPdf(customerId) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function formatVND(amount) {
+// Home Credit uses anonymized currency units → multiply by 100 for approximate VND display
+const VND_SCALE = 100
+
+function formatVND(rawAmount) {
+  const amount = rawAmount * VND_SCALE
   if (amount >= 1e9) return `${(amount / 1e9).toFixed(1)}B VND`
   if (amount >= 1e6) return `${(amount / 1e6).toFixed(1)}M VND`
   if (amount >= 1e3) return `${(amount / 1e3).toFixed(0)}K VND`
-  return `${amount} VND`
+  return `${amount.toLocaleString()} VND`
 }
 
 // Re-export constants

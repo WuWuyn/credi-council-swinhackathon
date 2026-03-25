@@ -1,6 +1,6 @@
 {
   "customer_info": {
-    "summary": "Khách hàng nữ, 59 tuổi, là người hưu trí có nhu cầu vay tiêu dùng 90 triệu VND với tài sản bảo đảm là bất động sản.",
+    "summary": "Khách hàng nữ, 59 tuổi, là người hưu trí có nhu cầu vay tiêu dùng với số tiền 900,000 VND.",
     "gender": "Nữ",
     "age": 60,
     "education": "Đại học / Cao đẳng",
@@ -57,7 +57,7 @@
       "model_version": "lgb1_ref_v1",
       "auc": "0.803",
       "shap_verified": true,
-      "inference_timestamp": "2026-03-25T10:32:47.592014+00:00"
+      "inference_timestamp": "2026-03-25T10:34:54.993360+00:00"
     },
     "financial_ratios": {
       "income_annual_vnd": 31500000.0,
@@ -118,7 +118,7 @@
           "detail": "DEF_30_CNT_SOCIAL_CIRCLE = 0"
         }
       ],
-      "narrative": "Uy tín của khách hàng được đánh giá thông qua điểm tín dụng ngoại (EXT_SOURCE_1: 0.8923, EXT_SOURCE_2: 0.7802, EXT_SOURCE_3: 0.8625). Theo SHAP, các yếu tố này đóng vai trò tích cực trong việc giảm rủi ro vỡ nợ. Việc không ghi nhận nợ quá hạn (inst_mean_DPD_SCALE = 0) phản ánh tư cách tín dụng ổn định, phù hợp với quy định về đánh giá lịch sử tín dụng tại Điều 17, TT39/2016/TT-NHNN."
+      "narrative": "Tư cách tín dụng của khách hàng được đánh giá dựa trên lịch sử tín dụng ổn định, thể hiện qua điểm tín dụng ngoại (EXT_SOURCE_1: 0.8923, EXT_SOURCE_2: 0.7802, EXT_SOURCE_3: 0.8625). Các yếu tố SHAP cho thấy việc không có nợ quá hạn (inst_mean_DPD_SCALE: 0.0) là yếu tố tích cực mạnh mẽ giúp củng cố uy tín. Theo Điều 10, Thông tư 11/2021/TT-NHNN, việc duy trì lịch sử CIC tốt là cơ sở quan trọng để đánh giá tư cách khách hàng, đảm bảo khách hàng không thuộc nhóm nợ xấu tại các tổ chức tín dụng khác."
     },
     "capacity_assessment": {
       "score": 33,
@@ -158,7 +158,7 @@
           "detail": "Pensioner — retired"
         }
       ],
-      "narrative": "Năng lực trả nợ thể hiện qua DTI 14.3% và DSCR 7.00. Tuy nhiên, SHAP chỉ ra các yếu tố rủi ro như 'Tỷ lệ thời gian công tác/tuổi' (-999.0) và 'Tín dụng hiện tại/TB đơn đã duyệt' (0.0601) cho thấy sự bất ổn trong thu nhập hưu trí. Theo Điều 7, TT39/2016/TT-NHNN, TCTD cần đảm bảo khách hàng có khả năng tài chính thực tế để trả nợ, trong khi thu nhập hiện tại của khách hàng ở mức thấp, gây rủi ro về khả năng duy trì nghĩa vụ nợ."
+      "narrative": "Năng lực trả nợ của khách hàng ở mức an toàn với DTI 14.3% và DSCR 7.00. Tuy nhiên, các yếu tố SHAP như 'AMT_ANNUITY_to_prev_approved' (0.1687) và 'AMT_CREDIT_to_prev_approved' (0.0601) phản ánh áp lực từ các khoản vay trước đó. Dù thu nhập hưu trí ổn định, việc thiếu thông tin thời gian công tác (DAYS_EMPLOYED: -999) theo Điều 7, Thông tư 39/2016/TT-NHNN đòi hỏi ngân hàng phải thẩm định kỹ lưỡng tính bền vững của nguồn thu nhập này để đảm bảo khả năng trả nợ dài hạn."
     },
     "capital_assessment": {
       "score": 15,
@@ -196,7 +196,7 @@
           "detail": "Bureau requests/year = 1.0"
         }
       ],
-      "narrative": "Khách hàng sở hữu bất động sản làm vốn tự có, tuy nhiên SHAP ghi nhận 'Tổng dư nợ CIC' ở mức -999.0, cho thấy sự thiếu minh bạch hoặc dữ liệu không đầy đủ về các khoản vay khác. Việc thiếu thông tin nợ CIC rõ ràng làm giảm khả năng đánh giá nguồn vốn tự có thực tế để đối ứng cho khoản vay theo thông lệ quản trị rủi ro."
+      "narrative": "Khách hàng sở hữu bất động sản, đây là nguồn vốn tự có đáng kể giúp tăng cường khả năng đảm bảo nghĩa vụ nợ. Dữ liệu SHAP về tổng dư nợ CIC (bureau_sum_AMT_CREDIT_SUM: -999) cho thấy mức độ đòn bẩy tài chính hiện tại của khách hàng không quá cao, phù hợp với quy định về đánh giá năng lực tài chính của khách hàng vay tại Điều 7, Thông tư 39/2016/TT-NHNN."
     },
     "conditions_assessment": {
       "score": 8,
@@ -235,7 +235,7 @@
           "detail": "Age = 59"
         }
       ],
-      "narrative": "Mục đích vay tiêu dùng phù hợp với trình độ học vấn cao của khách hàng. SHAP chỉ ra 'Trung bình điểm tín dụng ngoại' (0.845) là yếu tố tích cực mạnh mẽ nhất. Tuy nhiên, việc có các đơn vay bị từ chối trước đó (DAYS_DECISION_MAX = 0) theo SHAP là yếu tố cần lưu ý, phù hợp với quy định về kiểm soát rủi ro tín dụng tại Điều 17, TT39/2016/TT-NHNN."
+      "narrative": "Điều kiện vay tiêu dùng của khách hàng được hỗ trợ bởi trình độ học vấn cao và độ tuổi 59 phù hợp. Các yếu tố SHAP như 'NEW_EXT_SOURCES_MEAN' (-0.5757) và 'NEW_SOURCES_PROD' (-0.2764) đóng góp tích cực vào hồ sơ. Tuy nhiên, yếu tố 'prev_refused_DAYS_DECISION_MAX' (0.0994) cần được lưu ý để đảm bảo mục đích vay là chính đáng và không nằm trong tình trạng khó khăn tài chính cấp bách."
     },
     "collateral_assessment": {
       "score": 10,
@@ -269,12 +269,12 @@
           "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.2439"
         }
       ],
-      "narrative": "Tài sản bảo đảm là bất động sản, tuy nhiên tỷ lệ LTV đạt 100% theo dữ liệu tài chính. Theo quy định quản trị rủi ro, mức LTV này vượt ngưỡng an toàn thông thường, không đảm bảo biên độ dự phòng cần thiết khi giá trị tài sản biến động hoặc cần thanh lý theo quy định tại TT11/2021/TT-NHNN."
+      "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Với tỷ lệ LTV 100%, hồ sơ này vượt ngưỡng an toàn thông lệ 70%. Theo quy định tại Thông tư 41/2016/TT-NHNN, mức LTV này làm tăng trọng số rủi ro tín dụng lên 100%, ảnh hưởng trực tiếp đến chi phí vốn và yêu cầu an toàn vốn của ngân hàng."
     }
   },
   "financial_summary": {
-    "income_analysis": "Thu nhập hàng tháng 2,625,000 VND là mức thấp, cần xác minh tính bền vững của nguồn thu nhập hưu trí.",
-    "debt_analysis": "DTI 14.3% và DSCR 7.00 ở mức an toàn trên lý thuyết, nhưng cần đối chiếu với thu nhập thực tế."
+    "income_analysis": "Thu nhập hưu trí đạt 2,625,000 VND/tháng, đảm bảo tỷ lệ DTI ở mức an toàn 14.3%.",
+    "debt_analysis": "Tổng dư nợ hiện tại thấp, tuy nhiên cần kiểm soát chặt chẽ các khoản vay tiêu dùng để tránh rủi ro mất khả năng thanh toán."
   },
   "debt_assessment": {
     "score": 81,
@@ -346,18 +346,18 @@
         "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.2439"
       }
     ],
-    "narrative": "Tài sản bảo đảm là bất động sản, tuy nhiên tỷ lệ LTV đạt 100% theo dữ liệu tài chính. Theo quy định quản trị rủi ro, mức LTV này vượt ngưỡng an toàn thông thường, không đảm bảo biên độ dự phòng cần thiết khi giá trị tài sản biến động hoặc cần thanh lý theo quy định tại TT11/2021/TT-NHNN."
+    "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Với tỷ lệ LTV 100%, hồ sơ này vượt ngưỡng an toàn thông lệ 70%. Theo quy định tại Thông tư 41/2016/TT-NHNN, mức LTV này làm tăng trọng số rủi ro tín dụng lên 100%, ảnh hưởng trực tiếp đến chi phí vốn và yêu cầu an toàn vốn của ngân hàng."
   },
   "suggested_terms": {
     "max_amount_vnd": 90000000.0,
-    "interest_rate_suggestion": "Theo biểu phí hiện hành",
+    "interest_rate_suggestion": "Áp dụng lãi suất theo biểu phí hiện hành cho phân khúc rủi ro AA, có điều chỉnh biên độ bù đắp rủi ro do LTV cao.",
     "conditions": [
       "LTV 100% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức",
-      "Xác minh thu nhập thực tế của người hưu trí",
+      "Xác minh sổ hưu và sao kê nhận lương hưu",
       "Yêu cầu bổ sung tài sản bảo đảm để giảm LTV xuống dưới 70%",
-      "Thẩm định thực địa tình trạng bất động sản",
-      "Kiểm tra chi tiết dư nợ CIC thực tế",
-      "Cam kết mục đích sử dụng vốn tiêu dùng"
+      "Kiểm tra lịch sử CIC chi tiết để loại trừ nợ xấu",
+      "Đánh giá tính bền vững của thu nhập hưu trí",
+      "Phê duyệt dựa trên phương án sử dụng vốn tiêu dùng cụ thể"
     ]
   },
   "reward_assessment": {
@@ -383,33 +383,29 @@
     "positive_signals": [
       "Property ownership",
       "Stable pensioner status",
-      "Single household with no dependents"
+      "Consistent residential and work location data"
     ],
     "risk_flags": [
-      "Extremely low monthly income (26,250 VND)",
-      "Poor property condition (2.9/10)",
-      "No elevator in apartment building",
+      "Extremely low income level",
+      "Low property quality rating",
       "No contact phone number for employer",
-      "Future employment start date (3026-03-26)"
+      "Single applicant with no dependents"
     ]
   },
   "caveats": [
-    "Thu nhập đầu vào thấp, không đảm bảo tính bền vững",
-    "LTV 100% vượt ngưỡng an toàn rủi ro",
-    "Dữ liệu CIC không đầy đủ (SHAP -999.0)",
-    "Rủi ro chuyển nhóm nợ theo TT11/2021/TT-NHNN"
+    "LTV 100% vượt ngưỡng an toàn 70% theo thông lệ",
+    "Thiếu thông tin liên lạc đơn vị công tác/nguồn thu nhập",
+    "Thu nhập thấp so với mặt bằng chung",
+    "Rủi ro từ các khoản vay tiêu dùng trước đó",
+    "Cần thẩm định thực tế tài sản bảo đảm"
   ],
   "audit_reference": {
     "model_version": "lgb1_ref_v1",
-    "inference_timestamp": "2026-03-25T10:32:47.592014+00:00",
+    "inference_timestamp": "2026-03-25T10:34:54.993360+00:00",
     "rag_citations": [
       {
         "source": null,
-        "title": "tt39_2016_lending"
-      },
-      {
-        "source": null,
-        "title": "credit_assessment_5c"
+        "title": "basel_vietnam_car"
       },
       {
         "source": null,
@@ -421,37 +417,16 @@
       },
       {
         "source": null,
+        "title": "credit_assessment_5c"
+      },
+      {
+        "source": null,
         "title": "tt39_2016_lending"
       },
       {
-        "text": "Đánh giá theo khung 5C (Điều 17, TT39/2016/TT-NHNN)",
+        "text": "*   Với LTV > 70%, khoản vay này sẽ chịu trọng số rủi ro tín dụng cao hơn (100% thay vì 50% nếu LTV ≤ 70%) khi tính toán hệ số CAR.",
         "chunk_indices": [
-          0,
-          1
-        ]
-      },
-      {
-        "text": "*   **Capacity (Năng lực trả nợ):** Đây là điểm yếu chí mạng.",
-        "chunk_indices": [
-          1
-        ]
-      },
-      {
-        "text": "*   **Phân loại nợ (TT11/2021/TT-NHNN):** TCTD phải thực hiện phân loại nợ định kỳ.",
-        "chunk_indices": [
-          2
-        ]
-      },
-      {
-        "text": "*   **Quy định CIC:** Xếp hạng tín dụng của CIC là căn cứ quan trọng để đánh giá Character.",
-        "chunk_indices": [
-          3
-        ]
-      },
-      {
-        "text": "*   Yêu cầu giảm hạn mức vay để đưa LTV về mức an toàn (< 70%).",
-        "chunk_indices": [
-          4
+          0
         ]
       }
     ],

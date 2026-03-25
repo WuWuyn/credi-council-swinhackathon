@@ -14,12 +14,7 @@ export default function Header({ variant = 'default', title, onBack, actions }) 
     return (
       <header className="sticky top-0 w-full z-40 h-16 bg-white/80 backdrop-blur-xl flex justify-center items-center border-b border-slate-200/50 shadow-sm">
         <div className="max-w-7xl w-full px-8 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black font-headline text-primary">CrediCouncil AI</h1>
-            </div>
-            <div className="h-6 w-[1px] bg-slate-200 hidden md:block"></div>
-            <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
               {onBack && (
                 <button
                   onClick={onBack}
@@ -32,7 +27,6 @@ export default function Header({ variant = 'default', title, onBack, actions }) 
                 {title || 'Credit Report Detail'}
               </h2>
             </div>
-          </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={actions?.onPdfClick}
