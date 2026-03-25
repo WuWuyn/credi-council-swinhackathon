@@ -36,6 +36,7 @@ from credicouncil.api.routes_customers import router as customers_router
 from credicouncil.api.routes_report import router as report_router
 from credicouncil.api.routes_scoring import router_legacy as scoring_legacy_router
 from credicouncil.api.routes_scoring import router_v1 as scoring_v1_router
+from credicouncil.api.routes_ws import router_ws as ws_router
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,7 @@ app.include_router(customers_router)
 app.include_router(report_router)
 app.include_router(scoring_v1_router)
 app.include_router(scoring_legacy_router)
+app.include_router(ws_router)
 
 # ─── Serve frontend static files (production build) ──────────────────────────
 _FRONTEND_CANDIDATES = [

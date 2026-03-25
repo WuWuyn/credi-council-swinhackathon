@@ -4,17 +4,14 @@ CREDICOUNCIL API — Data Access Layer.
 Centralized helpers for reading customer data from the file system.
 
 Architecture:
-    data/mock/customer_XXX/   → INPUT data + safety-net fallback
+    data/mock/customer_XXX/   → INPUT data (raw documents, application_row)
     data/output/customer_XXX/ → OUTPUT from pipeline runs
-
-Read priority:  output/ first  →  mock/ as fallback.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import shutil
 from pathlib import Path
 from typing import Any
 
@@ -108,29 +105,22 @@ def load_customer_report(customer_id: str) -> tuple[dict, dict]:
     """
     Load credit_report.json + shap_values.json for display.
 
-    Read priority:  data/output/  →  data/mock/
+    Reads from data/output/ only — no mock fallback.
     """
     folder_id = normalize_folder_id(customer_id)
-
-    # Priority 1: output/
     output_folder = OUTPUT_DIR / folder_id
-    mock_folder = MOCK_DIR / folder_id
 
     report_data: dict = {}
     shap_data: dict = {}
 
-    # Determine which folder has the report
-    if (output_folder / "credit_report.json").exists():
-        source_folder = output_folder
-    elif (mock_folder / "credit_report.json").exists():
-        source_folder = mock_folder
-    else:
+    report_path = output_folder / "credit_report.json"
+    if not report_path.exists():
         return {}, {}
 
-    with open(source_folder / "credit_report.json", encoding="utf-8") as f:
+    with open(report_path, encoding="utf-8") as f:
         report_data = json.load(f)
 
-    shap_path = source_folder / "shap_values.json"
+    shap_path = output_folder / "shap_values.json"
     if shap_path.exists():
         with open(shap_path, encoding="utf-8") as f:
             shap_data = json.load(f)
@@ -138,31 +128,3 @@ def load_customer_report(customer_id: str) -> tuple[dict, dict]:
     return report_data, shap_data
 
 
-# ─── Fallback: copy mock → output ────────────────────────────────────────────
-
-def fallback_copy_mock_to_output(folder_id: str) -> bool:
-    """
-    When pipeline fails, copy results from mock/ to output/ as safety net.
-
-    Copies:  credit_report.json, shap_values.json, credit_report.pdf
-    Returns True if fallback succeeded, False if mock data doesn't exist.
-    """
-    mock_folder = MOCK_DIR / folder_id
-    output_folder = OUTPUT_DIR / folder_id
-
-    mock_report = mock_folder / "credit_report.json"
-    if not mock_report.exists():
-        logger.warning(f"Fallback failed — no mock data for {folder_id}")
-        return False
-
-    output_folder.mkdir(parents=True, exist_ok=True)
-
-    # Copy all result files
-    for filename in ("credit_report.json", "shap_values.json", "credit_report.pdf"):
-        src = mock_folder / filename
-        if src.exists():
-            shutil.copy2(str(src), str(output_folder / filename))
-            logger.info(f"  Fallback copied: {filename} → output/{folder_id}/")
-
-    logger.info(f"Fallback complete for {folder_id}")
-    return True

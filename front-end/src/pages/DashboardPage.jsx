@@ -12,6 +12,7 @@ import {
   isBackendAvailable,
   getPdfPreviewUrl,
   downloadPdf,
+  connectProcessingWebSocket,
 } from '../services/apiService'
 import ExtractedDataReviewModal from '../components/ExtractedDataReviewModal'
 import './DashboardPage.css'
@@ -49,6 +50,9 @@ export default function DashboardPage() {
   // Clear output confirm dialog
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
+
+  // Pipeline metrics (runtime + token usage)
+  const [pipelineMetrics, setPipelineMetrics] = useState(null) // { runtime_seconds, total_tokens }
 
   // ── Load customers on mount ──
   useEffect(() => {
@@ -137,10 +141,15 @@ export default function DashboardPage() {
         clearInterval(a1AnimInterval)
         setLayerProgress(100)
         setCompletedLayers(prev => new Set([...prev, 0]))
-        setLayerData(prev => ({
-          ...prev,
-          A1: { value: Object.keys(ingestionResult.application_row || {}).length, label: 'Fields ✓' }
-        }))
+        setLayerData(prev => {
+          const row = ingestionResult.application_row || {}
+          const totalFields = Object.keys(row).length
+          const filledFields = Object.values(row).filter(v => v !== null && v !== undefined && v !== '').length
+          return {
+            ...prev,
+            A1: { value: `${filledFields}/${totalFields}`, label: 'Fields ✓' }
+          }
+        })
 
         // Animate CG (confidence gate) layer — quick pass-through
         setActiveLayer(1)
@@ -190,17 +199,22 @@ export default function DashboardPage() {
             } : cust
           ))
 
-          // Update layer badges
-          setLayerData({
-            A1: { value: Object.keys(ingestionResult.application_row || {}).length, label: 'Fields ✓' },
-            CG: { value: '✓', label: 'PROCEED' },
-            A2: { value: '753', label: 'Feats ✓' },
-            A3: { value: processResult.credit_score || '—', label: 'Score ✓' },
-            A4: {
-              value: processResult.four_c_scores
-                ? Object.values(processResult.four_c_scores).reduce((a, b) => a + b, 0).toFixed(0) : '—',
-              label: '5C pts ✓',
-            },
+          // Update layer badges with REAL data
+          setLayerData(prev => {
+            const row = ingestionResult.application_row || {}
+            const totalFields = Object.keys(row).length
+            const filledFields = Object.values(row).filter(v => v !== null && v !== undefined && v !== '').length
+            return {
+              ...prev,
+              A1: { value: `${filledFields}/${totalFields}`, label: 'Fields ✓' },
+              CG: { value: '✓', label: 'PROCEED' },
+              A3: { value: processResult.credit_score || '—', label: 'Score ✓' },
+              A4: {
+                value: processResult.four_c_scores
+                  ? Object.values(processResult.four_c_scores).reduce((a, b) => a + b, 0).toFixed(0) : '—',
+                label: '5C pts ✓',
+              },
+            }
           })
           setCompletedLayers(new Set([0, 1, 2, 3, 4]))
         }
@@ -215,52 +229,33 @@ export default function DashboardPage() {
         setReviewData(null)
         setReviewCustomerId(null)
 
-        // If cancelled by user, still handle gracefully
+        // If cancelled by user → reset to pending, stop pipeline
         if (err.message === 'USER_CANCELLED') {
-          setCustomerResults(prev => ({
-            ...prev,
-            [customer.id]: {
-              application_id: customer.id,
-              credit_score: 0,
-              risk_band: 'SKIP',
-              pd_pct: 0,
-              recommendation: 'SKIPPED',
-              four_c_scores: {},
-              skipped: true,
-            },
-          }))
-          setBatchProgress({ completed: i + 1, total })
-          continue
+          // Don't set any result → customer stays 'pending'
+          // Reset pipeline animation state
+          setActiveLayer(-1)
+          setLayerProgress(0)
+          setCompletedLayers(new Set())
+          setLayerData({})
+          setPipelineMeta('Pipeline cancelled by user')
+          setIsProcessingApproval(false)
+          // Break out of batch loop entirely
+          break
         }
 
-        // Real error — try fallback
-        if (customer.scoreData) {
-          setCustomerResults(prev => ({
-            ...prev,
-            [customer.id]: {
-              application_id: customer.id,
-              credit_score: customer.scoreData.creditScore,
-              pd_pct: customer.scoreData.pdPct,
-              risk_band: customer.scoreData.riskBand,
-              recommendation: customer.scoreData.recommendation,
-              four_c_scores: customer.scoreData.fiveCScores || {},
-              fallback: true,
-            },
-          }))
-        } else {
-          setCustomerResults(prev => ({
-            ...prev,
-            [customer.id]: {
-              application_id: customer.id,
-              credit_score: 0,
-              risk_band: 'ERR',
-              pd_pct: 0,
-              recommendation: 'ERROR',
-              four_c_scores: {},
-              error: true,
-            },
-          }))
-        }
+        // Real error — mark as error
+        setCustomerResults(prev => ({
+          ...prev,
+          [customer.id]: {
+            application_id: customer.id,
+            credit_score: 0,
+            risk_band: 'ERR',
+            pd_pct: 0,
+            recommendation: 'ERROR',
+            four_c_scores: {},
+            error: true,
+          },
+        }))
         setBatchProgress({ completed: i + 1, total })
       }
     }
@@ -269,58 +264,129 @@ export default function DashboardPage() {
     setCurrentCustomer(null)
     setBatchProgress(null)
     setRunning(false)
-    setPipelineMeta(`Pipeline complete — ${total} profiles processed`)
   }, [selected, running, customers])
 
-  /* ── HITL: Handle approval from review popup ── */
+  /* ── HITL: Handle approval from review popup (WebSocket realtime) ── */
   const handleReviewApprove = useCallback(async (editedRow, metadata) => {
     // ① Close modal IMMEDIATELY so judges can see the pipeline animation
     setReviewData(null)
     setIsProcessingApproval(true)
+    setPipelineMetrics(null)
     setPipelineMeta(`Đang xử lý A2→A3→A4 cho ${reviewCustomerLabel || reviewCustomerId}...`)
 
+    // Map step IDs to pipeline layer indices
+    const STEP_TO_INDEX = { A2: 2, A3: 3, A4: 4 }
+
+    const wsParams = {
+      customer_id: reviewCustomerId,
+      application_row: editedRow,
+      raw_texts: metadata.raw_texts,
+      thin_file_flag: metadata.thin_file_flag,
+      identity_consistency_flag: metadata.identity_consistency_flag,
+    }
+
     try {
-      // ② Start API call in background (non-blocking)
-      const apiPromise = runProcessing({
-        customer_id: reviewCustomerId,
-        application_row: editedRow,
-        raw_texts: metadata.raw_texts,
-        thin_file_flag: metadata.thin_file_flag,
-        identity_consistency_flag: metadata.identity_consistency_flag,
+      // ② Connect WebSocket for realtime events
+      const { promise } = connectProcessingWebSocket(wsParams, (event) => {
+        const layerIdx = STEP_TO_INDEX[event.step]
+
+        if (event.event === 'started' && layerIdx !== undefined) {
+          // Mark layer as active with progress animation
+          setActiveLayer(layerIdx)
+          setLayerProgress(0)
+          setPipelineMeta(`Đang xử lý ${event.step} cho ${reviewCustomerLabel || reviewCustomerId}...`)
+          // Start a smooth progress animation while waiting
+          // A4 (Report Generator) takes much longer → slower animation
+          const speed = event.step === 'A4' ? { increment: 0.8, interval: 150 } : { increment: 2, interval: 100 }
+          const animInterval = setInterval(() => {
+            setLayerProgress(prev => Math.min(prev + speed.increment, 95))
+          }, speed.interval)
+          // Store interval ID for cleanup when completed
+          window[`__anim_${event.step}`] = animInterval
+        }
+
+        if (event.event === 'completed' && layerIdx !== undefined) {
+          // Stop animation and mark layer as 100% complete
+          if (window[`__anim_${event.step}`]) {
+            clearInterval(window[`__anim_${event.step}`])
+            delete window[`__anim_${event.step}`]
+          }
+          setLayerProgress(100)
+          setCompletedLayers(prev => new Set([...prev, layerIdx]))
+
+          // Update layer badges with REAL data from backend
+          if (event.step === 'A2' && event.data) {
+            setLayerData(prev => ({
+              ...prev,
+              A2: { value: event.data.features_count || '—', label: 'Feats ✓' },
+            }))
+          } else if (event.step === 'A3' && event.data) {
+            setLayerData(prev => ({
+              ...prev,
+              A3: { value: event.data.credit_score || '—', label: 'Score ✓' },
+            }))
+            setPipelineMeta(`A3 hoàn tất — Score: ${event.data.credit_score}, PD: ${event.data.pd_pct}%`)
+          } else if (event.step === 'A4' && event.data) {
+            setLayerData(prev => ({
+              ...prev,
+              A4: {
+                value: event.data.five_c_total || '—',
+                label: '5C pts ✓',
+              },
+            }))
+          }
+        }
+
+        // Capture metrics from done event
+        if (event.event === 'done' && event.metrics) {
+          setPipelineMetrics(event.metrics)
+        }
       })
 
-      // ③ Animate A2→A3→A4 (skip CG at index 1, already completed)
-      for (let li = 2; li < PIPELINE_LAYERS.length; li++) {
-        setActiveLayer(li)
-        setLayerProgress(0)
-        const steps = 15
-        const dur = 600
-        for (let s = 0; s <= steps; s++) {
-          setLayerProgress((s / steps) * 100)
-          await new Promise(r => setTimeout(r, dur / steps))
-        }
-        setCompletedLayers(prev => new Set([...prev, li]))
-      }
+      // ③ Wait for final result from WebSocket
+      const result = await promise
       setActiveLayer(-1)
-
-      // ④ Wait for API result (may already be done by now)
-      const result = await apiPromise
-
       setIsProcessingApproval(false)
-      // Resolve the promise that runPipeline is awaiting
+
       if (window.__hitlResolve) {
         window.__hitlResolve(result)
         window.__hitlResolve = null
         window.__hitlReject = null
       }
     } catch (err) {
-      setIsProcessingApproval(false)
-      console.error('[HITL] Processing failed:', err)
-      // Resolve with null to indicate failure but don't block pipeline
-      if (window.__hitlResolve) {
-        window.__hitlResolve(null)
-        window.__hitlResolve = null
-        window.__hitlReject = null
+      console.warn('[HITL] WebSocket failed, falling back to HTTP:', err.message)
+
+      // ── Fallback: use existing HTTP API if WebSocket fails ──
+      try {
+        // Run fake progress while HTTP call is in flight
+        setActiveLayer(2)
+        setLayerProgress(0)
+        const fallbackAnim = setInterval(() => {
+          setLayerProgress(prev => Math.min(prev + 1, 95))
+        }, 200)
+
+        const result = await runProcessing(wsParams)
+
+        clearInterval(fallbackAnim)
+        setLayerProgress(100)
+        setCompletedLayers(new Set([0, 1, 2, 3, 4]))
+        setActiveLayer(-1)
+        setIsProcessingApproval(false)
+
+        if (window.__hitlResolve) {
+          window.__hitlResolve(result)
+          window.__hitlResolve = null
+          window.__hitlReject = null
+        }
+      } catch (httpErr) {
+        setActiveLayer(-1)
+        setIsProcessingApproval(false)
+        console.error('[HITL] HTTP fallback also failed:', httpErr)
+        if (window.__hitlResolve) {
+          window.__hitlResolve(null)
+          window.__hitlResolve = null
+          window.__hitlReject = null
+        }
       }
     }
   }, [reviewCustomerId, reviewCustomerLabel])
@@ -574,13 +640,7 @@ export default function DashboardPage() {
                           </div>
                         )}
 
-                        {/* Show fallback indicator */}
-                        {result && result.fallback && (
-                          <div className="fallback-notice">
-                            <span className="material-symbols-outlined text-[12px]">info</span>
-                            Showing cached report data (backend was offline)
-                          </div>
-                        )}
+
                       </div>
                     )}
                   </div>
@@ -608,19 +668,46 @@ export default function DashboardPage() {
         {/* ═══ CENTER: PIPELINE VISUALIZATION ═══ */}
         <div className="main">
           <div className="pipeline-header">
-            <div className="pipeline-title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-              MULTI-LAYER PIPELINE ENGINE
+            <div className="pipeline-header-left">
+              <div className="pipeline-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                MULTI-LAYER PIPELINE ENGINE
+              </div>
+              <div className="pipeline-meta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                {pipelineMeta}
+              </div>
             </div>
-            <div className="pipeline-meta">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              {pipelineMeta}
-            </div>
+            {pipelineMetrics && (
+              <div className="pipeline-metrics">
+                <span className="metric-badge time">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {pipelineMetrics.runtime_seconds >= 60
+                    ? `${Math.floor(pipelineMetrics.runtime_seconds / 60)}m ${Math.round(pipelineMetrics.runtime_seconds % 60)}s`
+                    : `${pipelineMetrics.runtime_seconds}s`
+                  }
+                </span>
+                <span className="metric-badge tokens">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
+                  {pipelineMetrics.total_tokens >= 1000
+                    ? `${(pipelineMetrics.total_tokens / 1000).toFixed(1)}K`
+                    : pipelineMetrics.total_tokens
+                  } tokens
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="pipeline-layers">

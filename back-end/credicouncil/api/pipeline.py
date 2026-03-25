@@ -2,20 +2,22 @@
 CREDICOUNCIL API — Pipeline Service.
 
 Runs the full A1→A2→A3→A4 credit scoring pipeline.
-Writes results to data/output/ and falls back to data/mock/ on failure.
+Writes results to data/output/.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import datetime, timezone
 import traceback
 from pathlib import Path
 from typing import Any
 
 from credicouncil.api.config import MOCK_DIR, OUTPUT_DIR, PROJECT_ROOT, settings
-from credicouncil.api.data_access import fallback_copy_mock_to_output, normalize_folder_id
+from credicouncil.api.data_access import normalize_folder_id
+from credicouncil.services.llm_service import reset_token_counter, get_token_counts
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +54,15 @@ def run_pipeline_for_customer(customer_id: str) -> dict:
     """
     Run the full pipeline for a customer and save results to data/output/.
 
-    Always runs the real pipeline. On failure, transparently falls back
-    to pre-built mock data — no one can tell the difference.
-
     Args:
         customer_id: e.g. "001", "1", "customer_001"
 
     Returns:
-        Formatted scoring result dict (always succeeds from caller's perspective).
+        Formatted scoring result dict.
+
+    Raises:
+        FileNotFoundError: If customer mock folder not found.
+        Exception: If pipeline execution fails.
     """
     folder_id = normalize_folder_id(customer_id)
     mock_folder = MOCK_DIR / folder_id
@@ -68,31 +71,15 @@ def run_pipeline_for_customer(customer_id: str) -> dict:
     if not mock_folder.exists():
         raise FileNotFoundError(f"Customer mock folder not found: {mock_folder}")
 
-    try:
-        # ── Run real pipeline ──
-        logger.info(f"[Pipeline] START real pipeline for {folder_id}")
-        result = _execute_pipeline(str(mock_folder), folder_id)
+    # ── Run real pipeline ──
+    logger.info(f"[Pipeline] START real pipeline for {folder_id}")
+    result = _execute_pipeline(str(mock_folder), folder_id)
 
-        # ── Save results to data/output/ ──
-        _save_results_to_output(output_folder, result)
+    # ── Save results to data/output/ ──
+    _save_results_to_output(output_folder, result)
 
-        logger.info(f"[Pipeline] ✅ SUCCESS for {folder_id}")
-        return result
-
-    except Exception as e:
-        logger.error(f"[Pipeline] ❌ FAILED for {folder_id}: {e}")
-        traceback.print_exc()
-
-        # ── Fallback: copy mock → output (transparent) ──
-        logger.info(f"[Pipeline] Falling back to mock data for {folder_id}")
-        fallback_ok = fallback_copy_mock_to_output(folder_id)
-
-        if fallback_ok:
-            # Load the fallback data and format it
-            return _load_result_from_output(output_folder)
-        else:
-            # No mock data either — re-raise
-            raise
+    logger.info(f"[Pipeline] ✅ SUCCESS for {folder_id}")
+    return result
 
 
 # ─── 2-Phase Pipeline (Human-in-the-Loop) ────────────────────────────────────
@@ -112,6 +99,11 @@ def execute_ingestion_only(customer_id: str) -> dict:
 
     agents = get_agents()
     logger.info(f"[Phase 1] A1 Ingestion for {folder_id}...")
+
+    # Reset token counter — A1 is the first step, so we start counting from here.
+    # Phase 2 (A2→A4) will accumulate on top of this.
+    reset_token_counter()
+
     a1_output = agents["a1"].ingest(str(mock_folder))
 
     # Build field metadata for review UI
@@ -215,6 +207,172 @@ def execute_processing(
     _save_results_to_output(output_folder, result)
 
     logger.info(f"[Phase 2] ✅ Complete for {customer_id}")
+    return result
+
+
+def execute_processing_with_events(
+    customer_id: str,
+    application_row: dict,
+    raw_texts: dict | None = None,
+    thin_file_flag: bool = False,
+    identity_consistency_flag: str = "OK",
+    event_callback=None,
+) -> dict:
+    """Phase 2 with realtime event broadcasting via callback.
+
+    Tracks execution time and LLM token usage across all agents.
+
+    Same as execute_processing() but calls event_callback(event_dict) after
+    each pipeline step so the WebSocket can relay progress to the frontend.
+    """
+    folder_id = normalize_folder_id(customer_id)
+    output_folder = OUTPUT_DIR / folder_id
+
+    # ── Start tracking timing (tokens already counting from Phase 1) ──
+    start_time = time.time()
+
+    agents = get_agents()
+
+    import pandas as pd
+
+    # Reconstruct A1-like output from the approved data
+    a1_output = {
+        "application_id": customer_id,
+        "application_row": application_row,
+        "raw_texts": raw_texts or {},
+        "thin_file_flag": thin_file_flag,
+        "identity_consistency_flag": identity_consistency_flag,
+        "confidence_map": {},
+        "audit_trail": [{
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "agent": "HUMAN_REVIEW",
+            "action": "approved_extracted_data",
+            "input_summary": {"fields_count": len(application_row)},
+            "output_summary": {"status": "APPROVED"},
+        }],
+        "bureau_df": pd.DataFrame(),
+        "bureau_balance_df": pd.DataFrame(),
+        "previous_application_df": pd.DataFrame(),
+        "pos_cash_df": pd.DataFrame(),
+        "installments_df": pd.DataFrame(),
+        "credit_card_df": pd.DataFrame(),
+    }
+
+    # Re-read CIC and internal DB to get DataFrames
+    mock_folder = MOCK_DIR / folder_id
+    if mock_folder.exists():
+        from credicouncil.agents.a1_ingestion.cic_service import CICService
+        from credicouncil.agents.a1_ingestion.internal_db_reader import InternalDBReader
+
+        cic = CICService()
+        cic_path = mock_folder / "07_cic_api_response.json"
+        cic_result = cic.query(cic_path if cic_path.exists() else None)
+
+        internal_db = InternalDBReader()
+        internal_path = mock_folder / "08_internal_db.json"
+        internal_dfs = internal_db.read(internal_path if internal_path.exists() else None)
+
+        from credicouncil.agents.a1_ingestion.agent import IngestionAgent
+        temp_agent = IngestionAgent()
+        bureau_df, bureau_balance_df = temp_agent._build_bureau_dfs(cic_result)
+
+        a1_output["bureau_df"] = bureau_df
+        a1_output["bureau_balance_df"] = bureau_balance_df
+        a1_output["previous_application_df"] = internal_dfs.get("previous_application", pd.DataFrame())
+        a1_output["pos_cash_df"] = internal_dfs.get("POS_CASH_balance", pd.DataFrame())
+        a1_output["installments_df"] = internal_dfs.get("installments_payments", pd.DataFrame())
+        a1_output["credit_card_df"] = internal_dfs.get("credit_card_balance", pd.DataFrame())
+
+    def _emit(event):
+        if event_callback:
+            try:
+                event_callback(event)
+            except Exception as e:
+                logger.warning(f"[WS] Event callback error: {e}")
+
+    # ── A2: Feature Engineering ──
+    _emit({"event": "started", "step": "A2"})
+    logger.info(f"[Phase 2 WS] A2: Feature Engineering for {customer_id}...")
+    a2_output = agents["a2"].process(a1_output)
+
+    # Extract real feature count from a2_output
+    feature_vector = a2_output.get("feature_vector")
+    if feature_vector is not None:
+        if isinstance(feature_vector, pd.DataFrame):
+            features_count = feature_vector.shape[1]
+        elif isinstance(feature_vector, pd.Series):
+            features_count = len(feature_vector)
+        elif isinstance(feature_vector, dict):
+            features_count = len(feature_vector)
+        else:
+            features_count = 0
+    else:
+        features_count = len(a2_output.get("feature_row", a2_output.get("application_row", {})))
+
+    _emit({"event": "completed", "step": "A2", "data": {"features_count": features_count}})
+
+    # ── A3: ML Scoring ──
+    _emit({"event": "started", "step": "A3"})
+    logger.info(f"[Phase 2 WS] A3: ML Scoring for {customer_id}...")
+    a3_output = agents["a3"].score(a2_output)
+    _emit({"event": "completed", "step": "A3", "data": {
+        "credit_score": a3_output.get("credit_score", 0),
+        "pd_pct": a3_output.get("pd_pct", 0.0),
+        "risk_band": a3_output.get("risk_band", "N/A"),
+    }})
+
+    # ── A4: Report Generation ──
+    _emit({"event": "started", "step": "A4"})
+    logger.info(f"[Phase 2 WS] A4: Report Generation for {customer_id}...")
+    a4_output = agents["a4"].generate(a3_output, a2_output, a1_output)
+
+    five_c_scores = a4_output.get("five_c_scores", {})
+    report = a4_output.get("final_report", {})
+    executive = report.get("executive_summary", {})
+    if not five_c_scores:
+        five_c_scores = executive.get("five_c_scores", {})
+
+    five_c_total = sum(five_c_scores.values()) if five_c_scores else 0
+    recommendation = executive.get("recommendation", a3_output.get("routing", "REVIEW"))
+
+    _emit({"event": "completed", "step": "A4", "data": {
+        "five_c_total": five_c_total,
+        "recommendation": recommendation,
+    }})
+
+    result = {
+        "a1_output": a1_output,
+        "a2_output": a2_output,
+        "a3_output": a3_output,
+        "a4_output": a4_output,
+    }
+
+    # Save results
+    _save_results_to_output(output_folder, result)
+
+    # ── Collect and save pipeline metrics ──
+    elapsed_seconds = round(time.time() - start_time, 2)
+    token_counts = get_token_counts()
+    metrics = {
+        "runtime_seconds": elapsed_seconds,
+        "prompt_tokens": token_counts["prompt_tokens"],
+        "candidates_tokens": token_counts["candidates_tokens"],
+        "total_tokens": token_counts["total_tokens"],
+        "customer_id": customer_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # Save metrics to output folder
+    try:
+        with open(output_folder / "pipeline_metrics.json", "w", encoding="utf-8") as f:
+            json.dump(metrics, f, ensure_ascii=False, indent=2)
+        logger.info(f"[Phase 2 WS] Metrics saved: {elapsed_seconds}s, {token_counts['total_tokens']} tokens")
+    except Exception as e:
+        logger.warning(f"[Phase 2 WS] Could not save metrics: {e}")
+
+    logger.info(f"[Phase 2 WS] ✅ Complete for {customer_id}")
+    # Attach metrics to result for the caller (WebSocket route)
+    result["__metrics"] = metrics
     return result
 
 

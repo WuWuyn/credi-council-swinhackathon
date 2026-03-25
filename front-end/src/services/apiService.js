@@ -9,7 +9,7 @@
  */
 
 import { API_CONFIG } from '../config/api'
-import { CUSTOMERS_FALLBACK, PIPELINE_LAYERS, reportFallbackData } from '../data/mockData'
+import { PIPELINE_LAYERS } from '../data/mockData'
 
 // ── URL Helpers ──────────────────────────────────────────────────────────
 // In development with Vite proxy, use relative paths (empty string).
@@ -116,12 +116,8 @@ export async function fetchCustomers() {
       source: 'backend',
     }
   } catch (err) {
-    console.warn('[API] Backend offline for customers, using fallback data:', err.message)
-    return {
-      customers: CUSTOMERS_FALLBACK,
-      total: CUSTOMERS_FALLBACK.length,
-      source: 'fallback',
-    }
+    console.error('[API] Backend offline for customers:', err.message)
+    throw err
   }
 }
 
@@ -141,8 +137,8 @@ export async function fetchReportJSON(customerId) {
     const json = await res.json()
     return { data: json, source: 'backend' }
   } catch (err) {
-    console.warn(`[API] Report fallback for customer ${customerId}:`, err.message)
-    return { data: reportFallbackData, source: 'fallback' }
+    console.error(`[API] Report fetch failed for customer ${customerId}:`, err.message)
+    throw err
   }
 }
 
@@ -282,3 +278,82 @@ function formatVND(rawAmount) {
 
 // Re-export constants
 export { PIPELINE_LAYERS }
+
+
+// ── WebSocket Pipeline Processing ────────────────────────────────────────────
+
+/**
+ * Build WebSocket URL from current page origin.
+ * In dev (Vite proxy), use relative ws:// path.
+ * In production, use configured BASE_URL converted to ws://.
+ */
+function getWsBaseUrl() {
+  if (isDev) {
+    // Vite proxy handles /ws/* → backend
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${location.host}`
+  }
+  // Production: convert http(s) to ws(s)
+  return API_CONFIG.BASE_URL.replace(/^http/, 'ws')
+}
+
+/**
+ * Connect to WebSocket pipeline endpoint for realtime A2→A3→A4 processing.
+ *
+ * @param {Object} params - ProcessRequest fields { customer_id, application_row, raw_texts, ... }
+ * @param {Function} onEvent - Called for each event: { event, step?, data?, result?, message? }
+ * @returns {{ promise: Promise<Object>, close: Function }}
+ *   - promise resolves with the full ScoreResponse when pipeline completes
+ *   - close() can be called to abort the WebSocket connection
+ */
+export function connectProcessingWebSocket(params, onEvent) {
+  const wsUrl = `${getWsBaseUrl()}/ws/process`
+  const ws = new WebSocket(wsUrl)
+
+  const promise = new Promise((resolve, reject) => {
+    ws.onopen = () => {
+      console.log('[WS] Connected to', wsUrl)
+      // Send ProcessRequest data
+      ws.send(JSON.stringify(params))
+    }
+
+    ws.onmessage = (msg) => {
+      try {
+        const event = JSON.parse(msg.data)
+        console.log('[WS] Event:', event.event, event.step || '')
+
+        // Forward event to caller
+        if (onEvent) onEvent(event)
+
+        // Terminal events
+        if (event.event === 'done') {
+          resolve(event.result)
+          ws.close()
+        } else if (event.event === 'error') {
+          reject(new Error(event.message || 'Pipeline error'))
+          ws.close()
+        }
+      } catch (err) {
+        console.error('[WS] Parse error:', err)
+      }
+    }
+
+    ws.onerror = (err) => {
+      console.error('[WS] WebSocket error:', err)
+      reject(new Error('WebSocket connection failed'))
+    }
+
+    ws.onclose = (ev) => {
+      console.log('[WS] Closed:', ev.code, ev.reason)
+      // If closed without resolving, reject
+      if (ev.code !== 1000 && ev.code !== 1005) {
+        reject(new Error(`WebSocket closed: ${ev.code}`))
+      }
+    }
+  })
+
+  return {
+    promise,
+    close: () => ws.close(),
+  }
+}

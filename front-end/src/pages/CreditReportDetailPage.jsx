@@ -17,9 +17,6 @@ export default function CreditReportDetailPage() {
       try {
         const result = await fetchReportJSON(id)
         setData(result.data)
-        if (result.source === 'fallback') {
-          console.info('[Report] Using fallback data for customer', id)
-        }
       } catch (err) {
         console.error('Failed to load report:', err)
         setError(err.message)

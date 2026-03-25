@@ -57,7 +57,7 @@
       "model_version": "lgb1_ref_v1",
       "auc": "0.803",
       "shap_verified": true,
-      "inference_timestamp": "2026-03-25T14:09:49.795176+00:00"
+      "inference_timestamp": "2026-03-25T15:17:53.577066+00:00"
     },
     "financial_ratios": {
       "income_annual_vnd": 31500000,
@@ -118,7 +118,7 @@
           "detail": "DEF_30_CNT_SOCIAL_CIRCLE = 0"
         }
       ],
-      "narrative": "Uy tín của khách hàng được đánh giá dựa trên lịch sử tín dụng ổn định với điểm tín dụng ngoại (EXT_SOURCE_1, 2, 3) ở mức cao, đóng góp tích cực vào hồ sơ theo SHAP values. Tuy nhiên, theo quy định tại TT39/2016/TT-NHNN về việc thẩm định tư cách khách hàng, cần lưu ý yếu tố 'inst_mean_DPD_SCALE' cho thấy sự ổn định trong việc thanh toán. Dù không ghi nhận nợ quá hạn, các yếu tố SHAP về điểm tín dụng ngoại cho thấy khách hàng cần duy trì sự nhất quán trong hành vi tín dụng để đảm bảo tuân thủ các chuẩn mực đạo đức nghề nghiệp ngân hàng."
+      "narrative": "Tư cách tín dụng của khách hàng được đánh giá dựa trên lịch sử giao dịch ổn định, thể hiện qua điểm tín dụng ngoại (EXT_SOURCE_1: 0.8923, EXT_SOURCE_2: 0.7802, EXT_SOURCE_3: 0.8625). Các yếu tố SHAP cho thấy việc không ghi nhận nợ quá hạn (inst_mean_DPD_SCALE: 0.0) là điểm tích cực củng cố uy tín. Tuy nhiên, theo Điều 17 Thông tư 39/2016/TT-NHNN, ngân hàng cần xem xét tính xác thực của hồ sơ khi khách hàng là người hưu trí, đảm bảo tuân thủ nguyên tắc tự chủ trong hoạt động cho vay theo Điều 4 của Thông tư này."
     },
     "capacity_assessment": {
       "score": 33,
@@ -158,7 +158,7 @@
           "detail": "Pensioner — retired"
         }
       ],
-      "narrative": "Năng lực trả nợ của khách hàng được thể hiện qua DTI 14.3% và DSCR 7.00, cho thấy khả năng đáp ứng nghĩa vụ nợ tốt. Tuy nhiên, SHAP values chỉ ra các yếu tố như 'AMT_ANNUITY_to_prev_approved' và 'AMT_CREDIT_to_prev_approved' đang tạo áp lực lên khả năng trả nợ. Theo Điều 7, 17 TT39/2016/TT-NHNN, ngân hàng cần thực hiện thẩm định thực tế để xác minh tính bền vững của nguồn thu nhập hưu trí, đặc biệt khi các chỉ số về thời gian công tác (DAYS_EMPLOYED) và tỷ lệ công tác/tuổi (NEW_EMPLOY_TO_BIRTH_RATIO) cho thấy sự thiếu hụt về thu nhập từ lao động trực tiếp."
+      "narrative": "Năng lực trả nợ của khách hàng ghi nhận DTI ở mức 14.3% và DSCR đạt 7.00, cho thấy khả năng đáp ứng nghĩa vụ nợ hiện tại. Tuy nhiên, các yếu tố SHAP như 'AMT_ANNUITY_to_prev_approved' (0.1687) và 'AMT_CREDIT_to_prev_approved' (0.0601) phản ánh áp lực từ các khoản vay trước đó. Dù tỷ lệ nợ thấp, việc thu nhập hưu trí không ổn định kết hợp với 'NEW_EMPLOY_TO_BIRTH_RATIO' (-999.0) làm tăng rủi ro về khả năng duy trì dòng tiền, đòi hỏi sự thận trọng theo quy định về khả năng tài chính tại Điều 7 Thông tư 39/2016/TT-NHNN."
     },
     "capital_assessment": {
       "score": 15,
@@ -196,7 +196,7 @@
           "detail": "Bureau requests/year = 1"
         }
       ],
-      "narrative": "Khách hàng sở hữu bất động sản làm tài sản tích lũy, tuy nhiên SHAP value của 'bureau_sum_AMT_CREDIT_SUM' cho thấy dư nợ CIC hiện tại là một yếu tố cần cân nhắc. Theo quy định về quản trị rủi ro, việc sở hữu tài sản là điểm cộng nhưng cần đối chiếu với tổng dư nợ thực tế để đảm bảo tỷ lệ vốn tự có đủ khả năng bù đắp rủi ro tín dụng theo chuẩn Basel II/III đã được đề cập trong RAG context."
+      "narrative": "Khách hàng sở hữu bất động sản, đây là yếu tố vốn tự có tích cực. Tuy nhiên, dữ liệu SHAP về 'bureau_sum_AMT_CREDIT_SUM' (-999.0) cho thấy cần kiểm soát chặt chẽ tổng dư nợ CIC hiện tại. Việc đánh giá vốn tự có phải đảm bảo khách hàng có đủ nguồn lực tài chính để thực hiện nghĩa vụ nợ, tránh rủi ro phân loại nợ theo Thông tư 11/2021/TT-NHNN."
     },
     "conditions_assessment": {
       "score": 8,
@@ -235,7 +235,7 @@
           "detail": "Age = 59"
         }
       ],
-      "narrative": "Mục đích vay tiêu dùng phù hợp với đối tượng hưu trí, tuy nhiên SHAP values cảnh báo rủi ro từ 'prev_refused_DAYS_DECISION_MAX' và 'region_mean_income_rel'. Điều này cho thấy khách hàng có thể đã gặp khó khăn khi tiếp cận tín dụng trước đó. Theo TT39/2016/TT-NHNN, ngân hàng cần làm rõ các khoản vay bị từ chối trước đây để đảm bảo phương án vay vốn khả thi và phù hợp với trình độ học vấn cũng như điều kiện kinh tế của khách hàng."
+      "narrative": "Mục đích vay tiêu dùng (CONSUMPTION) phù hợp với nhu cầu cá nhân. Trình độ học vấn cao và độ tuổi 59 là các yếu tố ổn định. Tuy nhiên, SHAP chỉ ra 'region_mean_income_rel' (0.0666) và 'AMT_PAY_YEAR' (0.056) là các biến số cần lưu ý. Theo Basel II (Thông tư 41/2016), các khoản vay tiêu dùng cần được đánh giá kỹ lưỡng về mục đích sử dụng vốn để đảm bảo tính minh bạch và an toàn hệ thống."
     },
     "collateral_assessment": {
       "score": 10,
@@ -269,12 +269,12 @@
           "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.2439"
         }
       ],
-      "narrative": "Tài sản bảo đảm là bất động sản, tuy nhiên với LTV 100%, khoản vay vượt ngưỡng an toàn 70% theo quy định Basel II, làm tăng trọng số rủi ro (RWA). Theo TT11/2021/TT-NHNN, giá trị TSBĐ cần được định giá lại thận trọng để đảm bảo khả năng thanh khoản, đặc biệt khi tình trạng tài sản có thể ảnh hưởng đến việc phân loại nhóm nợ."
+      "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Tuy nhiên, với LTV 100% và yếu tố SHAP 'AMT_CREDIT_GOODS_PERC' (1.0), tài sản này vượt ngưỡng an toàn thông thường. Theo quy định tại Thông tư 41/2016, khoản vay có LTV cao sẽ chịu trọng số rủi ro tín dụng lớn hơn, làm tăng yêu cầu vốn tự có của ngân hàng."
     }
   },
   "financial_summary": {
-    "income_analysis": "Thu nhập chủ yếu từ lương hưu, cần xác minh tính bền vững theo quy định tại TT39/2016/TT-NHNN.",
-    "debt_analysis": "DTI 14.3% và DSCR 7.00 ở mức an toàn, tuy nhiên cần lưu ý các khoản vay đã được phê duyệt trước đó theo SHAP values."
+    "income_analysis": "Thu nhập tháng đạt 2,625,000 VND từ nguồn hưu trí, cần xác minh tính bền vững.",
+    "debt_analysis": "DTI 14.3% và DSCR 7.00 cho thấy khả năng trả nợ hiện tại ở mức an toàn."
   },
   "debt_assessment": {
     "score": 81,
@@ -346,18 +346,18 @@
         "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.2439"
       }
     ],
-    "narrative": "Tài sản bảo đảm là bất động sản, tuy nhiên với LTV 100%, khoản vay vượt ngưỡng an toàn 70% theo quy định Basel II, làm tăng trọng số rủi ro (RWA). Theo TT11/2021/TT-NHNN, giá trị TSBĐ cần được định giá lại thận trọng để đảm bảo khả năng thanh khoản, đặc biệt khi tình trạng tài sản có thể ảnh hưởng đến việc phân loại nhóm nợ."
+    "narrative": "Khách hàng sử dụng bất động sản làm tài sản bảo đảm. Tuy nhiên, với LTV 100% và yếu tố SHAP 'AMT_CREDIT_GOODS_PERC' (1.0), tài sản này vượt ngưỡng an toàn thông thường. Theo quy định tại Thông tư 41/2016, khoản vay có LTV cao sẽ chịu trọng số rủi ro tín dụng lớn hơn, làm tăng yêu cầu vốn tự có của ngân hàng."
   },
   "suggested_terms": {
     "max_amount_vnd": 90000000,
     "interest_rate_suggestion": "Theo biểu phí hiện hành của ngân hàng",
     "conditions": [
       "LTV 100% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức",
-      "Xác minh thu nhập hưu trí qua sao kê",
-      "Định giá lại tài sản bảo đảm theo tình trạng thực tế",
-      "Giải trình lý do các đơn vay trước bị từ chối",
-      "Kiểm soát hạn mức tín dụng theo EAD",
-      "Thẩm định thực tế tại nơi cư trú"
+      "Xác minh nguồn thu nhập hưu trí ổn định",
+      "Bổ sung tài sản bảo đảm có tính thanh khoản cao hơn",
+      "Giới hạn hạn mức tín dụng để kiểm soát rủi ro",
+      "Thực hiện giám sát đặc biệt sau giải ngân",
+      "Kiểm tra tính pháp lý của bất động sản thế chấp"
     ]
   },
   "reward_assessment": {
@@ -382,25 +382,27 @@
     "loan_purpose": "CONSUMPTION",
     "positive_signals": [
       "Property ownership",
-      "Stable pensioner status",
-      "Single household with no dependents"
+      "Stable residential history",
+      "Single household status",
+      "Higher education level"
     ],
     "risk_flags": [
       "Extremely low income",
-      "Poor property condition rating (2.9/10)",
+      "Low property quality score (2.9/10)",
       "No contact phone number for employer",
-      "Unrealistic employment start date (year 3026)"
+      "Pensioner status with minimal income"
     ]
   },
   "caveats": [
-    "LTV 100% vượt ngưỡng an toàn Basel II",
-    "Có lịch sử bị từ chối tín dụng (DAYS_DECISION_MAX)",
-    "Thu nhập hưu trí cần xác minh tính bền vững",
-    "Tình trạng tài sản bảo đảm cần kiểm tra thực tế"
+    "LTV 100% vượt ngưỡng an toàn ngành",
+    "Thu nhập hưu trí thấp tiềm ẩn rủi ro dòng tiền",
+    "Chất lượng tài sản bảo đảm cần thẩm định lại",
+    "Dữ liệu CIC có các giá trị cần làm rõ",
+    "Rủi ro tập trung vào vay tiêu dùng"
   ],
   "audit_reference": {
     "model_version": "lgb1_ref_v1",
-    "inference_timestamp": "2026-03-25T14:09:49.795176+00:00",
+    "inference_timestamp": "2026-03-25T15:17:53.577066+00:00",
     "rag_citations": [
       {
         "source": null,
@@ -408,40 +410,24 @@
       },
       {
         "source": null,
-        "title": "tt39_2016_lending"
-      },
-      {
-        "source": null,
-        "title": "tt39_2016_lending"
-      },
-      {
-        "source": null,
-        "title": "tt11_2021_debt_classification"
-      },
-      {
-        "source": null,
         "title": "basel_vietnam_car"
       },
       {
-        "text": "Đánh giá theo khung 5C",
-        "chunk_indices": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "source": null,
+        "title": "tt39_2016_lending"
       },
       {
-        "text": "*   **TT11/2021/TT-NHNN (Điều 10):** Quy định về phân loại nợ.",
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "text": "*   **Thông tư 11/2021/TT-NHNN:** Quy định về phân loại nợ.",
         "chunk_indices": [
-          3,
           0
-        ]
-      },
-      {
-        "text": "*   **Basel II/III:** Hệ số CAR (Capital Adequacy Ratio) theo TT41/2016 (Basel II) yêu cầu ≥ 8% và TT14/2025 (Basel III) yêu cầu ≥ 10.5%.",
-        "chunk_indices": [
-          4
         ]
       }
     ],

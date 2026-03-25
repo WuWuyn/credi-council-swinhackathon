@@ -15,10 +15,41 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# ── Global token counter (thread-safe) ──────────────────────────────────────
+_token_lock = threading.Lock()
+_token_counts = {"prompt_tokens": 0, "candidates_tokens": 0, "total_tokens": 0}
+
+
+def reset_token_counter():
+    """Reset global token counter to zero. Call before a pipeline run."""
+    global _token_counts
+    with _token_lock:
+        _token_counts = {"prompt_tokens": 0, "candidates_tokens": 0, "total_tokens": 0}
+
+
+def get_token_counts() -> dict:
+    """Return a snapshot of accumulated token counts."""
+    with _token_lock:
+        return dict(_token_counts)
+
+
+def _accumulate_tokens(response):
+    """Extract usage_metadata from a Gemini response and add to global counter."""
+    try:
+        usage = getattr(response, "usage_metadata", None)
+        if usage:
+            with _token_lock:
+                _token_counts["prompt_tokens"] += getattr(usage, "prompt_token_count", 0) or 0
+                _token_counts["candidates_tokens"] += getattr(usage, "candidates_token_count", 0) or 0
+                _token_counts["total_tokens"] += getattr(usage, "total_token_count", 0) or 0
+    except Exception as e:
+        logger.debug(f"Could not read token usage: {e}")
 
 # Lazy-initialized client (google.genai SDK)
 _client = None
@@ -142,6 +173,7 @@ class LLMService:
                     ),
                 )
             response = self._call_with_retry(_call, self.MAX_RETRIES, self.RETRY_BASE_DELAY)
+            _accumulate_tokens(response)
             response_text = response.text
             logger.debug(f"LLM JSON response ({len(response_text)} chars)")
         except Exception as e:
@@ -186,6 +218,7 @@ class LLMService:
                     ),
                 )
             response = self._call_with_retry(_call, self.MAX_RETRIES, self.RETRY_BASE_DELAY)
+            _accumulate_tokens(response)
             text = response.text
             logger.debug(f"LLM response ({len(text)} chars)")
             return text
@@ -233,6 +266,7 @@ class LLMService:
                     ),
                 )
             response = self._call_with_retry(_call, self.MAX_RETRIES, self.RETRY_BASE_DELAY)
+            _accumulate_tokens(response)
             result = schema_class.model_validate_json(response.text)
             return result.model_dump()
 
@@ -250,6 +284,7 @@ class LLMService:
                         max_output_tokens=max_tokens,
                     ),
                 )
+                _accumulate_tokens(response)
                 raw = json.loads(response.text)
                 result = schema_class.model_validate(raw)
                 return result.model_dump()
