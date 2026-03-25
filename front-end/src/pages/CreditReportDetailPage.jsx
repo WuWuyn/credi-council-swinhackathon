@@ -17,9 +17,6 @@ export default function CreditReportDetailPage() {
       try {
         const result = await fetchReportJSON(id)
         setData(result.data)
-        if (result.source === 'fallback') {
-          console.info('[Report] Using fallback data for customer', id)
-        }
       } catch (err) {
         console.error('Failed to load report:', err)
         setError(err.message)
@@ -37,6 +34,16 @@ export default function CreditReportDetailPage() {
   const sd = data.shap_data || {}
   const cinfo = rd.customer_info || {}
   const exec = rd.executive_summary || {}
+  const fr = exec.financial_ratios || {}
+
+  // Format VND for display (values already scaled x100 by backend)
+  const fmtVND = (v) => {
+    if (!v) return 'N/A'
+    if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B VND`
+    if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M VND`
+    if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K VND`
+    return `${v.toLocaleString()} VND`
+  }
 
   const profile = {
     name: cinfo.name || `Customer #${id}`,
@@ -107,10 +114,7 @@ export default function CreditReportDetailPage() {
   ]
 
   // SVG circle calculations
-  const radius = 70
-  const circumference = 2 * Math.PI * radius
   const scoreRatio = score.value / 900  // max score ~900
-  const dashOffset = circumference - (circumference * scoreRatio)
 
   return (
     <div className="min-h-screen bg-surface transition-colors duration-300">
@@ -122,13 +126,13 @@ export default function CreditReportDetailPage() {
       />
 
       {/* Content Area */}
-      <div className="pt-12 pb-12 px-8 max-w-7xl mx-auto space-y-8">
-        {/* Hero Info & Score */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="pt-12 pb-12 px-8 max-w-7xl mx-auto space-y-6">
+        {/* ═══ ROW 1: Profile + Score + 5C Radar ═══ */}
+        <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* User Profile Card */}
           <div className="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/15 flex flex-col md:flex-row gap-8 items-center">
             <div className="relative">
-              <div className="w-32 h-32 rounded-full border-4 border-surface-container-high bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+              <div className="w-28 h-28 rounded-full border-4 border-surface-container-high bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                 <span className="material-symbols-outlined text-primary text-5xl">person</span>
               </div>
               <div className="absolute bottom-0 right-0 bg-primary text-on-primary p-1.5 rounded-full border-4 border-surface-container-lowest">
@@ -137,88 +141,88 @@ export default function CreditReportDetailPage() {
             </div>
             <div className="flex-1 text-center md:text-left">
               <div className="flex flex-col md:flex-row md:items-end gap-2 md:gap-4 mb-4">
-                <h3 className="font-headline text-3xl font-bold tracking-tight text-on-surface">{profile.name}</h3>
-                <span className="text-slate-500 font-label text-sm tracking-widest uppercase pb-1">ID: {profile.id}</span>
+                <h3 className="font-headline text-2xl font-bold tracking-tight text-on-surface">{profile.name}</h3>
+                <span className="text-slate-500 font-label text-sm tracking-widest uppercase pb-0.5">ID: {profile.id}</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-6">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Income Type</p>
-                  <p className="text-on-surface font-medium">{profile.occupation}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Income Type</p>
+                  <p className="text-on-surface font-medium text-sm">{profile.occupation}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Loan Purpose</p>
-                  <p className="text-on-surface font-medium">{cinfo.loan_purpose || 'N/A'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Loan Purpose</p>
+                  <p className="text-on-surface font-medium text-sm">{cinfo.loan_purpose || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gender</p>
-                  <p className="text-on-surface font-medium">{cinfo.gender || 'N/A'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Gender</p>
+                  <p className="text-on-surface font-medium text-sm">{cinfo.gender || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Education</p>
-                  <p className="text-on-surface font-medium">{cinfo.education || 'N/A'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Education</p>
+                  <p className="text-on-surface font-medium text-sm">{cinfo.education || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Asset Type</p>
-                  <p className="text-on-surface font-medium">{profile.assetType}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Asset Type</p>
+                  <p className="text-on-surface font-medium text-sm">{profile.assetType}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 mt-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Loan Amount</p>
+                  <p className="text-on-surface font-semibold text-sm text-primary">{fmtVND(fr.credit_total_vnd)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Monthly Income</p>
+                  <p className="text-on-surface font-semibold text-sm text-primary">{fmtVND(fr.income_monthly_vnd)}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Score Radial Display */}
-          <div className="bg-primary text-on-primary p-8 rounded-xl shadow-lg flex flex-col items-center justify-center text-center relative overflow-hidden">
+          <div className="bg-primary text-on-primary p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12 blur-2xl"></div>
-            <p className="font-label text-[11px] font-bold uppercase tracking-[0.2em] mb-4 opacity-80">Credit Score Index</p>
+            <p className="font-label text-[10px] font-bold uppercase tracking-[0.15em] mb-3 opacity-80">Credit Score</p>
             <div className="relative flex items-center justify-center">
-              <svg className="w-40 h-40">
-                <circle className="text-white/10" cx="80" cy="80" fill="transparent" r={radius} stroke="currentColor" strokeWidth="8" />
+              <svg className="w-36 h-36">
+                <circle className="text-white/10" cx="72" cy="72" fill="transparent" r="60" stroke="currentColor" strokeWidth="7" />
                 <circle
                   className="text-white"
-                  cx="80" cy="80"
+                  cx="72" cy="72"
                   fill="transparent"
-                  r={radius}
+                  r="60"
                   stroke="currentColor"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashOffset}
+                  strokeDasharray={2 * Math.PI * 60}
+                  strokeDashoffset={2 * Math.PI * 60 - (2 * Math.PI * 60 * scoreRatio)}
                   strokeLinecap="round"
-                  strokeWidth="8"
+                  strokeWidth="7"
                   style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 1s ease-in-out' }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-headline text-5xl font-black tracking-tighter">{score.value}</span>
-                <span className="text-xs font-medium opacity-80 uppercase tracking-widest">{score.label}</span>
+                <span className="font-headline text-4xl font-black tracking-tighter">{score.value}</span>
+                <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{score.label}</span>
               </div>
             </div>
-            <p className="mt-6 text-sm opacity-90 leading-relaxed px-4">
-              <span className="font-bold">{cinfo.summary}</span>
-            </p>
           </div>
-        </section>
 
-        {/* Detailed Analysis Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* 5C Radar Analysis */}
-          <div className="bg-surface-container-low p-8 rounded-xl border border-outline-variant/15 flex flex-col">
-            <div className="flex justify-between items-start mb-10">
+          <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/15 flex flex-col items-center">
+            <div className="flex justify-between items-center w-full mb-3">
               <div>
-                <h4 className="font-headline text-xl font-bold text-on-surface">5C Model Analysis</h4>
-                <p className="text-slate-500 text-sm">Component Scores (Total: {exec.five_c_total || 0})</p>
+                <h4 className="font-headline text-base font-bold text-on-surface">5C Analysis</h4>
+                <p className="text-slate-500 text-xs">Total: {exec.five_c_total || 0}/120</p>
               </div>
-              <span className="bg-surface-container-lowest text-primary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm border border-primary/10">
-                AI Computed
+              <span className="bg-surface-container-lowest text-primary text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight shadow-sm border border-primary/10">
+                AI
               </span>
             </div>
-            <div className="flex-1 flex items-center justify-center relative py-12">
-              {/* Custom Radar Chart */}
-              <div className="relative w-72 h-72">
-                {/* Background Pentagons */}
+            <div className="flex-1 flex items-center justify-center relative py-4">
+              <div className="relative w-52 h-52">
                 <div className="absolute inset-0 radar-grid bg-slate-200/30 scale-100"></div>
                 <div className="absolute inset-0 radar-grid bg-slate-200/50 scale-75"></div>
                 <div className="absolute inset-0 radar-grid bg-slate-200/70 scale-50"></div>
-                <div className="absolute inset-0 radar-grid bg-slate-200/90 scale-25"></div>
-                {/* Active Data Polygon */}
                 <svg className="absolute inset-0 w-full h-full drop-shadow-xl" viewBox="0 0 100 100">
                   <polygon
                     fill="rgba(227, 24, 55, 0.2)"
@@ -226,22 +230,20 @@ export default function CreditReportDetailPage() {
                     stroke="#E31837"
                     strokeWidth="1.5"
                   />
-                  {/* Nodes */}
-                  <circle cx={ptCharacter.cx} cy={ptCharacter.cy} fill="#E31837" r="2.5" />
-                  <circle cx={ptCapacity.cx} cy={ptCapacity.cy} fill="#E31837" r="2.5" />
-                  <circle cx={ptCapital.cx} cy={ptCapital.cy} fill="#E31837" r="2.5" />
-                  <circle cx={ptCollateral.cx} cy={ptCollateral.cy} fill="#E31837" r="2.5" />
-                  <circle cx={ptConditions.cx} cy={ptConditions.cy} fill="#E31837" r="2.5" />
+                  <circle cx={ptCharacter.cx} cy={ptCharacter.cy} fill="#E31837" r="2" />
+                  <circle cx={ptCapacity.cx} cy={ptCapacity.cy} fill="#E31837" r="2" />
+                  <circle cx={ptCapital.cx} cy={ptCapital.cy} fill="#E31837" r="2" />
+                  <circle cx={ptCollateral.cx} cy={ptCollateral.cy} fill="#E31837" r="2" />
+                  <circle cx={ptConditions.cx} cy={ptConditions.cy} fill="#E31837" r="2" />
                 </svg>
-                {/* Labels */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest">Character</div>
-                <div className="absolute top-1/4 -right-12 text-[10px] font-bold uppercase tracking-widest">Capacity</div>
-                <div className="absolute -bottom-6 right-0 text-[10px] font-bold uppercase tracking-widest">Capital</div>
-                <div className="absolute -bottom-6 left-0 text-[10px] font-bold uppercase tracking-widest">Collateral</div>
-                <div className="absolute top-1/4 -left-12 text-[10px] font-bold uppercase tracking-widest">Conditions</div>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] font-bold uppercase tracking-wider">CHR</div>
+                <div className="absolute top-1/4 -right-6 text-[8px] font-bold uppercase tracking-wider">CAP</div>
+                <div className="absolute -bottom-4 right-2 text-[8px] font-bold uppercase tracking-wider">CPL</div>
+                <div className="absolute -bottom-4 left-2 text-[8px] font-bold uppercase tracking-wider">COL</div>
+                <div className="absolute top-1/4 -left-6 text-[8px] font-bold uppercase tracking-wider">CON</div>
               </div>
             </div>
-            <div className="grid grid-cols-5 gap-2 mt-8">
+            <div className="grid grid-cols-5 gap-1 w-full">
               {[
                 { value: fiveC.character, label: 'CHR' },
                 { value: fiveC.capacity, label: 'CAP' },
@@ -250,65 +252,71 @@ export default function CreditReportDetailPage() {
                 { value: fiveC.conditions, label: 'CON' },
               ].map((item) => (
                 <div key={item.label} className="text-center">
-                  <span className="block text-primary font-bold text-lg">{item.value}</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase">{item.label}</span>
+                  <span className="block text-primary font-bold text-sm">{item.value}</span>
+                  <span className="text-[7px] text-slate-400 font-bold uppercase">{item.label}</span>
                 </div>
               ))}
             </div>
           </div>
+        </section>
 
-          {/* Feature Importance (XAI) */}
-          <div className="bg-surface-container-low p-8 rounded-xl border border-outline-variant/15 flex flex-col">
-            <div className="mb-8">
-              <h4 className="font-headline text-xl font-bold text-on-surface">Feature Importance (XAI)</h4>
-              <p className="text-slate-500 text-sm">AI Score Explanation</p>
-            </div>
-            <div className="space-y-6 flex-1">
-              {/* Positive Factors */}
-              <div className="space-y-4">
-                <h5 className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">trending_up</span>
-                  Key Positive Factors
-                </h5>
-                <div className="space-y-3">
-                  {positiveFactors.map((factor, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-on-surface-variant">{factor.label}</span>
-                        <span className="font-bold text-primary">{factor.points}</span>
-                      </div>
-                      <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: factor.width }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* ═══ ROW 2: Positive + Risk Factors side by side ═══ */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Positive Factors */}
+          <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/15">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <span className="material-symbols-outlined text-primary text-lg">trending_up</span>
               </div>
-              {/* Negative Factors */}
-              <div className="space-y-4 pt-4 border-t border-slate-200/50">
-                <h5 className="text-[10px] font-bold text-error uppercase tracking-widest flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">trending_down</span>
-                  Key Risk Factors
-                </h5>
-                <div className="space-y-3">
-                  {negativeFactors.map((factor, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-on-surface-variant">{factor.label}</span>
-                        <span className="font-bold text-error">{factor.points}</span>
-                      </div>
-                      <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-error rounded-full transition-all duration-1000" style={{ width: factor.width }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <h4 className="font-headline text-base font-bold text-on-surface">Key Positive Factors</h4>
+                <p className="text-slate-500 text-[10px]">SHAP Feature Attribution</p>
               </div>
             </div>
-            <div className="mt-8 p-4 bg-surface-container-highest/30 rounded-lg">
-              <p className="text-[11px] italic text-slate-500 leading-relaxed">
-                * CrediCouncil AI v2.1 uses Ensemble Learning averaging 248 variables. Area under the curve (AUC): 0.94
-              </p>
+            <div className="space-y-3">
+              {positiveFactors.map((factor, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-on-surface-variant">{factor.label}</span>
+                    <span className="font-bold text-primary">{factor.points}</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: factor.width }}></div>
+                  </div>
+                </div>
+              ))}
+              {positiveFactors.length === 0 && (
+                <p className="text-sm text-slate-400 italic">No significant positive factors detected</p>
+              )}
+            </div>
+          </div>
+
+          {/* Risk Factors */}
+          <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/15">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="p-1.5 bg-error/10 rounded-lg">
+                <span className="material-symbols-outlined text-error text-lg">trending_down</span>
+              </div>
+              <div>
+                <h4 className="font-headline text-base font-bold text-on-surface">Key Risk Factors</h4>
+                <p className="text-slate-500 text-[10px]">SHAP Feature Attribution</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {negativeFactors.map((factor, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-on-surface-variant">{factor.label}</span>
+                    <span className="font-bold text-error">{factor.points}</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-error rounded-full transition-all duration-1000" style={{ width: factor.width }}></div>
+                  </div>
+                </div>
+              ))}
+              {negativeFactors.length === 0 && (
+                <p className="text-sm text-slate-400 italic">No significant risk factors detected</p>
+              )}
             </div>
           </div>
         </section>
@@ -391,7 +399,7 @@ export default function CreditReportDetailPage() {
       {/* PDF PREVIEW MODAL */}
       {showPdf && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowPdf(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[100vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center px-6 py-4 border-b border-outline-variant/30 bg-surface-container-lowest">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -410,7 +418,7 @@ export default function CreditReportDetailPage() {
               </button>
             </div>
             
-            <div className="flex-1 bg-slate-100 p-0 relative overflow-hidden min-h-[500px]">
+            <div className="flex-1 bg-slate-100 p-0 relative overflow-hidden min-h-[680px]">
               <iframe 
                 src={getPdfPreviewUrl(id)} 
                 title="Credit Report PDF"

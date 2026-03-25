@@ -31,11 +31,20 @@ export const CUSTOMERS_FALLBACK = [
 
 export const PIPELINE_LAYERS = [
   {
-    id: 'A1', title: 'Layer 01: Data Ingestion & Statistical Feature Pipeline', sub: 'Dataset ground truth verification', color: '#0f9d58', bgColor: '#e6f4ea', badgeBg: '#0f9d58',
+    id: 'A1', title: 'Layer 01: Data Ingestion & OCR Pipeline', sub: 'Docling OCR + Gemini Structured Extraction', color: '#0f9d58', bgColor: '#e6f4ea', badgeBg: '#0f9d58',
     nodes: [
-      { icon: 'description', label: 'App Row JSON', detail: '122 cols' },
-      { icon: 'grid_view', label: 'CIC API', detail: 'Bureau' },
+      { icon: 'picture_as_pdf', label: 'PDF Docs', detail: 'Docling OCR' },
+      { icon: 'grid_view', label: 'CIC API', detail: 'Bureau Data' },
       { icon: 'storage', label: 'Internal DB', detail: 'Prev Loans' },
+      { icon: 'smart_toy', label: 'LLM Extract', detail: 'Gemini Fields' },
+    ],
+  },
+  {
+    id: 'CG', title: 'Confidence Gate', sub: 'Data quality checkpoint — HALT / PROCEED / ESCALATE', color: '#f4b400', bgColor: '#fef7e0', badgeBg: '#f4b400',
+    nodes: [
+      { icon: 'verified', label: 'Critical Check', detail: 'Per-field ≥ 85%' },
+      { icon: 'analytics', label: 'Weighted Score', detail: 'Overall ≥ 85%' },
+      { icon: 'alt_route', label: 'Route', detail: 'HALT / PROCEED' },
     ],
   },
   {
@@ -62,7 +71,7 @@ export const PIPELINE_LAYERS = [
     nodes: [
       { icon: 'search', label: 'Policy RAG', detail: 'OPENSEARCH EMBEDS' },
       { icon: 'document_scanner', label: 'Contextual', detail: 'RETRIEVAL ENGINE' },
-      { icon: 'translate', label: '5C Narrative', detail: '11 SECTIONS [VN]' },
+      { icon: 'translate', label: '5C Narrative', detail: '6 SECTIONS [VN]' },
       { icon: 'fact_check', label: 'Consistency', detail: 'SHAP-GROUNDED VAL' },
       { icon: 'picture_as_pdf', label: 'PDF Output', detail: 'FINAL DOSSIER' },
     ],

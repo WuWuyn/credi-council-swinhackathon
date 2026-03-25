@@ -48,6 +48,17 @@ class FeatureEngineerAgent:
         self.semantic_extractor = SemanticExtractor()
         self.imputer = IntelligentImputer()
 
+        # Cache SingleCustomerFE (loads fe_stats.pkl + model pkl once)
+        self._single_customer_fe = None
+        try:
+            from credicouncil.agents.a2_feature_engineer.single_customer_fe import SingleCustomerFE
+            self._single_customer_fe = SingleCustomerFE("models/fe_stats.pkl")
+            logger.info("A2: SingleCustomerFE cached (fe_stats + model loaded)")
+        except FileNotFoundError as e:
+            logger.warning(f"A2: FE stats not found at init: {e}")
+        except Exception as e:
+            logger.warning(f"A2: Could not pre-load SingleCustomerFE: {e}")
+
     def process(self, a1_output: dict[str, Any]) -> dict[str, Any]:
         """Run A2 feature engineering pipeline.
 
@@ -75,12 +86,11 @@ class FeatureEngineerAgent:
         # Source: OCR text (from PDFs) or structured summary (from application_row)
         raw_texts = a1_output.get("raw_texts", {})
         if raw_texts:
-            # USE_OCR=true: combine raw OCR text from all PDFs
+            # Combine raw OCR text from all PDFs
             input_text = " ".join(str(v) for v in raw_texts.values())
             logger.info("  Step 1: Semantic extraction from OCR text")
         else:
-            # USE_OCR=false: build structured summary from application_row
-            # This is actually MORE accurate than noisy OCR text
+            # Fallback: build structured summary from application_row
             input_text = self._build_text_from_application_row(application_row)
             logger.info("  Step 1: Semantic extraction from application_row summary")
 
@@ -183,20 +193,14 @@ class FeatureEngineerAgent:
     def _run_feature_engineering(self, a1_output: dict[str, Any]) -> pd.Series | None:
         """Run full feature engineering pipeline on A1 output.
 
-        Uses SingleCustomerFE which applies the same feature engineering
-        as training/feature_engineering.py but for a single customer.
+        Uses cached SingleCustomerFE instance (loaded once at init).
         """
-        try:
-            from credicouncil.agents.a2_feature_engineer.single_customer_fe import SingleCustomerFE
-
-            fe = SingleCustomerFE("models/fe_stats.pkl")
-            return fe.build_features(a1_output)
-
-        except FileNotFoundError as e:
-            logger.warning(f"  FE stats not found: {e}")
-            logger.warning("  Run: python training/precompute_fe_stats.py --data-dir home-credit-default-risk/")
+        if self._single_customer_fe is None:
+            logger.warning("  SingleCustomerFE not available — skipping feature engineering")
             return None
 
+        try:
+            return self._single_customer_fe.build_features(a1_output)
         except Exception as e:
             logger.error(f"Feature engineering failed: {e}")
             import traceback
@@ -208,7 +212,7 @@ class FeatureEngineerAgent:
         """Convert application_row dict into structured text for LLM semantic extraction.
 
         This produces a text summary that the SemanticExtractor can analyze,
-        enabling semantic features even when OCR text is not available (USE_OCR=false).
+        enabling semantic features even when OCR text is not available.
         """
         lines = []
 

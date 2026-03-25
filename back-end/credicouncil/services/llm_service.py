@@ -15,9 +15,41 @@ import json
 import logging
 import os
 import re
+import threading
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# ── Global token counter (thread-safe) ──────────────────────────────────────
+_token_lock = threading.Lock()
+_token_counts = {"prompt_tokens": 0, "candidates_tokens": 0, "total_tokens": 0}
+
+
+def reset_token_counter():
+    """Reset global token counter to zero. Call before a pipeline run."""
+    global _token_counts
+    with _token_lock:
+        _token_counts = {"prompt_tokens": 0, "candidates_tokens": 0, "total_tokens": 0}
+
+
+def get_token_counts() -> dict:
+    """Return a snapshot of accumulated token counts."""
+    with _token_lock:
+        return dict(_token_counts)
+
+
+def _accumulate_tokens(response):
+    """Extract usage_metadata from a Gemini response and add to global counter."""
+    try:
+        usage = getattr(response, "usage_metadata", None)
+        if usage:
+            with _token_lock:
+                _token_counts["prompt_tokens"] += getattr(usage, "prompt_token_count", 0) or 0
+                _token_counts["candidates_tokens"] += getattr(usage, "candidates_token_count", 0) or 0
+                _token_counts["total_tokens"] += getattr(usage, "total_token_count", 0) or 0
+    except Exception as e:
+        logger.debug(f"Could not read token usage: {e}")
 
 # Lazy-initialized client (google.genai SDK)
 _client = None
@@ -65,8 +97,43 @@ class LLMService:
         text = llm.generate_text(system_prompt, user_prompt)
     """
 
+    # Retry config
+    MAX_RETRIES = 3
+    RETRY_BASE_DELAY = 1.0  # seconds (exponential: 1s, 2s, 4s)
+
     def __init__(self):
         pass
+
+    @staticmethod
+    def _call_with_retry(fn, max_retries=3, base_delay=1.0):
+        """Call fn() with exponential backoff on rate-limit / transient errors.
+
+        Retries on:
+          - 429 Resource Exhausted (rate limit)
+          - 503 Service Unavailable
+          - Connection/timeout errors
+        """
+        last_exc = None
+        for attempt in range(max_retries):
+            try:
+                return fn()
+            except Exception as e:
+                err_str = str(e).lower()
+                is_retryable = any(kw in err_str for kw in [
+                    "429", "resource_exhausted", "rate",
+                    "503", "unavailable", "deadline",
+                    "timeout", "connection",
+                ])
+                if not is_retryable or attempt == max_retries - 1:
+                    raise
+                delay = base_delay * (2 ** attempt)
+                logger.warning(
+                    f"Gemini API error (attempt {attempt+1}/{max_retries}): {e}. "
+                    f"Retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+                last_exc = e
+        raise last_exc  # should not reach here
 
     def generate_json(
         self,
@@ -95,15 +162,18 @@ class LLMService:
         full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
 
         try:
-            response = client.models.generate_content(
-                model=_MODEL_ID,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=0.2,
-                    response_mime_type="application/json",
-                ),
-            )
+            def _call():
+                return client.models.generate_content(
+                    model=_MODEL_ID,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=max_tokens,
+                        temperature=0.2,
+                        response_mime_type="application/json",
+                    ),
+                )
+            response = self._call_with_retry(_call, self.MAX_RETRIES, self.RETRY_BASE_DELAY)
+            _accumulate_tokens(response)
             response_text = response.text
             logger.debug(f"LLM JSON response ({len(response_text)} chars)")
         except Exception as e:
@@ -138,14 +208,17 @@ class LLMService:
         full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
 
         try:
-            response = client.models.generate_content(
-                model=_MODEL_ID,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=0.2,
-                ),
-            )
+            def _call():
+                return client.models.generate_content(
+                    model=_MODEL_ID,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=max_tokens,
+                        temperature=0.2,
+                    ),
+                )
+            response = self._call_with_retry(_call, self.MAX_RETRIES, self.RETRY_BASE_DELAY)
+            _accumulate_tokens(response)
             text = response.text
             logger.debug(f"LLM response ({len(text)} chars)")
             return text
@@ -180,17 +253,20 @@ class LLMService:
         client = _get_client()
 
         try:
-            response = client.models.generate_content(
-                model=_MODEL_ID,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    response_mime_type="application/json",
-                    response_schema=schema_class,
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                ),
-            )
+            def _call():
+                return client.models.generate_content(
+                    model=_MODEL_ID,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        response_mime_type="application/json",
+                        response_schema=schema_class,
+                        temperature=temperature,
+                        max_output_tokens=max_tokens,
+                    ),
+                )
+            response = self._call_with_retry(_call, self.MAX_RETRIES, self.RETRY_BASE_DELAY)
+            _accumulate_tokens(response)
             result = schema_class.model_validate_json(response.text)
             return result.model_dump()
 
@@ -208,12 +284,32 @@ class LLMService:
                         max_output_tokens=max_tokens,
                     ),
                 )
+                _accumulate_tokens(response)
                 raw = json.loads(response.text)
                 result = schema_class.model_validate(raw)
                 return result.model_dump()
             except Exception as e2:
                 logger.error(f"Fallback structured extraction also failed: {e2}")
                 return schema_class().model_dump()
+
+    async def generate_structured_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema_class: type,
+        max_tokens: int = 8192,
+        temperature: float = 0.1,
+    ) -> dict[str, Any]:
+        """Async wrapper for generate_structured().
+
+        Uses asyncio.to_thread to run the blocking Gemini API call
+        in a thread pool, allowing concurrent LLM calls.
+        """
+        import asyncio
+        return await asyncio.to_thread(
+            self.generate_structured,
+            system_prompt, user_prompt, schema_class, max_tokens, temperature,
+        )
 
     def _parse_json(self, text: str, required_keys: set[str]) -> dict[str, Any]:
         """Parse JSON from LLM response, with fallback regex extraction."""

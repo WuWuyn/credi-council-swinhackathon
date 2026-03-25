@@ -30,9 +30,9 @@ def confidence_gate(state: CreditState) -> dict[str, Any]:
         1. Check ALL CRITICAL fields have confidence ≥ 0.85
            - If ANY critical field fails → HALT pipeline
         2. Calculate overall_confidence
-           - ≥ 0.80 → AUTO_PROCEED
-           - 0.65-0.80 → PROCEED_WITH_WARNINGS
-           - < 0.65 → ESCALATE_TO_HUMAN
+           - ≥ 0.85 → AUTO_PROCEED
+           - 0.70-0.85 → PROCEED_WITH_WARNINGS
+           - < 0.70 → ESCALATE_TO_HUMAN
 
     Args:
         state: Current pipeline state with confidence_map.

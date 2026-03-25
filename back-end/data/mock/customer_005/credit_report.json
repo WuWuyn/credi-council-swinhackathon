@@ -1,0 +1,438 @@
+{
+  "customer_info": {
+    "gender": "Nữ",
+    "age": 64,
+    "education": "Trung cấp / THPT",
+    "family_status": "Đã kết hôn",
+    "income_type": "Hưu trí",
+    "housing": "Nhà riêng / Chung cư",
+    "own_realty": "Y",
+    "own_car": "Y",
+    "loan_purpose": "CONSUMPTION"
+  },
+  "executive_summary": {
+    "credit_score": 555,
+    "risk_band": "BBB",
+    "pd_pct": 18.66,
+    "recommendation": "CONDITIONAL",
+    "five_c_total": 90,
+    "five_c_scores": {
+      "character": 30,
+      "capacity": 33,
+      "capital": 13,
+      "conditions": 5,
+      "collateral": 9
+    },
+    "five_c_shap_allocation": {
+      "character": {
+        "shap_sum": 0.9504,
+        "pct": 16
+      },
+      "capacity": {
+        "shap_sum": 0.6947,
+        "pct": 12
+      },
+      "capital": {
+        "shap_sum": 0.1138,
+        "pct": 2
+      },
+      "conditions": {
+        "shap_sum": 4.0963,
+        "pct": 69
+      },
+      "collateral": {
+        "shap_sum": 0.0413,
+        "pct": 1
+      }
+    },
+    "decision_reasons": [
+      "Credit Score 555 → Band BBB → CONDITIONAL (Cần bổ sung TSBĐ hoặc guarantor)"
+    ],
+    "decision_overrides": [],
+    "model_info": {
+      "model_version": "lgb1_ref_v1",
+      "auc": "0.803",
+      "shap_verified": true,
+      "inference_timestamp": "2026-03-25T10:32:49.474934+00:00"
+    },
+    "financial_ratios": {
+      "income_annual_vnd": 13500000.0,
+      "income_monthly_vnd": 1125000.0,
+      "annuity_monthly_vnd": 231116.66666666666,
+      "credit_total_vnd": 83925900.0,
+      "goods_price_vnd": 72450000.0,
+      "dti": 0.2054,
+      "dti_pct": "20.5%",
+      "dscr": 4.87,
+      "ltv": 1.1584,
+      "ltv_pct": "115.8%"
+    }
+  },
+  "five_c_scorecard": {
+    "character_assessment": {
+      "score": 30,
+      "max_score": 30,
+      "status": "ĐẠT",
+      "shap_pct": "16%",
+      "indicators_met": [
+        "Điểm CIC ngoại tốt (0.80)",
+        "Không ghi nhận nợ quá hạn (DPD)",
+        "Giấy tờ định danh ổn định",
+        "Ít yêu cầu tín dụng gần đây",
+        "Vòng xã hội không có nợ xấu"
+      ],
+      "indicators_review": [],
+      "breakdown": [
+        {
+          "criterion": "CIC External Score",
+          "points": 10,
+          "max": 10,
+          "detail": "EXT_SOURCE avg = 0.8010"
+        },
+        {
+          "criterion": "Lịch sử thanh toán (DPD)",
+          "points": 7,
+          "max": 7,
+          "detail": "DPD issue: False"
+        },
+        {
+          "criterion": "Định danh & hồ sơ",
+          "points": 5,
+          "max": 5,
+          "detail": "Document flags + ID publish stability"
+        },
+        {
+          "criterion": "Lịch sử tín dụng trước",
+          "points": 5,
+          "max": 5,
+          "detail": "Bureau requests: 2.0/year, 0/month"
+        },
+        {
+          "criterion": "Vòng xã hội (social circle)",
+          "points": 3,
+          "max": 3,
+          "detail": "DEF_30_CNT_SOCIAL_CIRCLE = 0"
+        }
+      ],
+      "narrative": null
+    },
+    "capacity_assessment": {
+      "score": 33,
+      "max_score": 40,
+      "status": "ĐẠT",
+      "shap_pct": "12%",
+      "indicators_met": [
+        "DTI 20.5% — rất tốt",
+        "DSCR 4.87 — dư dả"
+      ],
+      "indicators_review": [
+        "Thu nhập hưu trí — cần xác minh tính bền vững"
+      ],
+      "breakdown": [
+        {
+          "criterion": "DTI (Nợ/Thu nhập)",
+          "points": 14,
+          "max": 14,
+          "detail": "DTI = 20.5%"
+        },
+        {
+          "criterion": "DSCR (Dòng tiền/Nợ)",
+          "points": 10,
+          "max": 10,
+          "detail": "DSCR = 4.87"
+        },
+        {
+          "criterion": "Loại thu nhập",
+          "points": 5,
+          "max": 8,
+          "detail": "NAME_INCOME_TYPE = Pensioner"
+        },
+        {
+          "criterion": "Thâm niên công tác",
+          "points": 4,
+          "max": 8,
+          "detail": "Pensioner — retired"
+        }
+      ],
+      "narrative": null
+    },
+    "capital_assessment": {
+      "score": 13,
+      "max_score": 20,
+      "status": "XEM_XÉT",
+      "shap_pct": "2%",
+      "indicators_met": [
+        "Sở hữu bất động sản",
+        "Sở hữu ô tô"
+      ],
+      "indicators_review": [
+        "Đòn bẩy tài chính rất cao (6.2x thu nhập)"
+      ],
+      "breakdown": [
+        {
+          "criterion": "Bất động sản",
+          "points": 7,
+          "max": 7,
+          "detail": "FLAG_OWN_REALTY = Y"
+        },
+        {
+          "criterion": "Ô tô",
+          "points": 3,
+          "max": 3,
+          "detail": "FLAG_OWN_CAR = Y"
+        },
+        {
+          "criterion": "Đòn bẩy (Vay/Thu nhập)",
+          "points": 0,
+          "max": 6,
+          "detail": "Ratio = 83925900.0/13500000.0"
+        },
+        {
+          "criterion": "Gánh nặng nợ ngoài (CIC)",
+          "points": 3,
+          "max": 4,
+          "detail": "Bureau requests/year = 2.0"
+        }
+      ],
+      "narrative": null
+    },
+    "conditions_assessment": {
+      "score": 5,
+      "max_score": 10,
+      "status": "XEM_XÉT",
+      "shap_pct": "69%",
+      "indicators_met": [
+        "Mục đích vay rõ ràng (CONSUMPTION)"
+      ],
+      "indicators_review": [
+        "Khu vực có xếp hạng rủi ro 3"
+      ],
+      "breakdown": [
+        {
+          "criterion": "Mục đích vay",
+          "points": 2,
+          "max": 3,
+          "detail": "Purpose = CONSUMPTION"
+        },
+        {
+          "criterion": "Trình độ học vấn",
+          "points": 2,
+          "max": 3,
+          "detail": "Education = Secondary / secondary special"
+        },
+        {
+          "criterion": "Xếp hạng vùng",
+          "points": 0,
+          "max": 2,
+          "detail": "REGION_RATING = 3"
+        },
+        {
+          "criterion": "Tuổi & ổn định gia đình",
+          "points": 1,
+          "max": 2,
+          "detail": "Age = 63"
+        }
+      ],
+      "narrative": null
+    },
+    "collateral_assessment": {
+      "score": 9,
+      "max_score": 20,
+      "status": "XEM_XÉT",
+      "shap_pct": "1%",
+      "indicators_met": [
+        "Sở hữu bất động sản",
+        "Chất lượng tài sản tốt (nhà xây kiên cố)"
+      ],
+      "indicators_review": [
+        "LTV 116% — vượt 100%, rủi ro cao"
+      ],
+      "breakdown": [
+        {
+          "criterion": "LTV (Vay/TSBĐ)",
+          "points": 0,
+          "max": 10,
+          "detail": "LTV = 115.8%"
+        },
+        {
+          "criterion": "Quyền sở hữu tài sản",
+          "points": 5,
+          "max": 5,
+          "detail": "Realty=Y, Car=Y"
+        },
+        {
+          "criterion": "Chất lượng TSBĐ",
+          "points": 4,
+          "max": 5,
+          "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.0568"
+        }
+      ],
+      "narrative": null
+    }
+  },
+  "financial_summary": {},
+  "debt_assessment": {
+    "score": 81,
+    "max_score": 100,
+    "score_pct": "81%",
+    "overall_status": "ĐẠT",
+    "overall_color": "green",
+    "metrics": [
+      {
+        "name": "DTI (Nợ/Thu nhập)",
+        "value": "20.5%",
+        "threshold": "< 40%",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "DSCR (Dòng tiền/Nợ)",
+        "value": "4.87",
+        "threshold": "> 1.20",
+        "status": "Tốt",
+        "flag": "OK"
+      },
+      {
+        "name": "LTV (Vay/TSBĐ)",
+        "value": "115.8%",
+        "threshold": "< 70%",
+        "status": "Rủi ro",
+        "flag": "!!"
+      },
+      {
+        "name": "Mục đích vay",
+        "value": "Tiêu dùng",
+        "threshold": "PRODUCTION / INVESTMENT",
+        "status": "Rõ ràng",
+        "flag": "OK"
+      }
+    ],
+    "summary": "Phân tích nợ tổng hợp: 81/100 điểm (81%). Mục đích vay: Tiêu dùng. DTI 20.5% — trong ngưỡng an toàn. DSCR 4.87 — đạt ngưỡng."
+  },
+  "collateral_detail": {
+    "score": 9,
+    "max_score": 20,
+    "status": "XEM_XÉT",
+    "shap_pct": "1%",
+    "indicators_met": [
+      "Sở hữu bất động sản",
+      "Chất lượng tài sản tốt (nhà xây kiên cố)"
+    ],
+    "indicators_review": [
+      "LTV 116% — vượt 100%, rủi ro cao"
+    ],
+    "breakdown": [
+      {
+        "criterion": "LTV (Vay/TSBĐ)",
+        "points": 0,
+        "max": 10,
+        "detail": "LTV = 115.8%"
+      },
+      {
+        "criterion": "Quyền sở hữu tài sản",
+        "points": 5,
+        "max": 5,
+        "detail": "Realty=Y, Car=Y"
+      },
+      {
+        "criterion": "Chất lượng TSBĐ",
+        "points": 4,
+        "max": 5,
+        "detail": "Housing=house / apartment, Walls=stone, brick, Area=0.0568"
+      }
+    ],
+    "narrative": null
+  },
+  "suggested_terms": {
+    "max_amount_vnd": 83925900.0,
+    "interest_rate_suggestion": "theo biểu phí hiện hành",
+    "conditions": [
+      "LTV 116% vượt ngưỡng 80% — yêu cầu bổ sung TSBĐ hoặc giảm hạn mức"
+    ]
+  },
+  "reward_assessment": {
+    "interest_rate_pct": "13.0%",
+    "loan_amount_fmt": "84 triệu VND",
+    "term_months": 30,
+    "gross_income_fmt": "27 triệu VND",
+    "expected_loss_fmt": "7 triệu VND",
+    "risk_adj_income_fmt": "20 triệu VND",
+    "raroc_pct": "24.1%",
+    "verdict": "Tốt",
+    "verdict_flag": "OK",
+    "verdict_color": "green",
+    "customer_segment": "Sub-prime",
+    "upsell_opportunities": [],
+    "summary": "Lợi nhuận điều chỉnh rủi ro (RAROC): 24.1% — Tốt. Phân khúc: Sub-prime. Thu nhập lãi ước tính: 27 triệu VND, Tổn thất kỳ vọng: 7 triệu VND."
+  },
+  "llm_insights": {
+    "loan_purpose": "CONSUMPTION",
+    "positive_signals": [
+      "Property ownership",
+      "Vehicle ownership",
+      "Stable residency",
+      "Married status"
+    ],
+    "risk_flags": [
+      "Extremely low income (11,250 VND/month)",
+      "Very poor property quality (0.7/10)",
+      "Small living area (10.7 m2)",
+      "Unrealistic employment start date (3026-03-26)",
+      "No email address provided"
+    ]
+  },
+  "caveats": [],
+  "audit_reference": {
+    "model_version": "lgb1_ref_v1",
+    "inference_timestamp": "2026-03-25T10:32:49.474934+00:00",
+    "rag_citations": [
+      {
+        "source": null,
+        "title": "credit_assessment_5c"
+      },
+      {
+        "source": null,
+        "title": "tt11_2021_debt_classification"
+      },
+      {
+        "source": null,
+        "title": "basel_vietnam_car"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "source": null,
+        "title": "tt39_2016_lending"
+      },
+      {
+        "text": "Đánh giá theo khung 5C (Thông tư 39/2016/TT-NHNN)",
+        "chunk_indices": [
+          0
+        ]
+      },
+      {
+        "text": "*   **Thông tư 11/2021/TT-NHNN:** Quy định về phân loại nợ.",
+        "chunk_indices": [
+          1,
+          0
+        ]
+      },
+      {
+        "text": "*   **CAR (Tỷ lệ an toàn vốn):** Theo TT41/2016 (Basel II), khoản vay này có trọng số rủi ro cao (100% cho vay cá nhân + LTV > 70%).",
+        "chunk_indices": [
+          2
+        ]
+      }
+    ],
+    "rag_policy_docs": [
+      "TT39/2016/TT-NHNN",
+      "TT11/2021/TT-NHNN",
+      "QĐ493/2005/QĐ-NHNN",
+      "CIC Scoring Guide",
+      "Basel II/III (TT41/2016, TT14/2025)",
+      "5C Assessment Framework"
+    ]
+  }
+}

@@ -1,16 +1,8 @@
 """
 Test: Docling + LLM extraction pipeline vs ground truth.
-Sets USE_DOCLING=true temporarily to test the new extraction path.
 """
 import json, sys, io, os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-
-# Force USE_DOCLING=true for this test
-os.environ["USE_DOCLING"] = "true"
-
-# Clear settings cache so new env is picked up
-from credicouncil.config.settings import get_settings
-get_settings.cache_clear()
 
 from pathlib import Path
 from credicouncil.agents.a1_ingestion.agent import IngestionAgent

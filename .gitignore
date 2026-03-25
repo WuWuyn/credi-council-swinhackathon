@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.agents
 
 # ─── Dataset (Home Credit CSV files) ─────────────────────────────────────────
 *.csv

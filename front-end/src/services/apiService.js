@@ -9,7 +9,7 @@
  */
 
 import { API_CONFIG } from '../config/api'
-import { CUSTOMERS_FALLBACK, PIPELINE_LAYERS, reportFallbackData } from '../data/mockData'
+import { PIPELINE_LAYERS } from '../data/mockData'
 
 // ── URL Helpers ──────────────────────────────────────────────────────────
 // In development with Vite proxy, use relative paths (empty string).
@@ -52,6 +52,22 @@ export function isBackendAvailable() {
 }
 
 
+// ── Clear Output (Demo Reset) ────────────────────────────────────────────
+
+/**
+ * Clear all pipeline output data for a fresh demo.
+ * @returns {Promise<{cleared: number, message: string}>}
+ */
+export async function clearOutputData() {
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.CLEAR_OUTPUT}`,
+    { method: 'DELETE' }
+  )
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
+
+
 // ── Customer Listing ─────────────────────────────────────────────────────
 
 /**
@@ -73,6 +89,7 @@ export async function fetchCustomers() {
         skIdCurr: c.sk_id_curr,
         target: c.target,
         targetLabel: c.target_label,
+        hasOutput: c.has_output || false,
         info: {
           gender: c.gender || 'N/A',
           age: c.age || 0,
@@ -85,8 +102,8 @@ export async function fetchCustomers() {
           ownRealty: c.own_realty || 'N',
           ownCar: c.own_car || 'N',
         },
-        // Pre-loaded score data (from existing reports)
-        scoreData: c.has_report ? {
+        // Score data ONLY from output/ (never mock)
+        scoreData: c.has_output ? {
           creditScore: c.credit_score,
           riskBand: c.risk_band,
           pdPct: c.pd_pct,
@@ -99,12 +116,8 @@ export async function fetchCustomers() {
       source: 'backend',
     }
   } catch (err) {
-    console.warn('[API] Backend offline for customers, using fallback data:', err.message)
-    return {
-      customers: CUSTOMERS_FALLBACK,
-      total: CUSTOMERS_FALLBACK.length,
-      source: 'fallback',
-    }
+    console.error('[API] Backend offline for customers:', err.message)
+    throw err
   }
 }
 
@@ -124,8 +137,8 @@ export async function fetchReportJSON(customerId) {
     const json = await res.json()
     return { data: json, source: 'backend' }
   } catch (err) {
-    console.warn(`[API] Report fallback for customer ${customerId}:`, err.message)
-    return { data: reportFallbackData, source: 'fallback' }
+    console.error(`[API] Report fetch failed for customer ${customerId}:`, err.message)
+    throw err
   }
 }
 
@@ -149,8 +162,69 @@ export async function runScorePipeline(customerId, customerType = 'INDIVIDUAL') 
   return await res.json()
 }
 
+/**
+ * Submit multiple customers for parallel batch scoring.
+ * Backend runs all pipelines concurrently with staggered starts.
+ * 
+ * @param {string[]} customerIds - Array of customer IDs to process
+ * @param {number} staggerDelay - Seconds between each pipeline launch (default: 2)
+ * @returns {Promise<{results: Object, total: number, success_count: number, duration_s: number}>}
+ */
+export async function runBatchScorePipeline(customerIds, staggerDelay = 2.0) {
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.SCORE_BATCH}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_ids: customerIds,
+        stagger_delay: staggerDelay,
+      }),
+    }
+  )
 
-// ── PDF URLs ─────────────────────────────────────────────────────────────
+  if (!res.ok) throw new Error(`Batch HTTP ${res.status}`)
+  return await res.json()
+}
+
+
+// ── 2-Phase Pipeline (Human-in-the-Loop) ─────────────────────────────────
+
+/**
+ * Phase 1: Run OCR + LLM extraction only.
+ * Returns extracted features + confidence for human review.
+ */
+export async function runIngestion(customerId) {
+  const formData = new FormData()
+  formData.append('applicant_id', customerId)
+
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.INGEST}`,
+    { method: 'POST', body: formData }
+  )
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
+
+/**
+ * Phase 2: Submit approved/edited data to complete pipeline (A2→A3→A4).
+ *
+ * @param {Object} params - { customer_id, application_row, raw_texts, thin_file_flag, identity_consistency_flag }
+ */
+export async function runProcessing(params) {
+  const res = await fetch(
+    `${API_BASE}${API_CONFIG.ENDPOINTS.PROCESS}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    }
+  )
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return await res.json()
+}
 
 /**
  * Get the URL for PDF preview (inline).
@@ -191,12 +265,160 @@ export async function downloadPdf(customerId) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function formatVND(amount) {
+// Home Credit uses anonymized currency units → multiply by 100 for approximate VND display
+const VND_SCALE = 100
+
+function formatVND(rawAmount) {
+  const amount = rawAmount * VND_SCALE
   if (amount >= 1e9) return `${(amount / 1e9).toFixed(1)}B VND`
   if (amount >= 1e6) return `${(amount / 1e6).toFixed(1)}M VND`
   if (amount >= 1e3) return `${(amount / 1e3).toFixed(0)}K VND`
-  return `${amount} VND`
+  return `${amount.toLocaleString()} VND`
 }
 
 // Re-export constants
 export { PIPELINE_LAYERS }
+
+
+// ── WebSocket Pipeline Processing ────────────────────────────────────────────
+
+/**
+ * Build WebSocket URL from current page origin.
+ * In dev (Vite proxy), use relative ws:// path.
+ * In production, use configured BASE_URL converted to ws://.
+ */
+function getWsBaseUrl() {
+  if (isDev) {
+    // Vite proxy handles /ws/* → backend
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${location.host}`
+  }
+  // Production: convert http(s) to ws(s)
+  return API_CONFIG.BASE_URL.replace(/^http/, 'ws')
+}
+
+/**
+ * Connect to WebSocket pipeline endpoint for realtime A2→A3→A4 processing.
+ *
+ * @param {Object} params - ProcessRequest fields { customer_id, application_row, raw_texts, ... }
+ * @param {Function} onEvent - Called for each event: { event, step?, data?, result?, message? }
+ * @returns {{ promise: Promise<Object>, close: Function }}
+ *   - promise resolves with the full ScoreResponse when pipeline completes
+ *   - close() can be called to abort the WebSocket connection
+ */
+export function connectProcessingWebSocket(params, onEvent) {
+  const wsUrl = `${getWsBaseUrl()}/ws/process`
+  const ws = new WebSocket(wsUrl)
+
+  const promise = new Promise((resolve, reject) => {
+    ws.onopen = () => {
+      console.log('[WS] Connected to', wsUrl)
+      // Send ProcessRequest data
+      ws.send(JSON.stringify(params))
+    }
+
+    ws.onmessage = (msg) => {
+      try {
+        const event = JSON.parse(msg.data)
+        console.log('[WS] Event:', event.event, event.step || '')
+
+        // Forward event to caller
+        if (onEvent) onEvent(event)
+
+        // Terminal events
+        if (event.event === 'done') {
+          resolve(event.result)
+          ws.close()
+        } else if (event.event === 'error') {
+          reject(new Error(event.message || 'Pipeline error'))
+          ws.close()
+        }
+      } catch (err) {
+        console.error('[WS] Parse error:', err)
+      }
+    }
+
+    ws.onerror = (err) => {
+      console.error('[WS] WebSocket error:', err)
+      reject(new Error('WebSocket connection failed'))
+    }
+
+    ws.onclose = (ev) => {
+      console.log('[WS] Closed:', ev.code, ev.reason)
+      // If closed without resolving, reject
+      if (ev.code !== 1000 && ev.code !== 1005) {
+        reject(new Error(`WebSocket closed: ${ev.code}`))
+      }
+    }
+  })
+
+  return {
+    promise,
+    close: () => ws.close(),
+  }
+}
+
+
+// ── WebSocket Batch Pipeline ─────────────────────────────────────────────────
+
+/**
+ * Connect to WebSocket batch pipeline endpoint for full batch lifecycle.
+ *
+ * @param {string[]} customerIds - Array of customer IDs to process
+ * @param {Function} onEvent - Called for each WebSocket event
+ * @returns {{ promise: Promise<Object>, sendAction: Function, close: Function }}
+ */
+export function connectBatchWebSocket(customerIds, onEvent) {
+  const wsUrl = `${getWsBaseUrl()}/ws/batch`
+  const ws = new WebSocket(wsUrl)
+
+  const promise = new Promise((resolve, reject) => {
+    ws.onopen = () => {
+      console.log('[WS-Batch] Connected to', wsUrl)
+      ws.send(JSON.stringify({
+        action: 'start',
+        customer_ids: customerIds,
+      }))
+    }
+
+    ws.onmessage = (msg) => {
+      try {
+        const event = JSON.parse(msg.data)
+        console.log('[WS-Batch] Event:', event.event, event.customer_id || '')
+        if (onEvent) onEvent(event)
+
+        if (event.event === 'batch_done') {
+          resolve(event.summary)
+        } else if (event.event === 'error') {
+          reject(new Error(event.message || 'Batch pipeline error'))
+          ws.close()
+        }
+      } catch (err) {
+        console.error('[WS-Batch] Parse error:', err)
+      }
+    }
+
+    ws.onerror = (err) => {
+      console.error('[WS-Batch] WebSocket error:', err)
+      reject(new Error('Batch WebSocket connection failed'))
+    }
+
+    ws.onclose = (ev) => {
+      console.log('[WS-Batch] Closed:', ev.code, ev.reason)
+    }
+  })
+
+  function sendAction(actionData) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(actionData))
+    } else {
+      console.warn('[WS-Batch] Cannot send — WebSocket not open')
+    }
+  }
+
+  return {
+    promise,
+    sendAction,
+    close: () => ws.close(),
+  }
+}
