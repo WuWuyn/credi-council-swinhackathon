@@ -1,4 +1,5 @@
 # CrediCouncil AI — AI Credit Assessment System
+## 🚀 Live Demo: https://do82r4ojfypf7.cloudfront.net/
 
 > **AI-powered credit scoring pipeline** built on the MASCA architecture (Multi-Agent System for Credit Assessment), using LightGBM + SHAP + Gemini LLM to generate 5C credit reports compliant with Vietnamese banking standards.
 
